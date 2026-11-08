@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ekipa Tracker & Wrapped 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
+    .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .chip-active { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border-color: #8b5cf6; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35); }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen pb-16">
+
+  <!-- TOP NAVBAR -->
+  <header class="sticky top-0 z-30 glass border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-extrabold text-xl shadow-lg">
+          ⚡
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white">Ekipa Tracker <span class="text-indigo-400">2026</span></h1>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span id="syncStatusText">Tryb lokalny (localStorage)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nawigacja Zakładek -->
+      <nav class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+        <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white">
+          🏆 Tabela i Aktywności
+        </button>
+        <button onclick="switchTab('members')" id="tabBtn-members" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
+          👥 Ekipa (<span id="navMemberCount">0</span>)
+        </button>
+        <button onclick="switchTab('wrapped')" id="tabBtn-wrapped" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
+          📊 Statystyki / Wrapped
+        </button>
+        <button onclick="openConfigModal()" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-300 hover:bg-slate-800">
+          ⚙️ Konfiguracja
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-6">
+
+    <!-- ================= ZAKŁADKA 1: DASHBOARD (KREATOR + TABELA + DZIENNIK) ================= -->
+    <div id="tab-dashboard" class="space-y-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEWA KOLUMNA: Dodawanie wydarzenia + Sędzia AI (5 kolumn) -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="glass rounded-2xl p-6 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <span>➕ Dodaj Aktywność</span>
+              </h2>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">
+                Bonus Synergii IRL +15%/os.
+              </span>
+            </div>
+
+            <!-- Pole Sędziego AI -->
+            <div class="mb-5 bg-slate-900/80 border border-slate-800 rounded-xl p-3.5">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-indigo-400 mb-1.5">
+                🤖 Szybki opis dla Sędziego AI (Gemini / Lokalny Parser)
+              </label>
+              <textarea id="aiPromptInput" rows="3" placeholder="Np. Graliśmy w piłkę na Orliku 2 godziny w deszczu, byli Tomek, Michał, Kuba i Janek. Tomek ogarnął transport..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"></textarea>
+              <div class="mt-2.5 flex items-center justify-between gap-2">
+                <span id="aiModeBadge" class="text-[11px] text-slate-400">Tryb: Lokalny inteligentny parser</span>
+                <button type="button" onclick="analyzeWithAI()" id="aiAnalyzeBtn" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow transition flex items-center gap-1.5">
+                  <span>✨ Rozstrzygnij i wypełnij</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Formularz Wydarzenia -->
+            <form id="eventForm" onsubmit="handleSaveEvent(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Nazwa aktywności</label>
+                <input type="text" id="evTitle" required placeholder="Np. Piłka na hali / LoL 2v2 / Wyjście na kręgle" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Kategoria (Waga)</label>
+                  <select id="evCategory" onchange="recalculatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <option value="IRL_SPORT">⚽ IRL Sport / Ruch (3.0x)</option>
+                    <option value="IRL_CHILL">🍻 IRL Spotkanie / Chill (2.0x)</option>
+                    <option value="IRL_TRIP">⛰️ IRL Wyjazd / Duży Event (6.0x)</option>
+                    <option value="ONLINE_GAMING">🎮 Online: LoL 2v2 / Gry (0.5x)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Data</label>
+                  <input type="date" id="evDate" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Czas trwania (minuty)</label>
+                  <input type="number" id="evDuration" value="90" min="10" max="2880" step="10" onchange="recalculatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Bonus Sędziego AI (-5 do +15 pkt)</label>
+                  <input type="number" id="evAiBonus" value="0" min="-10" max="25" step="1" onchange="recalculatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+
+              <!-- Wybór uczestników + Szybkie dodawanie znajomego -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs font-medium text-slate-300">Obecni z Ekipy (<span id="selectedParticipantsCount">0</span>)</label>
+                  <div class="flex gap-2">
+                    <button type="button" onclick="selectAllMembers(true)" class="text-[11px] text-indigo-400 hover:underline">Wszyscy</button>
+                    <button type="button" onclick="selectAllMembers(false)" class="text-[11px] text-slate-400 hover:underline">Wyczyść</button>
+                  </div>
+                </div>
+                <div id="participantsSelector" class="flex flex-wrap gap-1.5 p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl min-h-[52px]"></div>
+
+                <!-- Szybkie dodanie nowej osoby bezpośrednio z formularza -->
+                <div class="mt-2 flex gap-2">
+                  <input type="text" id="quickMemberInput" placeholder="Brakuje kogoś? Wpisz imię/ksywkę..." class="flex-1 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                  <button type="button" onclick="quickAddMember()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-indigo-300 border border-slate-700 transition">
+                    + Dodaj osobę
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Werdykt / Komentarz AI i Tagi</label>
+                <input type="text" id="evComment" placeholder="Komentarz sędziego lub okoliczności (np. deszcz, grill, dogrywka)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500" />
+              </div>
+
+              <!-- Kalkulator na żywo -->
+              <div class="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-3.5 flex items-center justify-between">
+                <div>
+                  <div class="text-xs text-indigo-300 font-medium">Wyliczenie dla każdego uczestnika:</div>
+                  <div id="formulaBreakdown" class="text-[11px] text-slate-400 mt-0.5">Baza 10 × 3.0 (Sport) × 1.0 (Grupa)</div>
+                </div>
+                <div class="text-right">
+                  <span id="previewPoints" class="text-2xl font-extrabold text-indigo-400">30.0</span>
+                  <span class="text-xs text-indigo-300 block">pkt / osobę</span>
+                </div>
+              </div>
+
+              <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition">
+                💾 Zapisz aktywność w tabeli
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- PRAWA KOLUMNA: Ranking Główny + Historia Wydarzeń (7 kolumn) -->
+        <div class="lg:col-span-7 space-y-6">
+          
+          <!-- RANKING GŁÓWNY -->
+          <div class="glass rounded-2xl p-6 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div>
+                <h2 class="text-lg font-bold text-white">🏆 Ranking Roczny Ekipy</h2>
+                <p class="text-xs text-slate-400">Punkty liczone na żywo z dziennika aktywności (priorytet spotkań IRL)</p>
+              </div>
+              <button onclick="switchTab('members')" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 font-medium transition">
+                👥 Zarządzaj ludźmi (+ / -)
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-800 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    <th class="py-3 px-2">#</th>
+                    <th class="py-3 px-2">Osoba</th>
+                    <th class="py-3 px-2 text-right">Punkty</th>
+                    <th class="py-3 px-2 text-center">Na żywo (IRL)</th>
+                    <th class="py-3 px-2 text-center">Online (LoL/Gry)</th>
+                    <th class="py-3 px-2 text-right">Razem godzin</th>
+                    <th class="py-3 px-2 text-right">Ostatnio</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboardBody" class="divide-y divide-slate-800/60 text-sm"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- DZIENNIK WYDARZEŃ (LOG) -->
+          <div class="glass rounded-2xl p-6 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 class="text-lg font-bold text-white">📜 Dziennik wszystkich aktywności (<span id="eventsCountBadge">0</span>)</h2>
+              <div class="flex items-center gap-2">
+                <select id="filterCategory" onchange="renderAll()" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                  <option value="ALL">Wszystkie kategorie</option>
+                  <option value="IRL_SPORT">⚽ Tylko IRL Sport</option>
+                  <option value="IRL_CHILL">🍻 Tylko IRL Chill</option>
+                  <option value="IRL_TRIP">⛰️ Tylko IRL Wyjazdy</option>
+                  <option value="ONLINE_GAMING">🎮 Tylko Online (LoL)</option>
+                </select>
+                <select id="filterMember" onchange="renderAll()" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                  <option value="ALL">Wszyscy uczestnicy</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="eventsLogContainer" class="space-y-3 max-h-[520px] overflow-y-auto pr-1"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= ZAKŁADKA 2: ZARZĄDZANIE LUDŹMI (DODAWANIE / USUWANIE) ================= -->
+    <div id="tab-members" class="hidden space-y-6">
+      <div class="glass rounded-2xl p-6 shadow-xl max-w-4xl mx-auto">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-white">👥 Zarządzanie Ekipą (Dodawanie i usuwanie ludzi)</h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Możesz w każdej chwili dodać nowego znajomego, zmienić ksywkę albo usunąć osobę z tabeli.
+            </p>
+          </div>
+        </div>
+
+        <!-- Formularz dodawania nowej osoby -->
+        <form onsubmit="handleAddMemberTab(event)" class="flex flex-col sm:flex-row gap-3 mb-6 bg-slate-900/70 p-4 rounded-xl border border-slate-800">
+          <input type="text" id="newMemberNameInput" required placeholder="Wpisz imię lub ksywkę (np. Bartek, Młody, Seba)..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+          <input type="text" id="newMemberRoleInput" placeholder="Rola / Tytuł (opcjonalnie, np. Bramkarz / Midlaner)" class="sm:w-64 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+          <button type="submit" class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow transition whitespace-nowrap">
+            ➕ Dodaj do Ekipy
+          </button>
+        </form>
+
+        <!-- Lista osób z opcją edycji i usunięcia -->
+        <div id="membersManagementList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+      </div>
+    </div>
+
+    <!-- ================= ZAKŁADKA 3: STATYSTYKI / WRAPPED NA KONIEC ROKU ================= -->
+    <div id="tab-wrapped" class="hidden space-y-6">
+      <div class="glass rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
+          <div>
+            <h2 class="text-xl font-extrabold text-white">📊 Ekipa Wrapped – Podsumowanie i Statystyki</h2>
+            <p class="text-xs text-slate-400">Automatyczna analiza wszystkich zapisanych wydarzeń z całego roku</p>
+          </div>
+        </div>
+
+        <!-- Karty wyróżnień -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div class="bg-slate-900/90 border border-indigo-500/30 rounded-xl p-4">
+            <div class="text-xs font-semibold uppercase text-indigo-400">🤝 Najlepsze Duo (Nierozłączni)</div>
+            <div id="statBestDuo" class="text-lg font-extrabold text-white mt-1">-</div>
+            <div id="statBestDuoSub" class="text-xs text-slate-400 mt-0.5">Brak wspólnych wyjść</div>
+          </div>
+
+          <div class="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-4">
+            <div class="text-xs font-semibold uppercase text-emerald-400">🏃 Król Życia IRL</div>
+            <div id="statIrlKing" class="text-lg font-extrabold text-white mt-1">-</div>
+            <div id="statIrlKingSub" class="text-xs text-slate-400 mt-0.5">Najwięcej spotkań na żywo</div>
+          </div>
+
+          <div class="bg-slate-900/90 border border-amber-500/30 rounded-xl p-4">
+            <div class="text-xs font-semibold uppercase text-amber-400">👻 Duch Ekipy (Najrzadziej IRL)</div>
+            <div id="statGhost" class="text-lg font-extrabold text-white mt-1">-</div>
+            <div id="statGhostSub" class="text-xs text-slate-400 mt-0.5">Najmniej wyjść z domu</div>
+          </div>
+
+          <div class="bg-slate-900/90 border border-purple-500/30 rounded-xl p-4">
+            <div class="text-xs font-semibold uppercase text-purple-400">⏳ Czas Spędzony Razem</div>
+            <div id="statTotalHours" class="text-lg font-extrabold text-white mt-1">0 h</div>
+            <div id="statTotalHoursSub" class="text-xs text-slate-400 mt-0.5">0 osobo-godzin łącznie</div>
+          </div>
+        </div>
+
+        <!-- Rozkład dni tygodnia i kategorii -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5">
+            <h3 class="text-sm font-bold text-white mb-4">📅 W jakie dni najczęściej się spotykacie?</h3>
+            <div id="weekdayChart" class="space-y-2.5"></div>
+          </div>
+
+          <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5">
+            <h3 class="text-sm font-bold text-white mb-4">⚖️ Bilans: Życie na żywo (IRL) vs Gry Online</h3>
+            <div id="categoryBreakdownChart" class="space-y-3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ================= MODAL KONFIGURACJI (FIREBASE + GEMINI API + BACKUP) ================= -->
+  <div id="configModal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass rounded-2xl max-w-xl w-full p-6 border border-slate-700 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-white">⚙️ Konfiguracja (Lokalny Klucz AI & Firebase)</h3>
+        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+
+      <!-- 1. Klucz Gemini AI -->
+      <div class="space-y-2">
+        <label class="block text-xs font-bold uppercase tracking-wider text-indigo-400">
+          1. Darmowy Klucz Google Gemini API (Zapisywany tylko u Ciebie w localStorage)
+        </label>
+        <input type="password" id="cfgGeminiKey" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        <p class="text-[11px] text-slate-400">
+          Klucz nie trafia do bazy danych – zostaje w Twojej przeglądarce. Jeśli zostawisz puste, aplikacja użyje wbudowanego lokalnego parsera.
+        </p>
+      </div>
+
+      <!-- 2. Konfiguracja Firebase Realtime Database REST / Firestore -->
+      <div class="space-y-2 pt-2 border-t border-slate-800">
+        <label class="block text-xs font-bold uppercase tracking-wider text-emerald-400">
+          2. Adres URL Bazy Firebase (Realtime Database URL) – Wspólna tabela na żywo
+        </label>
+        <input type="text" id="cfgFirebaseUrl" placeholder="https://twoja-baza-default-rtdb.europe-west1.firebasedatabase.app" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
+        <p class="text-[11px] text-slate-400">
+          Wklej link do swojej darmowej bazy Firebase Realtime Database, aby każdy znajomy widział zmiany od razu. Możesz wygenerować <strong>Magic-Link</strong> poniżej, by znajomi nie musieli nic wklejać.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-2 pt-2">
+        <button onclick="saveConfig()" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition">
+          💾 Zapisz ustawienia
+        </button>
+        <button onclick="copyMagicLink()" class="px-4 py-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition">
+          🔗 Skopiuj Magic-Link dla znajomych
+        </button>
+        <button onclick="exportDataJson()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition">
+          ⬇️ Eksportuj JSON
+        </button>
+        <button onclick="resetDemoData()" class="px-3 py-2 rounded-lg bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-800/50 text-xs font-medium transition ml-auto">
+          🔄 Przywróć dane startowe
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ================= KONFIGURACJA WAG KATEGORII =================
+    const CATEGORIES = {
+      IRL_SPORT: { label: '⚽ IRL Sport / Ruch', weight: 3.0, isIrl: true, badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+      IRL_CHILL: { label: '🍻 IRL Spotkanie / Chill', weight: 2.0, isIrl: true, badge: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+      IRL_TRIP:  { label: '⛰️ IRL Wyjazd / Event', weight: 6.0, isIrl: true, badge: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+      ONLINE_GAMING: { label: '🎮 Online (LoL 2v2 / Gry)', weight: 0.5, isIrl: false, badge: 'bg-sky-500/20 text-sky-300 border-sky-500/30' }
+    };
+
+    const BASE_POINTS = 10;
+    const STORAGE_KEY_STATE = 'ekipa_tracker_state_2026_v2';
+    const STORAGE_KEY_CFG = 'ekipa_tracker_cfg_2026_v2';
+
+    // Domyślny stan z przykładową ekipą i wydarzeniami
+    const DEFAULT_STATE = {
+      members: [
+        { id: 'm1', name: 'Tomek', role: 'Organizator / Napastnik', color: '#6366f1' },
+        { id: 'm2', name: 'Michał', role: 'Król Orlika', color: '#10b981' },
+        { id: 'm3', name: 'Kuba', role: 'LoL 2v2 Tryhard', color: '#f59e0b' },
+        { id: 'm4', name: 'Janek', role: 'Człowiek Grill', color: '#ec4899' },
+        { id: 'm5', name: 'Piotrek', role: 'Kierowca Ekipy', color: '#06b6d4' },
+        { id: 'm6', name: 'Mateusz', role: 'Zjawia się znienacka', color: '#a855f7' }
+      ],
+      events: [
+        {
+          id: 'ev1',
+          title: 'Piłka na Orliku 6 osób (w deszczu)',
+          category: 'IRL_SPORT',
+          date: '2026-11-02',
+          duration: 120,
+          aiBonus: 5,
+          participants: ['m1', 'm2', 'm3', 'm4', 'm5', 'm6'],
+          comment: 'Sędzia AI: Pełny skład w listopadowym deszczu! +5 pkt bonusu za charakter.'
+        },
+        {
+          id: 'ev2',
+          title: 'Wieczorne 2v2 w LoLa na Customie',
+          category: 'ONLINE_GAMING',
+          date: '2026-11-04',
+          duration: 90,
+          aiBonus: 0,
+          participants: ['m1', 'm2', 'm3', 'm4'],
+          comment: 'Sędzia AI: Klasyczna gierka z fotela – waga 0.5x bez mnożnika IRL.'
+        },
+        {
+          id: 'ev3',
+          title: 'Planszówki i pizza u Janka',
+          category: 'IRL_CHILL',
+          date: '2026-11-06',
+          duration: 210,
+          aiBonus: 3,
+          participants: ['m1', 'm2', 'm4', 'm5'],
+          comment: 'Sędzia AI: Solidna integracja na żywo w 4 osoby (+3 pkt za organizację lokalu).'
+        }
+      ]
+    };
+
+    const AVATAR_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#a855f7', '#ef4444', '#14b8a6', '#84cc16'];
+
+    let appState = { members: [], events: [] };
+    let selectedParticipantIds = new Set();
+    let appConfig = { geminiKey: '', firebaseUrl: '' };
+
+    // ================= INICJALIZACJA =================
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('evDate').value = new Date().toISOString().split('T')[0];
+      loadConfig();
+      await loadState();
+      // Domyślnie zaznacz pierwszych 2 uczestników w formularzu
+      appState.members.slice(0, 2).forEach(m => selectedParticipantIds.add(m.id));
+      renderAll();
+    });
+
+    function loadConfig() {
+      // Sprawdź Magic-Link w URL (#firebase=...)
+      const hash = window.location.hash;
+      if (hash.includes('fb=')) {
+        try {
+          const params = new URLSearchParams(hash.slice(1));
+          const fbFromUrl = decodeURIComponent(params.get('fb') || '');
+          if (fbFromUrl) {
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_CFG) || '{}');
+            saved.firebaseUrl = fbFromUrl;
+            localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(saved));
+            history.replaceState(null, '', window.location.pathname);
+          }
+        } catch (e) {}
+      }
+
+      const raw = localStorage.getItem(STORAGE_KEY_CFG);
+      if (raw) {
+        try { appConfig = JSON.parse(raw); } catch (e) {}
+      }
+      updateConfigStatuses();
+    }
+
+    function updateConfigStatuses() {
+      const dot = document.getElementById('syncStatusDot');
+      const txt = document.getElementById('syncStatusText');
+      if (appConfig.firebaseUrl && appConfig.firebaseUrl.startsWith('http')) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        txt.textContent = 'Połączono z Firebase (Wspólna baza na żywo)';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+        txt.textContent = 'Tryb lokalny (localStorage – skonfiguruj Firebase do pracy grupowej)';
+      }
+
+      const aiBadge = document.getElementById('aiModeBadge');
+      if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
+        aiBadge.textContent = '⚡ Aktywny model: Google Gemini 2.5 Flash (Twój klucz lokalny)';
+        aiBadge.className = 'text-[11px] text-emerald-400 font-medium';
+      } else {
+        aiBadge.textContent = '🧠 Tryb: Wbudowany lokalny Sędzia AI (dodaj klucz Gemini w Konfiguracji dla pełnego AI)';
+        aiBadge.className = 'text-[11px] text-slate-400';
+      }
+    }
+
+    async function loadState() {
+      if (appConfig.firebaseUrl && appConfig.firebaseUrl.startsWith('http')) {
+        try {
+          const cleanUrl = appConfig.firebaseUrl.replace(/\/$/, '');
+          const res = await fetch(`${cleanUrl}/ekipaState.json`);
+          if (res.ok) {
+            const remoteData = await res.json();
+            if (remoteData && Array.isArray(remoteData.members)) {
+              appState = {
+                members: remoteData.members || [],
+                events: remoteData.events || []
+              };
+              localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(appState));
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn('Błąd odczytu z Firebase, używam pamięci lokalnej:', err);
+        }
+      }
+
+      const localRaw = localStorage.getItem(STORAGE_KEY_STATE);
+      if (localRaw) {
+        try {
+          appState = JSON.parse(localRaw);
+          if (!appState.members) appState.members = [];
+          if (!appState.events) appState.events = [];
+          return;
+        } catch (e) {}
+      }
+      appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      await persistState();
+    }
+
+    async function persistState() {
+      localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(appState));
+      if (appConfig.firebaseUrl && appConfig.firebaseUrl.startsWith('http')) {
+        try {
+          const cleanUrl = appConfig.firebaseUrl.replace(/\/$/, '');
+          await fetch(`${cleanUrl}/ekipaState.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(appState)
+          });
+        } catch (err) {
+          console.error('Nie udało się zapisać do Firebase:', err);
+        }
+      }
+    }
+
+    // ================= MATEMATYKA PUNKTACJI =================
+    function calculateEventPointsPerPerson(categoryKey, participantsCount, aiBonus = 0) {
+      const cat = CATEGORIES[categoryKey] || CATEGORIES.IRL_CHILL;
+      const count = Math.max(1, Number(participantsCount) || 1);
+      const synergyMultiplier = cat.isIrl ? (1 + 0.15 * (count - 1)) : 1.0;
+      const rawPoints = (BASE_POINTS * cat.weight * synergyMultiplier) + (Number(aiBonus) || 0);
+      return {
+        points: Math.max(1, Math.round(rawPoints * 10) / 10),
+        weight: cat.weight,
+        synergyMultiplier: Math.round(synergyMultiplier * 100) / 100,
+        isIrl: cat.isIrl
+      };
+    }
+
+    function recalculatePreview() {
+      const catKey = document.getElementById('evCategory').value;
+      const bonus = Number(document.getElementById('evAiBonus').value) || 0;
+      const count = selectedParticipantIds.size;
+      const calc = calculateEventPointsPerPerson(catKey, Math.max(1, count), bonus);
+
+      document.getElementById('previewPoints').textContent = calc.points.toFixed(1);
+      const bonusText = bonus !== 0 ? ` ${bonus > 0 ? '+' : ''}${bonus} (Bonus AI)` : '';
+      document.getElementById('formulaBreakdown').textContent =
+        `Baza ${BASE_POINTS} × ${calc.weight}x (Kategoria) × ${calc.synergyMultiplier}x (${count} os.)${bonusText}`;
+    }
+
+    // ================= ZARZĄDZANIE LUDŹMI (DODAWANIE / USUWANIE / EDYCJA) =================
+    async function addMemberCore(name, role = 'Członek Ekipy') {
+      const cleanName = (name || '').trim();
+      if (!cleanName) return null;
+
+      const exists = appState.members.find(m => m.name.toLowerCase() === cleanName.toLowerCase());
+      if (exists) {
+        alert(`Osoba o imieniu/ksywce "${cleanName}" już jest w Ekipie!`);
+        return exists;
+      }
+
+      const newMember = {
+        id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        name: cleanName,
+        role: (role || 'Członek Ekipy').trim(),
+        color: AVATAR_COLORS[appState.members.length % AVATAR_COLORS.length]
+      };
+
+      appState.members.push(newMember);
+      selectedParticipantIds.add(newMember.id);
+      await persistState();
+      renderAll();
+      return newMember;
+    }
+
+    async function quickAddMember() {
+      const input = document.getElementById('quickMemberInput');
+      const added = await addMemberCore(input.value, 'Członek Ekipy');
+      if (added) input.value = '';
+    }
+
+    async function handleAddMemberTab(e) {
+      e.preventDefault();
+      const nameInput = document.getElementById('newMemberNameInput');
+      const roleInput = document.getElementById('newMemberRoleInput');
+      const added = await addMemberCore(nameInput.value, roleInput.value || 'Członek Ekipy');
+      if (added) {
+        nameInput.value = '';
+        roleInput.value = '';
+      }
+    }
+
+    async function removeMember(memberId) {
+      const member = appState.members.find(m => m.id === memberId);
+      if (!member) return;
+
+      const eventsWithMember = appState.events.filter(ev => ev.participants.includes(memberId)).length;
+      const msg = eventsWithMember > 0
+        ? `Czy na pewno chcesz usunąć osobę "${member.name}" z Ekipy?
+
+Ta osoba bierze udział w ${eventsWithMember} zapisanych wydarzeniach (zostanie z nich odpięta).`
+        : `Czy na pewno chcesz usunąć osobę "${member.name}" z Ekipy?`;
+
+      if (!confirm(msg)) return;
+
+      appState.members = appState.members.filter(m => m.id !== memberId);
+      selectedParticipantIds.delete(memberId);
+
+      // Odpinamy osobę od wydarzeń i usuwamy wydarzenia, które zostałyby bez uczestników
+      appState.events = appState.events
+        .map(ev => ({
+          ...ev,
+          participants: ev.participants.filter(id => id !== memberId)
+        }))
+        .filter(ev => ev.participants.length > 0);
+
+      await persistState();
+      renderAll();
+    }
+
+    async function renameMemberPrompt(memberId) {
+      const member = appState.members.find(m => m.id === memberId);
+      if (!member) return;
+      const newName = prompt('Nowe imię / ksywka:', member.name);
+      if (!newName || !newName.trim()) return;
+      const newRole = prompt('Rola w ekipie:', member.role || '');
+      member.name = newName.trim();
+      if (newRole !== null) member.role = newRole.trim() || 'Członek Ekipy';
+      await persistState();
+      renderAll();
+    }
+
+    // ================= WYBÓR UCZESTNIKÓW W FORMULARZU =================
+    function toggleParticipant(memberId) {
+      if (selectedParticipantIds.has(memberId)) {
+        selectedParticipantIds.delete(memberId);
+      } else {
+        selectedParticipantIds.add(memberId);
+      }
+      renderParticipantsSelector();
+      recalculatePreview();
+    }
+
+    function selectAllMembers(selectAll) {
+      selectedParticipantIds.clear();
+      if (selectAll) {
+        appState.members.forEach(m => selectedParticipantIds.add(m.id));
+      }
+      renderParticipantsSelector();
+      recalculatePreview();
+    }
+
+    function renderParticipantsSelector() {
+      const container = document.getElementById('participantsSelector');
+      document.getElementById('selectedParticipantsCount').textContent = selectedParticipantIds.size;
+
+      if (appState.members.length === 0) {
+        container.innerHTML = `<span class="text-xs text-slate-500 py-2">Brak osób w ekipie – dodaj kogoś poniżej!</span>`;
+        return;
+      }
+
+      container.innerHTML = appState.members.map(m => {
+        const active = selectedParticipantIds.has(m.id);
+        return `
+          <button type="button" onclick="toggleParticipant('${m.id}')"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition flex items-center gap-1.5 ${
+              active
+                ? 'chip-active'
+                : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-600'
+            }">
+            <span class="w-2 h-2 rounded-full" style="background:${m.color}"></span>
+            <span>${escapeHtml(m.name)}</span>
+            ${active ? '<span>✓</span>' : ''}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // ================= DODAWANIE I USUWANIE WYDARZEŃ =================
+    async function handleSaveEvent(e) {
+      e.preventDefault();
+      if (selectedParticipantIds.size === 0) {
+        alert('Zaznacz przynajmniej jednego uczestnika z Ekipy!');
+        return;
+      }
+
+      const title = document.getElementById('evTitle').value.trim();
+      const category = document.getElementById('evCategory').value;
+      const date = document.getElementById('evDate').value;
+      const duration = Number(document.getElementById('evDuration').value) || 90;
+      const aiBonus = Number(document.getElementById('evAiBonus').value) || 0;
+      const comment = document.getElementById('evComment').value.trim();
+
+      const newEvent = {
+        id: 'ev_' + Date.now(),
+        title,
+        category,
+        date,
+        duration,
+        aiBonus,
+        participants: Array.from(selectedParticipantIds),
+        comment: comment || 'Zarejestrowano w dzienniku aktywności.'
+      };
+
+      appState.events.unshift(newEvent);
+      await persistState();
+
+      document.getElementById('evTitle').value = '';
+      document.getElementById('evAiBonus').value = '0';
+      document.getElementById('evComment').value = '';
+      document.getElementById('aiPromptInput').value = '';
+
+      renderAll();
+    }
+
+    async function deleteEvent(eventId) {
+      if (!confirm('Usunąć tę aktywność z historii? Punkty zostaną od razu przeliczone.')) return;
+      appState.events = appState.events.filter(ev => ev.id !== eventId);
+      await persistState();
+      renderAll();
+    }
+
+    // ================= SĘDZIA AI (GEMINI API + LOKALNY PARSER FALLBACK) =================
+    async function analyzeWithAI() {
+      const rawText = document.getElementById('aiPromptInput').value.trim();
+      if (!rawText) {
+        alert('Opisz krótko co robiliście i kto był obecny!');
+        return;
+      }
+
+      const btn = document.getElementById('aiAnalyzeBtn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Sędzia analizuje...</span>';
+
+      try {
+        if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
+          await runGeminiJudge(rawText);
+        } else {
+          runLocalHeuristicJudge(rawText);
+        }
+      } catch (err) {
+        console.warn('Błąd Gemini API, przełączam na lokalny parser:', err);
+        runLocalHeuristicJudge(rawText);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        recalculatePreview();
+      }
+    }
+
+    async function runGeminiJudge(text) {
+      const memberNames = appState.members.map(m => m.name).join(', ');
+      const prompt = `Jesteś błyskotliwym Sędzią Grywalizacji Ekipy Znajomych.
+Lista obecnych członków ekipy: [${memberNames}].
+Opis wydarzenia od użytkownika: "${text}".
+Zwróć WYŁĄCZNIE czysty obiekt JSON (bez markdownu) o strukturze:
+{
+  "title": "Krótka chwytliwa nazwa wydarzenia",
+  "category": "IRL_SPORT" | "IRL_CHILL" | "IRL_TRIP" | "ONLINE_GAMING",
+  "duration": liczba_minut_jako_int,
+  "aiBonus": liczba_od_-5_do_15_za_specjalne_warunki_pogode_lub_wysilek,
+  "detectedNames": ["Imię1", "Imię2"],
+  "comment": "Krótki, lekko uszczypliwy lub pochwalny werdykt sędziego po polsku (1 zdanie)"
+}`;
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(appConfig.geminiKey.trim())}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: 'application/json' }
+          })
+        }
+      );
+
+      if (!res.ok) throw new Error('Gemini HTTP ' + res.status);
+      const data = await res.json();
+      const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      const parsed = JSON.parse(rawJson);
+      applyJudgeResult(parsed);
+    }
+
+    function runLocalHeuristicJudge(text) {
+      const lower = text.toLowerCase();
+
+      // 1. Kategoria
+      let category = 'IRL_CHILL';
+      if (/(lol|2v2|cs|valorant|discord|online|komp|gierk)/.test(lower)) {
+        category = 'ONLINE_GAMING';
+      } else if (/(wyjazd|góry|mazury|weekend|wypad|namiot|koncert)/.test(lower)) {
+        category = 'IRL_TRIP';
+      } else if (/(piłk|orlik|hal|siłown|rower|bieg|basen|kręgl|kosz|tenis|mecz)/.test(lower)) {
+        category = 'IRL_SPORT';
+      }
+
+      // 2. Czas trwania
+      let duration = category === 'ONLINE_GAMING' ? 60 : (category === 'IRL_TRIP' ? 480 : 120);
+      const hourMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(h|godz)/);
+      const minMatch = lower.match(/(\d+)\s*min/);
+      if (hourMatch) duration = Math.round(parseFloat(hourMatch[1].replace(',', '.')) * 60);
+      else if (minMatch) duration = parseInt(minMatch[1], 10);
+
+      // 3. Wykrywanie osób z ekipy (uwzględnia odmianę przez przypadki - rdzeń 4 znaków)
+      const detectedIds = [];
+      appState.members.forEach(m => {
+        const stem = m.name.toLowerCase().slice(0, Math.max(3, m.name.length - 1));
+        if (lower.includes(stem)) detectedIds.push(m.id);
+      });
+
+      // 4. Bonus sędziego za warunki
+      let aiBonus = 0;
+      const reasons = [];
+      if (/(deszcz|ulew|śnieg|mróz|zimn)/.test(lower)) { aiBonus += 5; reasons.push('+5 za trudne warunki pogodowe'); }
+      if (/(transport|kierowc|odwiózł|przewiózł|ogarnął)/.test(lower)) { aiBonus += 4; reasons.push('+4 za logistykę'); }
+      if (/(spóźni|odwoła)/.test(lower)) { aiBonus -= 2; reasons.push('-2 za obsuwę'); }
+
+      const cleanTitle = text.length > 48 ? text.slice(0, 48).trim() + '...' : text;
+      const comment = reasons.length > 0
+        ? `Werdykt Sędziego: ${reasons.join(', ')}.`
+        : `Werdykt Sędziego: Rozpoznano ${CATEGORIES[category].label} (${duration} min).`;
+
+      applyJudgeResult({
+        title: cleanTitle,
+        category,
+        duration,
+        aiBonus,
+        detectedIds,
+        comment
+      });
+    }
+
+    function applyJudgeResult(result) {
+      if (result.title) document.getElementById('evTitle').value = result.title;
+      if (result.category && CATEGORIES[result.category]) {
+        document.getElementById('evCategory').value = result.category;
+      }
+      if (result.duration) document.getElementById('evDuration').value = result.duration;
+      if (typeof result.aiBonus === 'number') document.getElementById('evAiBonus').value = result.aiBonus;
+      if (result.comment) document.getElementById('evComment').value = result.comment;
+
+      if (Array.isArray(result.detectedIds) && result.detectedIds.length > 0) {
+        selectedParticipantIds = new Set(result.detectedIds);
+      } else if (Array.isArray(result.detectedNames) && result.detectedNames.length > 0) {
+        const matched = new Set();
+        result.detectedNames.forEach(n => {
+          const found = appState.members.find(m => m.name.toLowerCase().includes(n.toLowerCase().slice(0, 3)));
+          if (found) matched.add(found.id);
+        });
+        if (matched.size > 0) selectedParticipantIds = matched;
+      }
+      renderParticipantsSelector();
+    }
+
+    // ================= RENDEROWANIE CAŁEGO WIDOKU =================
+    function renderAll() {
+      document.getElementById('navMemberCount').textContent = appState.members.length;
+      renderParticipantsSelector();
+      recalculatePreview();
+      renderMemberFilterDropdown();
+      renderLeaderboard();
+      renderEventsLog();
+      renderMembersManagementTab();
+      renderWrappedStats();
+    }
+
+    function renderMemberFilterDropdown() {
+      const sel = document.getElementById('filterMember');
+      const current = sel.value || 'ALL';
+      sel.innerHTML = `<option value="ALL">Wszyscy uczestnicy (${appState.members.length})</option>` +
+        appState.members.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+      sel.value = appState.members.some(m => m.id === current) ? current : 'ALL';
+    }
+
+    function computeMemberStats() {
+      const statsMap = {};
+      appState.members.forEach(m => {
+        statsMap[m.id] = {
+          member: m,
+          points: 0,
+          irlCount: 0,
+          onlineCount: 0,
+          totalMinutes: 0,
+          lastDate: null
+        };
+      });
+
+      appState.events.forEach(ev => {
+        const calc = calculateEventPointsPerPerson(ev.category, ev.participants.length, ev.aiBonus);
+        ev.participants.forEach(pid => {
+          const st = statsMap[pid];
+          if (!st) return;
+          st.points += calc.points;
+          if (calc.isIrl) st.irlCount += 1;
+          else st.onlineCount += 1;
+          st.totalMinutes += Number(ev.duration) || 0;
+          if (!st.lastDate || ev.date > st.lastDate) st.lastDate = ev.date;
+        });
+      });
+
+      return Object.values(statsMap).sort((a, b) => b.points - a.points || b.irlCount - a.irlCount);
+    }
+
+    function renderLeaderboard() {
+      const tbody = document.getElementById('leaderboardBody');
+      const rows = computeMemberStats();
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-500">Brak osób w ekipie. Dodaj znajomych w zakładce "Ekipa"!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map((row, idx) => {
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+        const hours = (row.totalMinutes / 60).toFixed(1);
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3 px-2 font-bold text-slate-300">${medal}</td>
+            <td class="py-3 px-2">
+              <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold text-white shadow" style="background:${row.member.color}">
+                  ${escapeHtml(row.member.name.slice(0, 2).toUpperCase())}
+                </span>
+                <div>
+                  <div class="font-bold text-white">${escapeHtml(row.member.name)}</div>
+                  <div class="text-[11px] text-slate-400">${escapeHtml(row.member.role || 'Członek Ekipy')}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-2 text-right font-extrabold text-indigo-400 text-base">${row.points.toFixed(1)} pkt</td>
+            <td class="py-3 px-2 text-center">
+              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                ${row.irlCount}
+              </span>
+            </td>
+            <td class="py-3 px-2 text-center">
+              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                ${row.onlineCount}
+              </span>
+            </td>
+            <td class="py-3 px-2 text-right text-slate-300 font-medium">${hours} h</td>
+            <td class="py-3 px-2 text-right text-xs text-slate-400">${row.lastDate || '—'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderEventsLog() {
+      const container = document.getElementById('eventsLogContainer');
+      const catFilter = document.getElementById('filterCategory').value;
+      const memFilter = document.getElementById('filterMember').value;
+
+      const filtered = appState.events.filter(ev => {
+        if (catFilter !== 'ALL' && ev.category !== catFilter) return false;
+        if (memFilter !== 'ALL' && !ev.participants.includes(memFilter)) return false;
+        return true;
+      });
+
+      document.getElementById('eventsCountBadge').textContent = filtered.length;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-sm text-slate-500">Brak wydarzeń spełniających wybrane filtry.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(ev => {
+        const cat = CATEGORIES[ev.category] || CATEGORIES.IRL_CHILL;
+        const calc = calculateEventPointsPerPerson(ev.category, ev.participants.length, ev.aiBonus);
+        const participantBadges = ev.participants.map(pid => {
+          const m = appState.members.find(x => x.id === pid);
+          if (!m) return '';
+          return `<span class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-800 text-slate-200 border border-slate-700">${escapeHtml(m.name)}</span>`;
+        }).join('');
+
+        return `
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 hover:border-slate-700 transition">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-[11px] px-2 py-0.5 rounded-full border font-semibold ${cat.badge}">${cat.label}</span>
+                  <span class="text-xs text-slate-400">📅 ${ev.date} • ⏱️ ${ev.duration} min</span>
+                </div>
+                <h3 class="text-sm font-bold text-white mt-1.5">${escapeHtml(ev.title)}</h3>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="text-base font-extrabold text-indigo-400">+${calc.points.toFixed(1)} pkt/os.</div>
+                <div class="text-[11px] text-slate-400">Mnożnik grupy: ${calc.synergyMultiplier}x</div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 mt-3">${participantBadges}</div>
+
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+              <span class="italic">${escapeHtml(ev.comment || '')}</span>
+              <button onclick="deleteEvent('${ev.id}')" class="text-rose-400 hover:text-rose-300 font-medium ml-3">Usuń</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderMembersManagementTab() {
+      const container = document.getElementById('membersManagementList');
+      const stats = computeMemberStats();
+
+      if (stats.length === 0) {
+        container.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-500">Lista znajomych jest pusta. Dodaj pierwszą osobę powyżej!</div>`;
+        return;
+      }
+
+      container.innerHTML = stats.map(st => {
+        const m = st.member;
+        return `
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white shadow" style="background:${m.color}">
+                ${escapeHtml(m.name.slice(0, 2).toUpperCase())}
+              </div>
+              <div>
+                <div class="font-bold text-white text-sm">${escapeHtml(m.name)}</div>
+                <div class="text-xs text-slate-400">${escapeHtml(m.role || 'Członek Ekipy')} • <span class="text-indigo-400 font-semibold">${st.points.toFixed(1)} pkt</span> (${st.irlCount} IRL / ${st.onlineCount} Online)</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="renameMemberPrompt('${m.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition">
+                ✏️ Edytuj
+              </button>
+              <button onclick="removeMember('${m.id}')" class="px-2.5 py-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 text-xs text-rose-300 border border-rose-800/60 transition">
+                🗑️ Usuń
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================= STATYSTYKI / WRAPPED =================
+    function renderWrappedStats() {
+      const stats = computeMemberStats();
+
+      // 1. Najlepsze Duo
+      const pairCounts = {};
+      appState.events.forEach(ev => {
+        const p = ev.participants;
+        for (let i = 0; i < p.length; i++) {
+          for (let j = i + 1; j < p.length; j++) {
+            const key = [p[i], p[j]].sort().join('|');
+            pairCounts[key] = (pairCounts[key] || 0) + 1;
+          }
+        }
+      });
+
+      let bestPairKey = null;
+      let bestPairVal = 0;
+      Object.entries(pairCounts).forEach(([k, v]) => {
+        if (v > bestPairVal) { bestPairVal = v; bestPairKey = k; }
+      });
+
+      if (bestPairKey) {
+        const [id1, id2] = bestPairKey.split('|');
+        const n1 = appState.members.find(m => m.id === id1)?.name || '?';
+        const n2 = appState.members.find(m => m.id === id2)?.name || '?';
+        document.getElementById('statBestDuo').textContent = `${n1} & ${n2}`;
+        document.getElementById('statBestDuoSub').textContent = `${bestPairVal} wspólnych aktywności`;
+      } else {
+        document.getElementById('statBestDuo').textContent = 'Brak danych';
+        document.getElementById('statBestDuoSub').textContent = 'Dodaj więcej wydarzeń';
+      }
+
+      // 2. Król IRL i Duch Ekipy
+      if (stats.length > 0) {
+        const irlSorted = [...stats].sort((a, b) => b.irlCount - a.irlCount || b.points - a.points);
+        const king = irlSorted[0];
+        const ghost = irlSorted[irlSorted.length - 1];
+
+        document.getElementById('statIrlKing').textContent = king.member.name;
+        document.getElementById('statIrlKingSub').textContent = `${king.irlCount} wyjść na żywo (${(king.totalMinutes / 60).toFixed(1)} h)`;
+
+        document.getElementById('statGhost').textContent = ghost.member.name;
+        document.getElementById('statGhostSub').textContent = `Tylko ${ghost.irlCount} wyjść na żywo`;
+      }
+
+      // 3. Czas razem
+      const totalEventMinutes = appState.events.reduce((acc, ev) => acc + (Number(ev.duration) || 0), 0);
+      const totalPersonMinutes = appState.events.reduce((acc, ev) => acc + (Number(ev.duration) || 0) * ev.participants.length, 0);
+      document.getElementById('statTotalHours').textContent = `${(totalEventMinutes / 60).toFixed(1)} h spotkań`;
+      document.getElementById('statTotalHoursSub').textContent = `${(totalPersonMinutes / 60).toFixed(1)} osobo-godzin łącznie`;
+
+      // 4. Wykres dni tygodnia
+      const daysNames = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+      const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+      appState.events.forEach(ev => {
+        const d = new Date(ev.date);
+        if (!isNaN(d)) dayCounts[d.getDay()] += 1;
+      });
+      const maxDay = Math.max(1, ...dayCounts);
+      const order = [1, 2, 3, 4, 5, 6, 0]; // Pon -> Nd
+      document.getElementById('weekdayChart').innerHTML = order.map(idx => {
+        const pct = Math.round((dayCounts[idx] / maxDay) * 100);
+        return `
+          <div class="flex items-center gap-3 text-xs">
+            <span class="w-24 text-slate-300">${daysNames[idx]}</span>
+            <div class="flex-1 bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+              <div class="bg-indigo-500 h-full rounded-full" style="width:${pct}%"></div>
+            </div>
+            <span class="w-8 text-right font-bold text-slate-200">${dayCounts[idx]}</span>
+          </div>
+        `;
+      }).join('');
+
+      // 5. Wykres kategorii
+      const catCounts = { IRL_SPORT: 0, IRL_CHILL: 0, IRL_TRIP: 0, ONLINE_GAMING: 0 };
+      appState.events.forEach(ev => { catCounts[ev.category] = (catCounts[ev.category] || 0) + 1; });
+      const totalEv = Math.max(1, appState.events.length);
+
+      document.getElementById('categoryBreakdownChart').innerHTML = Object.entries(CATEGORIES).map(([key, cfg]) => {
+        const count = catCounts[key] || 0;
+        const pct = Math.round((count / totalEv) * 100);
+        return `
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-medium text-slate-200">${cfg.label}</span>
+              <span class="text-slate-400">${count} (${pct}%)</span>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+              <div class="bg-emerald-500 h-full rounded-full" style="width:${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================= NAWIGACJA I MODAL KONFIGURACJI =================
+    function switchTab(tabName) {
+      ['dashboard', 'members', 'wrapped'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tabName);
+        const btn = document.getElementById(`tabBtn-${t}`);
+        if (t === tabName) {
+          btn.className = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white';
+        } else {
+          btn.className = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white';
+        }
+      });
+    }
+
+    function openConfigModal() {
+      document.getElementById('cfgGeminiKey').value = appConfig.geminiKey || '';
+      document.getElementById('cfgFirebaseUrl').value = appConfig.firebaseUrl || '';
+      document.getElementById('configModal').classList.remove('hidden');
+    }
+
+    function closeConfigModal() {
+      document.getElementById('configModal').classList.add('hidden');
+    }
+
+    async function saveConfig() {
+      appConfig.geminiKey = document.getElementById('cfgGeminiKey').value.trim();
+      appConfig.firebaseUrl = document.getElementById('cfgFirebaseUrl').value.trim();
+      localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
+      updateConfigStatuses();
+      await persistState();
+      closeConfigModal();
+      renderAll();
+    }
+
+    function copyMagicLink() {
+      const fb = document.getElementById('cfgFirebaseUrl').value.trim();
+      if (!fb) {
+        alert('Najpierw wklej adres URL bazy Firebase!');
+        return;
+      }
+      const magicUrl = `${window.location.origin}${window.location.pathname}#fb=${encodeURIComponent(fb)}`;
+      navigator.clipboard.writeText(magicUrl);
+      alert('Skopiowano Magic-Link! Wyślij go znajomym na Discordzie/Messengerze – po kliknięciu połączą się z Waszą wspólną tabelą.');
+    }
+
+    function exportDataJson() {
+      const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ekipa-tracker-backup-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+    }
+
+    async function resetDemoData() {
+      if (!confirm('Przywrócić domyślną ekipę i przykładowe wydarzenia?')) return;
+      appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      selectedParticipantIds = new Set(appState.members.slice(0, 2).map(m => m.id));
+      await persistState();
+      closeConfigModal();
+      renderAll();
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
