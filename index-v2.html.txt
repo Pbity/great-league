@@ -1,0 +1,780 @@
+﻿<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ekipa ELO & Liga Dwójek 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .glass { background: rgba(30, 41, 59, 0.72); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass-dark { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .role-win { background: linear-gradient(135deg, #059669, #10b981); color: #fff; border-color: #34d399; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+    .role-lose { background: linear-gradient(135deg, #e11d48, #f43f5e); color: #fff; border-color: #fb7185; box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3); }
+    .role-coop { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border-color: #a78bfa; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+    .bet-selected { background: linear-gradient(135deg, #d97706, #f59e0b); color: #0f172a; font-weight: 800; border-color: #fcd34d; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35); }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen pb-16">
+
+
+  <!-- POWIADOMIENIA TOAST -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+
+  <!-- MODAL POTWIERDZENIA -->
+  <div id="confirmDialogModal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass rounded-2xl max-w-md w-full p-6 border border-slate-700 shadow-2xl space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-lg">⚠️</div>
+        <h3 id="confirmDialogTitle" class="text-base font-bold text-white">Potwierdzenie akcji</h3>
+      </div>
+      <p id="confirmDialogMessage" class="text-xs sm:text-sm text-slate-300 leading-relaxed"></p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="confirmDialogCancelBtn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition">
+          Anuluj
+        </button>
+        <button id="confirmDialogOkBtn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition">
+          Potwierdź
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- DATALIST DLA LIGI 2V2 -->
+  <datalist id="players2v2Datalist"></datalist>
+
+
+  <!-- TOP NAVBAR -->
+  <header class="sticky top-0 z-30 glass border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-extrabold text-xl shadow-lg">
+          ⚔️
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white">
+              Ekipa <span class="text-indigo-400">Inflationary ELO</span> 2026
+            </h1>
+            <span class="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              LIVE SYNC + ZAKŁADY
+            </span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span id="syncStatusText">Tryb lokalny (localStorage)</span>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Nawigacja Zakładek -->
+      <nav class="flex flex-wrap items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+        <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="px-3 py-2 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow">
+          🏆 Ranking ELO
+        </button>
+        <button onclick="switchTab('match')" id="tabBtn-match" class="px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+          ➕ Dodaj Mecz
+        </button>
+        <button onclick="switchTab('league2v2')" id="tabBtn-league2v2" class="px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+          🤝 Liga 2v2
+        </button>
+        <button onclick="switchTab('bets')" id="tabBtn-bets" class="px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+          🎲 Zakłady
+        </button>
+        <button onclick="switchTab('settings')" id="tabBtn-settings" class="px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+          ⚙️ Baza / Sync
+        </button>
+      </nav>
+    </div>
+  </header>
+
+
+  <!-- GŁÓWNY KONTENER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+
+
+    <!-- ZAKŁADKA 1: RANKING ELO & DASHBOARD -->
+    <section id="tab-dashboard" class="space-y-6">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div class="glass rounded-2xl p-4 border border-slate-800">
+          <div class="text-xs text-slate-400">Graczy w bazie</div>
+          <div id="statTotalPlayers" class="text-2xl font-extrabold text-white font-mono mt-1">0</div>
+        </div>
+        <div class="glass rounded-2xl p-4 border border-slate-800">
+          <div class="text-xs text-slate-400">Rozegranych meczów</div>
+          <div id="statTotalMatches" class="text-2xl font-extrabold text-indigo-400 font-mono mt-1">0</div>
+        </div>
+        <div class="glass rounded-2xl p-4 border border-slate-800">
+          <div class="text-xs text-slate-400">Średnie ELO Ekipy</div>
+          <div id="statAvgElo" class="text-2xl font-extrabold text-emerald-400 font-mono mt-1">1000</div>
+        </div>
+        <div class="glass rounded-2xl p-4 border border-slate-800">
+          <div class="text-xs text-slate-400">Pula Inflacyjna</div>
+          <div id="statInflationPool" class="text-2xl font-extrabold text-amber-400 font-mono mt-1">+0</div>
+        </div>
+      </div>
+
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Tabela ELO -->
+        <div class="lg:col-span-2 glass rounded-2xl p-5 border border-slate-800 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 class="text-base font-bold text-white">Tabela Główna ELO</h2>
+              <p class="text-xs text-slate-400">Kliknij gracza lub dodaj nowego do puli</p>
+            </div>
+            <div class="flex gap-2">
+              <input id="newPlayerNameInput" type="text" placeholder="Nowy gracz..." class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500" />
+              <button onclick="addNewPlayer()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition">
+                + Dodaj
+              </button>
+            </div>
+          </div>
+
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400">
+                  <th class="py-2.5 px-3">#</th>
+                  <th class="py-2.5 px-3">Gracz</th>
+                  <th class="py-2.5 px-3 text-right">ELO</th>
+                  <th class="py-2.5 px-3 text-center">W / L / C</th>
+                  <th class="py-2.5 px-3 text-right">Win%</th>
+                  <th class="py-2.5 px-3 text-right">Monety 🪙</th>
+                </tr>
+              </thead>
+              <tbody id="eloTableBody" class="divide-y divide-slate-800/60 text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+
+
+        <!-- Ostatnie mecze -->
+        <div class="glass rounded-2xl p-5 border border-slate-800 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-bold text-white">Ostatnie Mecze</h2>
+            <button onclick="undoLastMatch()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold">
+              ↩ Cofnij ostatni
+            </button>
+          </div>
+          <div id="matchHistoryList" class="space-y-2.5 max-h-[420px] overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ZAKŁADKA 2: DODAJ MECZ (KALKULATOR INFLACYJNY) -->
+    <section id="tab-match" class="hidden space-y-6">
+      <div class="glass rounded-2xl p-6 border border-slate-800 space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h2 class="text-lg font-extrabold text-white">Rejestracja Meczu (Inflationary ELO)</h2>
+            <p class="text-xs text-slate-400">Klikaj na graczy, aby zmieniać ich status: Brak ➔ Wygrany (W) ➔ Przegrany (L) ➔ Kooperacja (C)</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="matchGameTitle" type="text" placeholder="Nazwa gry (np. CS2, FIFA, Planszówka)" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white w-56" />
+            <select id="matchKFactor" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white">
+              <option value="24">Waga: Standard (K=24)</option>
+              <option value="40">Waga: Turniej / Duża (K=40)</option>
+              <option value="16">Waga: Szybka gra (K=16)</option>
+            </select>
+          </div>
+        </div>
+
+
+        <div id="matchPlayerGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+
+
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+          <div id="matchPreviewText" class="text-xs text-slate-300 font-mono">
+            Wybierz przynajmniej 1 Wygranego i 1 Przegranego (lub tryb Kooperacji).
+          </div>
+          <div class="flex gap-2">
+            <button onclick="resetMatchSelection()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition">
+              Wyczyść
+            </button>
+            <button onclick="submitMatch()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition">
+              ✅ Zapisz wynik meczu
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ZAKŁADKA 3: LIGA DWÓJEK (2V2) -->
+    <section id="tab-league2v2" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="glass rounded-2xl p-5 border border-slate-800 space-y-4">
+          <h2 class="text-base font-bold text-white">Dodaj wynik 2v2</h2>
+          <p class="text-xs text-slate-400">Stałe lub losowe pary – system automatycznie tworzy drużynę z 2 nazwisk.</p>
+
+
+          <div class="space-y-3">
+            <div class="p-3 rounded-xl bg-emerald-950/30 border border-emerald-700/40 space-y-2">
+              <div class="text-xs font-bold text-emerald-400">Drużyna A</div>
+              <div class="grid grid-cols-2 gap-2">
+                <input id="t1p1" list="players2v2Datalist" placeholder="Gracz A1" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white" />
+                <input id="t1p2" list="players2v2Datalist" placeholder="Gracz A2" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white" />
+              </div>
+              <input id="t1Score" type="number" value="1" min="0" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono" placeholder="Bramki / Punkty A" />
+            </div>
+
+
+            <div class="p-3 rounded-xl bg-indigo-950/30 border border-indigo-700/40 space-y-2">
+              <div class="text-xs font-bold text-indigo-400">Drużyna B</div>
+              <div class="grid grid-cols-2 gap-2">
+                <input id="t2p1" list="players2v2Datalist" placeholder="Gracz B1" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white" />
+                <input id="t2p2" list="players2v2Datalist" placeholder="Gracz B2" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white" />
+              </div>
+              <input id="t2Score" type="number" value="0" min="0" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono" placeholder="Bramki / Punkty B" />
+            </div>
+
+
+            <button onclick="add2v2Match()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg transition">
+              ⚽ Zapisz Mecz 2v2
+            </button>
+          </div>
+        </div>
+
+
+        <div class="lg:col-span-2 glass rounded-2xl p-5 border border-slate-800 space-y-4">
+          <h2 class="text-base font-bold text-white">Tabela Par (Liga Dwójek)</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400">
+                  <th class="py-2 px-3">#</th>
+                  <th class="py-2 px-3">Para</th>
+                  <th class="py-2 px-3 text-center">M</th>
+                  <th class="py-2 px-3 text-center">W-D-L</th>
+                  <th class="py-2 px-3 text-center">Bilans</th>
+                  <th class="py-2 px-3 text-right">Pkt</th>
+                </tr>
+              </thead>
+              <tbody id="table2v2Body" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ZAKŁADKA 4: ZAKŁADY BUKMACHERSKIE EKIPY -->
+    <section id="tab-bets" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="glass rounded-2xl p-5 border border-slate-800 space-y-3">
+          <h2 class="text-base font-bold text-white">Nowe Wydarzenie do Obstawiania</h2>
+          <input id="betEventTitle" type="text" placeholder="Np. Kto wygra wieczorny turniej w FIFĘ?" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white" />
+          <div class="grid grid-cols-2 gap-2">
+            <input id="betOptA" type="text" placeholder="Opcja A (np. Adi)" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white" />
+            <input id="betOddsA" type="number" step="0.1" value="1.85" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="betOptB" type="text" placeholder="Opcja B (np. Reszta)" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white" />
+            <input id="betOddsB" type="number" step="0.1" value="2.10" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono" />
+          </div>
+          <button onclick="createBetEvent()" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition">
+            🎲 Otwórz Zakład
+          </button>
+        </div>
+
+
+        <div class="lg:col-span-2 glass rounded-2xl p-5 border border-slate-800 space-y-4">
+          <h2 class="text-base font-bold text-white">Aktywne i Rozliczone Zakłady</h2>
+          <div id="betsListContainer" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ZAKŁADKA 5: USTAWIENIA, BACKUP JSON -->
+    <section id="tab-settings" class="hidden space-y-6">
+      <div class="glass rounded-2xl p-6 border border-slate-800 space-y-4">
+        <h2 class="text-base font-bold text-white">Eksport / Import Bazy Danych (JSON)</h2>
+        <p class="text-xs text-slate-400">Możesz pobrać pełny stan ligi do pliku lub wkleić kod JSON od znajomego.</p>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="exportDataJson()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white">
+            ⬇️ Pobierz Backup JSON
+          </button>
+          <button onclick="resetAllData()" class="px-4 py-2 rounded-xl bg-rose-600/20 border border-rose-500/40 hover:bg-rose-600/30 text-xs font-bold text-rose-300">
+            🗑️ Resetuj do domyślnych
+          </button>
+        </div>
+        <textarea id="jsonImportArea" rows="5" placeholder="Wklej tutaj kod JSON, aby zaimportować stan..." class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-xs font-mono text-slate-200"></textarea>
+        <button onclick="importDataJson()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white">
+          ⬆️ Wczytaj wklejony JSON
+        </button>
+      </div>
+    </section>
+
+
+  </main>
+
+
+  <script>
+    const STORAGE_KEY = 'ekipa_elo_2026_v1';
+
+
+    const defaultState = {
+      players: [
+        { id: 'p1', name: 'Mati', elo: 1045, wins: 3, losses: 1, coop: 1, coins: 120 },
+        { id: 'p2', name: 'Kuba', elo: 1020, wins: 2, losses: 2, coop: 1, coins: 95 },
+        { id: 'p3', name: 'Bartek', elo: 995, wins: 1, losses: 2, coop: 0, coins: 100 },
+        { id: 'p4', name: 'Tomek', elo: 970, wins: 1, losses: 2, coop: 0, coins: 80 }
+      ],
+      matches: [],
+      matches2v2: [],
+      bets: []
+    };
+
+
+    let state = loadState();
+    let currentMatchRoles = {}; // playerId -> 'W' | 'L' | 'C'
+
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return JSON.parse(JSON.stringify(defaultState));
+        return Object.assign(JSON.parse(JSON.stringify(defaultState)), JSON.parse(raw));
+      } catch (e) {
+        return JSON.parse(JSON.stringify(defaultState));
+      }
+    }
+
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+    }
+
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      const colors = {
+        info: 'bg-slate-800 border-indigo-500 text-white',
+        success: 'bg-emerald-950/90 border-emerald-500 text-emerald-200',
+        error: 'bg-rose-950/90 border-rose-500 text-rose-200'
+      };
+      el.className = `pointer-events-auto px-4 py-3 rounded-xl border-l-4 shadow-xl text-xs font-semibold transition ${colors[type] || colors.info}`;
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 3200);
+    }
+
+
+    function switchTab(tabId) {
+      const tabs = ['dashboard', 'match', 'league2v2', 'bets', 'settings'];
+      tabs.forEach(t => {
+        const sec = document.getElementById('tab-' + t);
+        const btn = document.getElementById('tabBtn-' + t);
+        if (t === tabId) {
+          sec.classList.remove('hidden');
+          btn.className = 'px-3 py-2 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow';
+        } else {
+          sec.classList.add('hidden');
+          btn.className = 'px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white';
+        }
+      });
+      renderAll();
+    }
+
+
+    function addNewPlayer() {
+      const input = document.getElementById('newPlayerNameInput');
+      const name = input.value.trim();
+      if (!name) return showToast('Podaj nazwę gracza!', 'error');
+      if (state.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+        return showToast('Taki gracz już istnieje!', 'error');
+      }
+      state.players.push({
+        id: 'p_' + Date.now(),
+        name,
+        elo: 1000,
+        wins: 0,
+        losses: 0,
+        coop: 0,
+        coins: 100
+      });
+      input.value = '';
+      saveState();
+      showToast(`Dodano gracza: ${name}`, 'success');
+    }
+
+
+    function togglePlayerRole(playerId) {
+      const order = [null, 'W', 'L', 'C'];
+      const curr = currentMatchRoles[playerId] || null;
+      const next = order[(order.indexOf(curr) + 1) % order.length];
+      if (!next) delete currentMatchRoles[playerId];
+      else currentMatchRoles[playerId] = next;
+      renderMatchBuilder();
+    }
+
+
+    function resetMatchSelection() {
+      currentMatchRoles = {};
+      renderMatchBuilder();
+    }
+
+
+    function calculateMatchChanges() {
+      const k = parseInt(document.getElementById('matchKFactor')?.value || '24', 10);
+      const winners = state.players.filter(p => currentMatchRoles[p.id] === 'W');
+      const losers = state.players.filter(p => currentMatchRoles[p.id] === 'L');
+      const coops = state.players.filter(p => currentMatchRoles[p.id] === 'C');
+
+
+      const changes = {};
+      if (winners.length > 0 && losers.length > 0) {
+        const avgWinElo = winners.reduce((s, p) => s + p.elo, 0) / winners.length;
+        const avgLoseElo = losers.reduce((s, p) => s + p.elo, 0) / losers.length;
+        const expectedWin = 1 / (1 + Math.pow(10, (avgLoseElo - avgWinElo) / 400));
+        const rawDelta = Math.max(4, Math.round(k * (1 - expectedWin)));
+        // Bonus inflacyjny +25% dla zwycięzców
+        const winGain = Math.round(rawDelta * 1.25);
+        const loseLoss = rawDelta;
+
+
+        winners.forEach(p => changes[p.id] = +winGain);
+        losers.forEach(p => changes[p.id] = -loseLoss);
+      }
+      coops.forEach(p => changes[p.id] = +8);
+      return changes;
+    }
+
+
+    function submitMatch() {
+      const changes = calculateMatchChanges();
+      const ids = Object.keys(changes);
+      if (ids.length === 0) {
+        return showToast('Zaznacz Wygranych i Przegranych (lub Kooperację)!', 'error');
+      }
+      const game = document.getElementById('matchGameTitle').value.trim() || 'Mecz towarzyski';
+      const snapshot = JSON.parse(JSON.stringify(state.players));
+
+
+      ids.forEach(id => {
+        const p = state.players.find(x => x.id === id);
+        if (!p) return;
+        p.elo += changes[id];
+        if (currentMatchRoles[id] === 'W') { p.wins++; p.coins += 15; }
+        if (currentMatchRoles[id] === 'L') { p.losses++; p.coins += 5; }
+        if (currentMatchRoles[id] === 'C') { p.coop++; p.coins += 10; }
+      });
+
+
+      state.matches.unshift({
+        id: 'm_' + Date.now(),
+        game,
+        date: new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }),
+        changes,
+        snapshot
+      });
+
+
+      currentMatchRoles = {};
+      document.getElementById('matchGameTitle').value = '';
+      saveState();
+      showToast('Mecz zapisany! Ranking zaktualizowany.', 'success');
+      switchTab('dashboard');
+    }
+
+
+    function undoLastMatch() {
+      if (state.matches.length === 0) return showToast('Brak meczów do cofnięcia.', 'error');
+      const last = state.matches.shift();
+      if (last.snapshot) {
+        state.players = last.snapshot;
+      }
+      saveState();
+      showToast('Cofnięto ostatni mecz.', 'info');
+    }
+
+
+    function add2v2Match() {
+      const a1 = document.getElementById('t1p1').value.trim();
+      const a2 = document.getElementById('t1p2').value.trim();
+      const b1 = document.getElementById('t2p1').value.trim();
+      const b2 = document.getElementById('t2p2').value.trim();
+      const s1 = parseInt(document.getElementById('t1Score').value, 10) || 0;
+      const s2 = parseInt(document.getElementById('t2Score').value, 10) || 0;
+
+
+      if (!a1 || !a2 || !b1 || !b2) {
+        return showToast('Wpisz wszystkich 4 graczy!', 'error');
+      }
+      const pairA = [a1, a2].sort().join(' & ');
+      const pairB = [b1, b2].sort().join(' & ');
+
+
+      state.matches2v2.unshift({
+        id: 'm2_' + Date.now(),
+        pairA,
+        pairB,
+        s1,
+        s2
+      });
+      saveState();
+      showToast(`Zapisano 2v2: ${pairA} (${s1}:${s2}) ${pairB}`, 'success');
+    }
+
+
+    function createBetEvent() {
+      const title = document.getElementById('betEventTitle').value.trim();
+      const optA = document.getElementById('betOptA').value.trim();
+      const optB = document.getElementById('betOptB').value.trim();
+      const oddsA = parseFloat(document.getElementById('betOddsA').value) || 1.8;
+      const oddsB = parseFloat(document.getElementById('betOddsB').value) || 1.8;
+
+
+      if (!title || !optA || !optB) return showToast('Wypełnij opis i obie opcje zakładu!', 'error');
+
+
+      state.bets.unshift({
+        id: 'b_' + Date.now(),
+        title,
+        optA,
+        optB,
+        oddsA,
+        oddsB,
+        resolved: null,
+        wagers: []
+      });
+      document.getElementById('betEventTitle').value = '';
+      saveState();
+      showToast('Utworzono zakład!', 'success');
+    }
+
+
+    function placeQuickWager(betId, choice) {
+      const player = state.players[0];
+      if (!player) return;
+      const bet = state.bets.find(b => b.id === betId);
+      if (!bet || bet.resolved) return;
+      bet.wagers.push({ player: player.name, choice, stake: 10 });
+      saveState();
+      showToast(`Postawiono 10 🪙 na opcję ${choice}`, 'success');
+    }
+
+
+    function resolveBet(betId, winnerChoice) {
+      const bet = state.bets.find(b => b.id === betId);
+      if (!bet || bet.resolved) return;
+      bet.resolved = winnerChoice;
+      saveState();
+      showToast(`Rozliczono zakład! Wygrywa opcja: ${winnerChoice}`, 'success');
+    }
+
+
+    function exportDataJson() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute('href', dataStr);
+      a.setAttribute('download', 'ekipa-elo-backup.json');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+
+    function importDataJson() {
+      try {
+        const raw = document.getElementById('jsonImportArea').value.trim();
+        const parsed = JSON.parse(raw);
+        if (!parsed.players) throw new Error('Brak tablicy players');
+        state = parsed;
+        saveState();
+        showToast('Zaimportowano bazę danych!', 'success');
+      } catch (e) {
+        showToast('Błędny format JSON!', 'error');
+      }
+    }
+
+
+    function resetAllData() {
+      state = JSON.parse(JSON.stringify(defaultState));
+      saveState();
+      showToast('Zresetowano dane do wartości początkowych.', 'info');
+    }
+
+
+    function renderMatchBuilder() {
+      const grid = document.getElementById('matchPlayerGrid');
+      if (!grid) return;
+      const changes = calculateMatchChanges();
+
+
+      grid.innerHTML = state.players.map(p => {
+        const role = currentMatchRoles[p.id];
+        let roleClass = 'bg-slate-900/90 border-slate-800 text-slate-200 hover:border-slate-600';
+        let badge = 'Kliknij, by wybrać';
+        if (role === 'W') { roleClass = 'role-win'; badge = '🏆 WYGRANY (W)'; }
+        if (role === 'L') { roleClass = 'role-lose'; badge = '💀 PRZEGRANY (L)'; }
+        if (role === 'C') { roleClass = 'role-coop'; badge = '🤝 KOOPERACJA (C)'; }
+
+
+        const delta = changes[p.id];
+        const deltaStr = delta ? (delta > 0 ? `+${delta}` : `${delta}`) : '';
+
+
+        return `
+          <button onclick="togglePlayerRole('${p.id}')" class="p-4 rounded-2xl border text-left transition flex flex-col justify-between ${roleClass}">
+            <div class="flex items-center justify-between w-full">
+              <span class="font-bold text-sm truncate">${p.name}</span>
+              <span class="font-mono text-xs opacity-90">${p.elo} ELO</span>
+            </div>
+            <div class="mt-3 flex items-center justify-between text-[11px] font-semibold">
+              <span>${badge}</span>
+              <span class="font-mono font-bold">${deltaStr}</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+
+    function renderAll() {
+      // Statystyki
+      const sorted = [...state.players].sort((a, b) => b.elo - a.elo);
+      document.getElementById('statTotalPlayers').textContent = state.players.length;
+      document.getElementById('statTotalMatches').textContent = state.matches.length;
+      const totalElo = state.players.reduce((s, p) => s + p.elo, 0);
+      const avgElo = state.players.length ? Math.round(totalElo / state.players.length) : 1000;
+      const inflation = totalElo - state.players.length * 1000;
+      document.getElementById('statAvgElo').textContent = avgElo;
+      document.getElementById('statInflationPool').textContent = (inflation >= 0 ? '+' : '') + inflation;
+
+
+      // Tabela główna ELO
+      const tbody = document.getElementById('eloTableBody');
+      tbody.innerHTML = sorted.map((p, idx) => {
+        const total = p.wins + p.losses;
+        const winRate = total > 0 ? Math.round((p.wins / total) * 100) : 0;
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3 px-3 font-mono text-xs text-slate-400">${medal}</td>
+            <td class="py-3 px-3 font-bold text-white">${p.name}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-indigo-400">${p.elo}</td>
+            <td class="py-3 px-3 text-center font-mono text-xs text-slate-300">${p.wins} / ${p.losses} / ${p.coop}</td>
+            <td class="py-3 px-3 text-right font-mono text-xs text-emerald-400">${winRate}%</td>
+            <td class="py-3 px-3 text-right font-mono text-xs text-amber-400">${p.coins}</td>
+          </tr>
+        `;
+      }).join('');
+
+
+      // Historia meczów
+      const hist = document.getElementById('matchHistoryList');
+      if (state.matches.length === 0) {
+        hist.innerHTML = `<div class="text-xs text-slate-500 py-6 text-center">Brak rozegranych meczów. Przejdź do "Dodaj Mecz"!</div>`;
+      } else {
+        hist.innerHTML = state.matches.map(m => {
+          const pills = Object.entries(m.changes).map(([pid, d]) => {
+            const pl = state.players.find(x => x.id === pid);
+            const name = pl ? pl.name : pid;
+            const cls = d > 0 ? 'text-emerald-400' : 'text-rose-400';
+            return `<span class="mr-2 font-mono text-[11px] ${cls}">${name} (${d > 0 ? '+' + d : d})</span>`;
+          }).join('');
+          return `
+            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+              <div class="flex justify-between text-xs font-bold text-white">
+                <span>🎮 ${m.game}</span>
+                <span class="text-slate-500 font-mono">${m.date}</span>
+              </div>
+              <div class="flex flex-wrap">${pills}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+
+      // Datalist 2v2
+      const dl = document.getElementById('players2v2Datalist');
+      dl.innerHTML = state.players.map(p => `<option value="${p.name}"></option>`).join('');
+
+
+      // Tabela 2v2
+      const pairsMap = {};
+      state.matches2v2.forEach(m => {
+        [m.pairA, m.pairB].forEach(pair => {
+          if (!pairsMap[pair]) pairsMap[pair] = { name: pair, m: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+        });
+        const A = pairsMap[m.pairA];
+        const B = pairsMap[m.pairB];
+        A.m++; B.m++;
+        A.gf += m.s1; A.ga += m.s2;
+        B.gf += m.s2; B.ga += m.s1;
+        if (m.s1 > m.s2) { A.w++; A.pts += 3; B.l++; }
+        else if (m.s1 < m.s2) { B.w++; B.pts += 3; A.l++; }
+        else { A.d++; B.d++; A.pts += 1; B.pts += 1; }
+      });
+      const pairsArr = Object.values(pairsMap).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga));
+      const t2v2 = document.getElementById('table2v2Body');
+      t2v2.innerHTML = pairsArr.length === 0
+        ? `<tr><td colspan="6" class="py-6 text-center text-xs text-slate-500">Brak zapisanych meczów 2v2</td></tr>`
+        : pairsArr.map((p, i) => `
+          <tr>
+            <td class="py-2.5 px-3 font-mono text-xs text-slate-400">${i + 1}.</td>
+            <td class="py-2.5 px-3 font-bold text-white">${p.name}</td>
+            <td class="py-2.5 px-3 text-center font-mono text-xs">${p.m}</td>
+            <td class="py-2.5 px-3 text-center font-mono text-xs">${p.w}-${p.d}-${p.l}</td>
+            <td class="py-2.5 px-3 text-center font-mono text-xs">${p.gf}:${p.ga}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-indigo-400">${p.pts}</td>
+          </tr>
+        `).join('');
+
+
+      // Zakłady
+      const betsCont = document.getElementById('betsListContainer');
+      betsCont.innerHTML = state.bets.length === 0
+        ? `<div class="text-xs text-slate-500 py-6 text-center">Brak otwartych zakładów.</div>`
+        : state.bets.map(b => `
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sm text-white">${b.title}</span>
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-amber-400">
+                ${b.resolved ? 'ROZLICZONY (' + b.resolved + ')' : 'OTWARTY'}
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="placeQuickWager('${b.id}', '${b.optA}')" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex justify-between">
+                <span>${b.optA}</span>
+                <span class="font-mono text-amber-400">@${b.oddsA}</span>
+              </button>
+              <button onclick="placeQuickWager('${b.id}', '${b.optB}')" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex justify-between">
+                <span>${b.optB}</span>
+                <span class="font-mono text-amber-400">@${b.oddsB}</span>
+              </button>
+            </div>
+            ${!b.resolved ? `
+              <div class="flex gap-2 pt-1 text-[11px]">
+                <button onclick="resolveBet('${b.id}', '${b.optA}')" class="text-emerald-400 hover:underline">Rozlicz: Wygrała Opcja A</button>
+                <span class="text-slate-600">|</span>
+                <button onclick="resolveBet('${b.id}', '${b.optB}')" class="text-emerald-400 hover:underline">Rozlicz: Wygrała Opcja B</button>
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+
+
+      renderMatchBuilder();
+    }
+
+
+    window.addEventListener('DOMContentLoaded', renderAll);
+  </script>
+</body>
+</html>
