@@ -1,0 +1,2920 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ekipa ELO & Liga Dwójek 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .glass { background: rgba(30, 41, 59, 0.72); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass-dark { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .role-win { background: linear-gradient(135deg, #059669, #10b981); color: #fff; border-color: #34d399; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+    .role-lose { background: linear-gradient(135deg, #e11d48, #f43f5e); color: #fff; border-color: #fb7185; box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3); }
+    .role-coop { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border-color: #a78bfa; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen pb-16">
+
+  <!-- POWIADOMIENIA TOAST (Zamiast alert) -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- MODAL POTWIERDZENIA (Zamiast confirm) -->
+  <div id="confirmDialogModal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass rounded-2xl max-w-md w-full p-6 border border-slate-700 shadow-2xl space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-lg">⚠️</div>
+        <h3 id="confirmDialogTitle" class="text-base font-bold text-white">Potwierdzenie akcji</h3>
+      </div>
+      <p id="confirmDialogMessage" class="text-xs sm:text-sm text-slate-300 leading-relaxed"></p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="confirmDialogCancelBtn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition">
+          Anuluj
+        </button>
+        <button id="confirmDialogOkBtn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition">
+          Potwierdź
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATALIST DLA LIGI 2V2 -->
+  <datalist id="players2v2Datalist"></datalist>
+
+  <!-- TOP NAVBAR -->
+  <header class="sticky top-0 z-30 glass border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-extrabold text-xl shadow-lg">
+          ⚔️
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white">
+              Ekipa <span class="text-indigo-400">Inflationary ELO</span> 2026
+            </h1>
+            <span class="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              + Liga 2v2
+            </span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span id="syncStatusText">Tryb lokalny (localStorage)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nawigacja Zakładek -->
+      <nav class="flex flex-wrap items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+        <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white">
+          🏆 Główny Ranking & Mecze
+        </button>
+        <button onclick="switchTab('league2v2')" id="tabBtn-league2v2" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5">
+          <span>🎮 Liga Dwójek (2v2)</span>
+          <span id="navSeasonBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">S1</span>
+        </button>
+        <button onclick="switchTab('members')" id="tabBtn-members" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
+          👥 Ekipa (<span id="navMemberCount">0</span>)
+        </button>
+        <button onclick="switchTab('wrapped')" id="tabBtn-wrapped" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
+          📊 Statystyki / Wrapped
+        </button>
+        <button onclick="openConfigModal()" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-300 hover:bg-slate-800">
+          ⚙️ Konfiguracja
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-6">
+
+    <!-- ================= ZAKŁADKA 1: GŁÓWNY DASHBOARD (KREATOR ELO + RANKING + LOG) ================= -->
+    <div id="tab-dashboard" class="space-y-8">
+
+      <!-- Pasek wyjaśniający mechanikę "Inflationary ELO" + Integrację z Ligą 2v2 -->
+      <div class="glass rounded-2xl p-4 border border-indigo-500/20 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-start sm:items-center gap-3">
+          <span class="text-2xl">📈</span>
+          <div class="text-xs sm:text-sm text-slate-300">
+            <strong class="text-white">Zasada Inflationary ELO (Start: 1000 MMR):</strong>
+            Każdy mecz to <span class="text-amber-300 font-semibold">Transfer ELO</span> (zależy od siły drużyn i wagi K)
+            <span class="text-emerald-400 font-semibold">+ Gwarantowana Tarcza Aktywności</span> za obecność.
+            Dodatkowo zamknięcie sezonu w zakładce <strong class="text-purple-300">🎮 Liga Dwójek (2v2)</strong> dopisuje wypracowany ułamek punktów bezpośrednio do Głównego Rankingu!
+          </div>
+        </div>
+        <button onclick="switchTab('league2v2')" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition shrink-0">
+          🎮 Przejdź do Ligi Dwójek 2v2 →
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEWA KOLUMNA: Kreator Meczu / Aktywności + Sędzia AI (5 kolumn) -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="glass rounded-2xl p-6 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <span>⚔️ Zarejestruj Mecz / Spotkanie</span>
+              </h2>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium">
+                System ELO + Bonus IRL
+              </span>
+            </div>
+
+            <!-- Pole Sędziego AI -->
+            <div class="mb-5 bg-slate-900/80 border border-slate-800 rounded-xl p-3.5">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-indigo-400 mb-1.5">
+                🤖 Szybki opis dla Sędziego AI (Wykrywa Zwycięzców i Przegranych)
+              </label>
+              <textarea id="aiPromptInput" rows="3" placeholder="Np. Graliśmy w piłkę 2h na Orliku. Tomek, Michał i Janek wygrali 10:7 z Kubą, Piotrkiem i Mateuszem. Padał deszcz!" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"></textarea>
+              <div class="mt-2.5 flex items-center justify-between gap-2">
+                <span id="aiModeBadge" class="text-[11px] text-slate-400">Tryb: Lokalny parser</span>
+                <button type="button" onclick="analyzeWithAI()" id="aiAnalyzeBtn" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow transition flex items-center gap-1.5">
+                  <span>✨ Rozstrzygnij drużyny i wagę</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Formularz Wydarzenia -->
+            <form id="eventForm" onsubmit="handleSaveEvent(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Nazwa meczu / aktywności</label>
+                <input type="text" id="evTitle" required placeholder="Np. Piłka 3v3 na hali / LoL 2v2 Custom / Wspólny Grill" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Kategoria (Stawka K & Tarcza)</label>
+                  <select id="evCategory" onchange="recalculatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <option value="IRL_SPORT">⚽ IRL Sport (K=48, Tarcza +14)</option>
+                    <option value="ONLINE_GAMING">🎮 Online LoL/Gry (K=28, Tarcza +5)</option>
+                    <option value="IRL_CHILL">🍻 IRL Chill/Planszówki (K=24, Tarcza +12)</option>
+                    <option value="IRL_TRIP">⛰️ IRL Wyjazd/Event (K=60, Tarcza +30)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Tryb rozstrzygnięcia</label>
+                  <select id="evMode" onchange="handleModeChange()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <option value="VERSUS">⚔️ Rywalizacja (Wygrani vs Przegrani)</option>
+                    <option value="COOP">🤝 Kooperacja / Remis (Wszyscy razem)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2.5">
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Data</label>
+                  <input type="date" id="evDate" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Czas (min)</label>
+                  <input type="number" id="evDuration" value="90" min="10" max="2880" step="10" onchange="recalculatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Bonus AI (pkt)</label>
+                  <input type="number" id="evAiBonus" value="0" min="-15" max="25" step="1" onchange="recalculatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+
+              <!-- Wybór uczestników i ich ról -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs font-medium text-slate-300">
+                    Kliknij osobę:
+                    <span class="text-emerald-400 font-semibold">🏆 Wygrany</span> →
+                    <span class="text-rose-400 font-semibold">💀 Przegrany</span> →
+                    <span class="text-slate-400">Nieobecny</span>
+                  </label>
+                  <button type="button" onclick="clearParticipantRoles()" class="text-[11px] text-slate-400 hover:underline">Resetuj</button>
+                </div>
+
+                <div id="participantsSelector" class="flex flex-wrap gap-1.5 p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl min-h-[60px]"></div>
+
+                <!-- Szybkie dodawanie nowej osoby -->
+                <div class="mt-2 flex gap-2">
+                  <input type="text" id="quickMemberInput" placeholder="Brakuje kogoś? Wpisz imię lub nick z 2v2..." class="flex-1 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                  <button type="button" onclick="quickAddMember()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-indigo-300 border border-slate-700 transition">
+                    + Dodaj osobę
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Komentarz Sędziego AI / Wynik meczu</label>
+                <input type="text" id="evComment" placeholder="Np. Wynik 10:8, dogrywka w deszczu" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500" />
+              </div>
+
+              <!-- Kalkulator ELO na żywo -->
+              <div class="bg-slate-950/90 border border-indigo-500/30 rounded-xl p-3.5 space-y-2.5">
+                <div class="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
+                  <span id="eloMatchupHeader" class="text-slate-300 font-semibold">Symulacja zmiany ELO (uwzględnia obecny ranking):</span>
+                  <span id="eloWinProbBadge" class="text-[11px] px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono">Szansa: 50% vs 50%</span>
+                </div>
+
+                <div id="eloPreviewCards" class="grid grid-cols-2 gap-2.5">
+                  <div class="bg-emerald-950/30 border border-emerald-500/30 rounded-lg p-2.5">
+                    <div class="text-[11px] text-emerald-300 font-semibold uppercase">🏆 Wygrani dostają:</div>
+                    <div id="previewWinnersDelta" class="text-xl font-extrabold text-emerald-400 mt-0.5 font-mono">+0.0 ELO</div>
+                    <div id="previewWinnersSub" class="text-[10px] text-slate-400">Transfer ELO + Tarcza Aktywności</div>
+                  </div>
+                  <div class="bg-rose-950/30 border border-rose-500/30 rounded-lg p-2.5">
+                    <div class="text-[11px] text-rose-300 font-semibold uppercase">💀 Przegrani (z Tarczą):</div>
+                    <div id="previewLosersDelta" class="text-xl font-extrabold text-rose-400 mt-0.5 font-mono">-0.0 ELO</div>
+                    <div id="previewLosersSub" class="text-[10px] text-slate-400">Strata ELO złagodzona przez Tarczę</div>
+                  </div>
+                </div>
+
+                <div id="longTermProofNote" class="text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-slate-800">
+                  💡 <strong>Gwarancja długiego terminu:</strong> Średnia zmiana na osobę w tym wydarzeniu to <span id="avgNetGainText" class="text-emerald-400 font-bold font-mono">+14.0 ELO</span>.
+                </div>
+              </div>
+
+              <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition">
+                💾 Zapisz wynik i przelicz Główny Ranking ELO
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- PRAWA KOLUMNA: Tabela Rankingowa ELO + Historia Meczów (7 kolumn) -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <!-- RANKING ELO -->
+          <div class="glass rounded-2xl p-6 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div>
+                <h2 class="text-lg font-bold text-white">🏆 Główna Tabela Rankingowa ELO (Start: 1000 MMR)</h2>
+                <p class="text-xs text-slate-400">Przeliczana chronologicznie ze spotkań IRL, gier online oraz zamkniętych sezonów Ligi Dwójek 2v2</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="switchTab('league2v2')" class="text-xs px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 font-semibold transition">
+                  🎮 Liga 2v2
+                </button>
+                <button onclick="switchTab('members')" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 font-medium transition">
+                  👥 Ekipa (+ / -)
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-800 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    <th class="py-3 px-2">#</th>
+                    <th class="py-3 px-2">Gracz (Alias 2v2)</th>
+                    <th class="py-3 px-2 text-right">Główne ELO</th>
+                    <th class="py-3 px-2 text-center">Bilans (W-L-C)</th>
+                    <th class="py-3 px-2 text-center">Win%</th>
+                    <th class="py-3 px-2 text-right" title="Punkty ze zwycięstw/porażek vs punkty za samą aktywność vs transfer z sezonów 2v2">Skill / Tarcza / 2v2</th>
+                    <th class="py-3 px-2 text-center">Forma</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboardBody" class="divide-y divide-slate-800/60 text-sm"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- DZIENNIK MECZÓW I AKTYWNOŚCI -->
+          <div class="glass rounded-2xl p-6 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 class="text-lg font-bold text-white">📜 Historia Meczów i Transferów Sezonowych (<span id="eventsCountBadge">0</span>)</h2>
+              <div class="flex flex-wrap items-center gap-2">
+                <select id="filterCategory" onchange="renderAll()" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                  <option value="ALL">Wszystkie kategorie</option>
+                  <option value="SEASON_2V2">🏆 Transfery Sezonu Ligi 2v2</option>
+                  <option value="IRL_SPORT">⚽ IRL Sport</option>
+                  <option value="ONLINE_GAMING">🎮 Online (LoL / Gry)</option>
+                  <option value="IRL_CHILL">🍻 IRL Chill</option>
+                  <option value="IRL_TRIP">⛰️ IRL Wyjazdy</option>
+                </select>
+                <select id="filterMember" onchange="renderAll()" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                  <option value="ALL">Wszyscy gracze</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="eventsLogContainer" class="space-y-3 max-h-[540px] overflow-y-auto pr-1"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= ZAKŁADKA 2: LIGA DWÓJEK (2v2) ZINTEGROWANA W STYLU GLASS/INDIGO ================= -->
+    <div id="tab-league2v2" class="hidden space-y-6">
+
+      <!-- Górny pasek Ligi Dwójek z przyciskiem Zakończ Sezon -->
+      <div class="glass rounded-2xl p-5 border border-purple-500/30 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-2xl shadow-lg shadow-purple-600/30">
+            🎮
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-lg sm:text-xl font-extrabold text-white tracking-tight">LIGA DWÓJEK – SYSTEM ELO 2v2</h2>
+              <span id="leagueSeasonHeaderBadge" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                SEZON #1
+              </span>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5">
+              Płaskie ELO sezonowe (start: <span class="font-mono text-white font-semibold">1000</span>, stawka <span class="font-mono text-white font-semibold">K=32</span>). Zakończenie sezonu przelicza wypracowaną nadwyżkę/stratę i dopisuje punkty do <strong class="text-indigo-300">Głównego Rankingu Ekipy</strong>!
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="openEndSeasonModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-amber-500/25 transition flex items-center gap-2">
+            <span>🏆 Zakończ Sezon (Transfer do Głównego ELO)</span>
+          </button>
+          <button onclick="openManualMatch2v2()" class="px-3.5 py-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition">
+            ✍️ Dodaj mecz ręcznie
+          </button>
+          <button onclick="undoLastMatch2v2()" class="px-3.5 py-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-800/50 text-xs font-semibold transition">
+            ↩️ Cofnij Mecz
+          </button>
+        </div>
+      </div>
+
+      <!-- Główna siatka Ligi Dwójek -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEWA KOLUMNA LIGI 2v2 (7 kolumn): Vision Dropzone + Weryfikacja + Tabela Sezonowa + Rekordy -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <!-- Dropzone Vision -->
+          <div id="dropzone2v2" class="glass rounded-2xl p-6 border-2 border-dashed border-indigo-500/30 hover:border-indigo-400/60 transition-all text-center cursor-pointer relative group" onclick="document.getElementById('fileInput2v2').click()">
+            <input type="file" id="fileInput2v2" accept="image/*" class="hidden" onchange="handleFileSelect2v2(event)">
+            <div id="dropzoneContent2v2" class="space-y-2.5">
+              <div class="w-12 h-12 mx-auto rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-2xl group-hover:scale-105 transition">
+                📸
+              </div>
+              <h3 class="text-sm sm:text-base font-bold text-white">Wklej zrzut ekranu z gry 2v2 (<span class="font-mono text-indigo-400">Ctrl + V</span>) lub kliknij tutaj</h3>
+              <p class="text-xs text-slate-400 max-w-lg mx-auto">
+                Gemini Vision automatycznie odczyta nicki graczy, bohaterów, zadane obrażenia, czas trwania oraz przygotuje podsumowanie.
+              </p>
+              <div class="pt-2 flex flex-wrap justify-center gap-2" onclick="event.stopPropagation()">
+                <button type="button" onclick="openManualMatch2v2()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-indigo-300 border border-slate-700 transition">
+                  ⚡ Symuluj / Wypełnij przykładowy mecz 2v2
+                </button>
+              </div>
+            </div>
+
+            <div id="loadingOverlay2v2" class="hidden py-6 space-y-3">
+              <div class="animate-spin mx-auto w-7 h-7 border-2 border-indigo-400 border-t-transparent rounded-full"></div>
+              <p id="loadingStatusText2v2" class="text-xs text-indigo-300 font-semibold uppercase tracking-wider">Przetwarzanie zrzutu ekranu przez Gemini Vision...</p>
+            </div>
+          </div>
+
+          <!-- Panel Weryfikacji Meczu 2v2 -->
+          <div id="verifyPanel2v2" class="glass rounded-2xl p-6 hidden space-y-5 border border-indigo-500/40 shadow-2xl">
+            <div class="flex flex-wrap justify-between items-center border-b border-slate-800 pb-3 gap-2">
+              <div>
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                  <span>⚔️ Weryfikacja Meczu Ligi Dwójek (2v2)</span>
+                </h3>
+                <p id="newPlayerNotice2v2" class="text-xs text-amber-300 mt-1 hidden"></p>
+              </div>
+              <button type="button" onclick="swapTeams2v2()" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold transition">
+                🔄 Zamień Drużyny
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <!-- Wygrani 2v2 -->
+              <div class="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-0.5 rounded-md text-xs font-bold role-win">🏆 DRUŻYNA WYGRANYCH</span>
+                  <span id="preview2v2WinDelta" class="text-xs font-mono font-bold text-emerald-400">+16 ELO</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <input id="w1_name" list="players2v2Datalist" type="text" placeholder="Nick Gracza 1" oninput="checkNewPlayersNotice2v2()" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500">
+                  <input id="w1_champ" type="text" placeholder="Bohater (np. Maokai)" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500">
+                  <input id="w1_dmg" type="number" placeholder="Zadane obrażenia (DMG)" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-emerald-300 col-span-2 font-mono focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-3 border-t border-slate-800/80">
+                  <input id="w2_name" list="players2v2Datalist" type="text" placeholder="Nick Gracza 2" oninput="checkNewPlayersNotice2v2()" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500">
+                  <input id="w2_champ" type="text" placeholder="Bohater (np. Samira)" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500">
+                  <input id="w2_dmg" type="number" placeholder="Zadane obrażenia (DMG)" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-emerald-300 col-span-2 font-mono focus:outline-none focus:border-emerald-500">
+                </div>
+              </div>
+
+              <!-- Przegrani 2v2 -->
+              <div class="bg-rose-950/20 border border-rose-500/30 rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-0.5 rounded-md text-xs font-bold role-lose">💀 DRUŻYNA PRZEGRANYCH</span>
+                  <span id="preview2v2LoseDelta" class="text-xs font-mono font-bold text-rose-400">-16 ELO</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <input id="l1_name" list="players2v2Datalist" type="text" placeholder="Nick Gracza 3" oninput="checkNewPlayersNotice2v2()" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-white focus:outline-none focus:border-rose-500">
+                  <input id="l1_champ" type="text" placeholder="Bohater (np. Varus)" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-white focus:outline-none focus:border-rose-500">
+                  <input id="l1_dmg" type="number" placeholder="Zadane obrażenia (DMG)" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-rose-300 col-span-2 font-mono focus:outline-none focus:border-rose-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-3 border-t border-slate-800/80">
+                  <input id="l2_name" list="players2v2Datalist" type="text" placeholder="Nick Gracza 4" oninput="checkNewPlayersNotice2v2()" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-white focus:outline-none focus:border-rose-500">
+                  <input id="l2_champ" type="text" placeholder="Bohater (np. Xin Zhao)" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-white focus:outline-none focus:border-rose-500">
+                  <input id="l2_dmg" type="number" placeholder="Zadane obrażenia (DMG)" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs sm:text-sm text-rose-300 col-span-2 font-mono focus:outline-none focus:border-rose-500">
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-slate-800 pt-4">
+              <div>
+                <label class="text-xs text-slate-400 font-medium">Czas trwania (MM:SS)</label>
+                <input id="match_duration" type="text" placeholder="18:20" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white mt-1 font-mono focus:outline-none focus:border-indigo-500">
+              </div>
+              <div class="md:col-span-2">
+                <label class="text-xs text-slate-400 font-medium">Komentarz / Notatka z meczu</label>
+                <input id="match_trivia" type="text" placeholder="Krótki opis przebiegu meczu" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white mt-1 focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" onclick="closeVerifyPanel2v2()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition">
+                Anuluj
+              </button>
+              <button type="button" onclick="confirmMatch2v2()" class="px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition">
+                💾 Zatwierdź Wynik 2v2
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabela Sezonowa Ligi Dwójek -->
+          <div class="glass rounded-2xl p-6 shadow-xl space-y-4">
+            <div class="flex flex-wrap justify-between items-center gap-2">
+              <div>
+                <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                  <span>📊 Tabela Sezonowa Ligi Dwójek</span>
+                </h3>
+                <p class="text-xs text-slate-400">
+                  Kolumna <strong class="text-amber-300">Prognoza Transferu (10%)</strong> pokazuje, ile punktów gracz dopisze do Głównego Rankingu po kliknięciu "Zakończ Sezon".
+                </p>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400 tracking-wider font-semibold">
+                    <th class="py-3 px-2.5">#</th>
+                    <th class="py-3 px-2.5">Gracz 2v2 (Konto Główne)</th>
+                    <th class="py-3 px-2.5 text-right">Główne ELO</th>
+                    <th class="py-3 px-2.5 text-right text-indigo-300">Sezon 2v2 ELO</th>
+                    <th class="py-3 px-2.5 text-right text-amber-300">Prognoza (10%)</th>
+                    <th class="py-3 px-2.5 text-center">W-L</th>
+                    <th class="py-3 px-2.5 text-center">WR %</th>
+                    <th class="py-3 px-2.5 text-center">Seria</th>
+                    <th class="py-3 px-2.5 text-center">Forma</th>
+                  </tr>
+                </thead>
+                <tbody id="standings2v2Body" class="divide-y divide-slate-800/60 text-sm"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Rekordy Ligi Dwójek -->
+          <div class="glass rounded-2xl p-6 shadow-xl space-y-4">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span>🏅 Rekordy Historyczne Ligi Dwójek</span>
+            </h3>
+            <div id="records2v2Grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 text-sm"></div>
+          </div>
+        </div>
+
+        <!-- PRAWA KOLUMNA LIGI 2v2 (5 kolumn): Prezentacja Slajdów TTS + Protokół Markdown -->
+        <div class="lg:col-span-5 space-y-6">
+
+          <!-- Prezentacja Sesji & Lektor TTS -->
+          <div class="glass rounded-2xl p-6 shadow-xl space-y-5">
+            <div class="flex flex-wrap justify-between items-center gap-2">
+              <div>
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                  <span>🎙️ Podsumowanie Sesji 2v2 (AI + Lektor TTS)</span>
+                </h3>
+                <p class="text-xs text-slate-400 mt-0.5">
+                  Nierozliczonych meczów w sesji: <span id="sessionCountLabel2v2" class="text-indigo-400 font-mono font-bold">0</span>
+                </p>
+              </div>
+              <button onclick="endSessionAndGenerateSlides2v2()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow transition">
+                ✨ Generuj Prezentację (10 Slajdów)
+              </button>
+            </div>
+
+            <!-- Odtwarzacz Slajdów -->
+            <div id="slideViewer2v2" class="bg-slate-950/90 border border-slate-800 rounded-xl p-5 min-h-[220px] flex flex-col justify-between relative">
+              <div class="flex justify-between items-center text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                <span id="slideBadge2v2" class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Brak slajdów</span>
+                <span id="ttsStatus2v2" class="text-emerald-400 hidden animate-pulse">🔊 Odtwarzanie lektora TTS...</span>
+              </div>
+
+              <div class="my-5 space-y-2.5">
+                <h4 id="slideTitle2v2" class="text-base font-bold text-white leading-snug">W oczekiwaniu na mecze sesji</h4>
+                <p id="slideText2v2" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Dodaj lub wklej mecze w Lidze Dwójek, a następnie kliknij "Generuj Prezentację". Sztuczna inteligencja przygotuje 10 slajdów podsumowujących obrażenia, serie i zmiany ELO oraz przeczyta je na głos.
+                </p>
+              </div>
+
+              <!-- Kontrolki Slajdów -->
+              <div class="flex flex-wrap justify-between items-center gap-2 pt-3 border-t border-slate-800/80">
+                <div class="flex items-center gap-1.5">
+                  <button onclick="prevSlide2v2()" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 font-medium transition">◀ Poprzedni</button>
+                  <button onclick="nextSlide2v2()" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 font-medium transition">Następny ▶</button>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="speakCurrentSlide2v2()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-indigo-300 border border-slate-700 transition">
+                    🔊 Czytaj
+                  </button>
+                  <button onclick="autoPlayPresentation2v2()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition">
+                    ▶ Auto-Play
+                  </button>
+                  <button onclick="stopTTS2v2()" class="px-2.5 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-xs text-rose-300 border border-rose-800/50 transition">
+                    ⏹ Stop
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Raport / Protokół Markdown -->
+          <div class="glass rounded-2xl p-6 shadow-xl space-y-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <h3 class="text-base font-bold text-white">📋 Protokół / Raport Tekstowy</h3>
+                <p class="text-xs text-slate-400">Gotowy do wklejenia na Discorda lub Messenger</p>
+              </div>
+              <button onclick="copyProtocol2v2()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-indigo-300 border border-slate-700 transition">
+                📋 Kopiuj raport
+              </button>
+            </div>
+            <pre id="protocolOutput2v2" class="bg-slate-950/95 border border-slate-800 rounded-xl p-4 text-[11px] font-mono text-slate-300 whitespace-pre-wrap overflow-x-auto leading-relaxed max-h-[380px] overflow-y-auto"></pre>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= ZAKŁADKA 3: ZARZĄDZANIE EKIPĄ I ALIASAMI 2v2 ================= -->
+    <div id="tab-members" class="hidden space-y-6">
+      <div class="glass rounded-2xl p-6 shadow-xl max-w-5xl mx-auto">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-white">👥 Zarządzanie Ekipą & Powiązania Nicków Ligi 2v2</h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Każda osoba startuje z pułapu <strong>1000 ELO</strong>. Możesz przypisać członkowi ekipy jego nick z <strong>Ligi Dwójek (2v2)</strong> (np. <code>Cancer</code>, <code>Jargolek</code>), aby punkty po zakończeniu sezonu trafiały na właściwe konto!
+            </p>
+          </div>
+        </div>
+
+        <form onsubmit="handleAddMemberTab(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6 bg-slate-900/70 p-4 rounded-xl border border-slate-800">
+          <input type="text" id="newMemberNameInput" required placeholder="Imię / Ksywka w Ekipie..." class="bg-slate-950 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+          <input type="text" id="newMemberRoleInput" placeholder="Rola / Tytuł (np. Kapitan)" class="bg-slate-950 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+          <input type="text" id="newMemberAliasInput" placeholder="Nick w Lidze 2v2 (opcjonalnie)" class="bg-slate-950 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-purple-500" />
+          <button type="submit" class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow transition whitespace-nowrap">
+            ➕ Dodaj do Ekipy
+          </button>
+        </form>
+
+        <div id="membersManagementList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      </div>
+    </div>
+
+    <!-- ================= ZAKŁADKA 4: STATYSTYKI / WRAPPED ================= -->
+    <div id="tab-wrapped" class="hidden space-y-6">
+      <div class="glass rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
+          <div>
+            <h2 class="text-xl font-extrabold text-white">📊 Ekipa ELO Wrapped – Statystyki Całoroczne</h2>
+            <p class="text-xs text-slate-400">Analiza składowych ELO: Pojedynki (Skill), Tarcza Aktywności IRL oraz Punkty Sezonowe z Ligi Dwójek 2v2</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div class="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-4">
+            <div class="text-xs font-semibold uppercase text-emerald-400">👑 Dominator Skilla (Pojedynki + 2v2)</div>
+            <div id="statSkillKing" class="text-lg font-extrabold text-white mt-1">-</div>
+            <div id="statSkillKingSub" class="text-xs text-slate-400 mt-0.5">Najwięcej punktów z czystej rywalizacji</div>
+          </div>
+
+          <div class="bg-slate-900/90 border border-indigo-500/30 rounded-xl p-4">
+            <div class="text-xs font-semibold uppercase text-indigo-400">🛡️ Żelazny Weteran (Tarcza Aktywności)</div>
+            <div id="statGrindKing" class="text-lg font-extrabold text-white mt-1">-</div>
+            <div id="statGrindKingSub" class="text-xs text-slate-400 mt-0.5">Najwięcej ELO z Tarczy Obecności</div>
+          </div>
+
+          <div class="bg-slate-900/90 border border-rose-500/30 rounded-xl p-4">
+            <div class="text-xs font-semibold uppercase text-rose-400">⚡ Najczęstszy Pojedynek (Nemezis)</div>
+            <div id="statNemesis" class="text-lg font-extrabold text-white mt-1">-</div>
+            <div id="statNemesisSub" class="text-xs text-slate-400 mt-0.5">Najczęściej po przeciwnych stronach</div>
+          </div>
+
+          <div class="bg-slate-900/90 border border-amber-500/30 rounded-xl p-4">
+            <div class="text-xs font-semibold uppercase text-amber-400">🤝 Najlepsze Duo (Wspólne Wygrane)</div>
+            <div id="statBestDuo" class="text-lg font-extrabold text-white mt-1">-</div>
+            <div id="statBestDuoSub" class="text-xs text-slate-400 mt-0.5">Najwięcej zwycięstw w jednej drużynie</div>
+          </div>
+        </div>
+
+        <!-- Wykresy rozkładu -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5">
+            <h3 class="text-sm font-bold text-white mb-2">📊 Skąd bierze się Główne ELO graczy?</h3>
+            <p class="text-xs text-slate-400 mb-4">Rozbicie na: Skill z meczów, Tarczę Obecności oraz Transfery z Sezonów Ligi 2v2:</p>
+            <div id="eloBreakdownChart" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1"></div>
+          </div>
+
+          <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5">
+            <h3 class="text-sm font-bold text-white mb-3">📅 Aktywność według dni tygodnia</h3>
+            <div id="weekdayChart" class="space-y-2.5"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ================= MODAL ZAKOŃCZENIA SEZONU LIGI 2V2 (TRANSFER DO GŁÓWNEGO ELO) ================= -->
+  <div id="endSeasonModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-dark rounded-2xl max-w-3xl w-full p-6 border border-amber-500/40 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl">🏆</div>
+          <div>
+            <h3 class="text-lg font-extrabold text-white">Zakończenie Sezonu Ligi Dwójek (2v2)</h3>
+            <p class="text-xs text-slate-400">Przeliczenie punktów sezonowych i oficjalny transfer do Głównego Rankingu ELO</p>
+          </div>
+        </div>
+        <button onclick="closeEndSeasonModal()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+
+      <!-- Parametry Transferu Sezonowego -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/90 p-4 rounded-xl border border-slate-800">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Nazwa w Historii Głównego Rankingu</label>
+          <input type="text" id="seasonTransferTitle" value="🏆 Koniec Sezonu #1 Ligi Dwójek (2v2)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-amber-300 mb-1">Przelicznik nadwyżki/straty od 1000 (%)</label>
+          <div class="flex items-center gap-2">
+            <input type="number" id="seasonTransferPercent" value="10" min="1" max="100" step="1" oninput="renderEndSeasonPreviewTable()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
+            <button type="button" onclick="setSeasonPercent(10)" class="px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-amber-300">10%</button>
+            <button type="button" onclick="setSeasonPercent(20)" class="px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300">20%</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-emerald-400 mb-1">Bonus za 1 rozegrany mecz (opcjonalnie)</label>
+          <div class="flex items-center gap-2">
+            <input type="number" id="seasonPerGameBonus" value="0" min="0" max="5" step="0.2" oninput="renderEndSeasonPreviewTable()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500" />
+            <button type="button" onclick="setSeasonGameBonus(0)" class="px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300">0</button>
+            <button type="button" onclick="setSeasonGameBonus(0.5)" class="px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-emerald-300">+0.5</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Podgląd Tabeli Transferowej -->
+      <div class="space-y-2">
+        <div class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+          <span>Podgląd zmian w Głównym Rankingu ELO po zamknięciu sezonu:</span>
+          <span class="text-[11px] text-slate-400">Sezonowe ELO zostanie po zatwierdzeniu zresetowane do 1000</span>
+        </div>
+        <div class="overflow-x-auto bg-slate-950/90 border border-slate-800 rounded-xl">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-[10px] uppercase text-slate-400">
+                <th class="py-2.5 px-3">Nick w Lidze 2v2</th>
+                <th class="py-2.5 px-3">Powiązany Gracz w Ekipie</th>
+                <th class="py-2.5 px-3 text-center">Mecze (W-L)</th>
+                <th class="py-2.5 px-3 text-right">Sezon 2v2 ELO</th>
+                <th class="py-2.5 px-3 text-right">Obecne Main ELO</th>
+                <th class="py-2.5 px-3 text-right text-amber-300">Transfer ELO</th>
+                <th class="py-2.5 px-3 text-right text-white">Nowe Main ELO</th>
+              </tr>
+            </thead>
+            <tbody id="endSeasonPreviewBody" class="divide-y divide-slate-800/60"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800">
+        <p class="text-[11px] text-slate-400 max-w-md">
+          💡 Transfer zapisze się jako oficjalne wydarzenie w Historii Głównego Rankingu (możesz je w każdej chwili usunąć z dziennika, aby cofnąć punkty).
+        </p>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeEndSeasonModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition">
+            Anuluj
+          </button>
+          <button type="button" onclick="confirmEndSeasonTransfer()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/25 transition">
+            🏆 Zatwierdź Koniec Sezonu i Przelej Punkty
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL EDYCJI CZŁONKA EKIPY ================= -->
+  <div id="editMemberModal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass rounded-2xl max-w-md w-full p-6 border border-slate-700 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white">✏️ Edytuj profil gracza i alias 2v2</h3>
+        <button onclick="closeEditMemberModal()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+      <input type="hidden" id="editMemberId" />
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Imię / Ksywka w Głównym Rankingu</label>
+          <input type="text" id="editMemberName" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Rola / Tytuł w Ekipie</label>
+          <input type="text" id="editMemberRole" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-purple-300 mb-1">Powiązany Nick w Lidze Dwójek 2v2</label>
+          <input type="text" id="editMemberAlias" list="players2v2Datalist" placeholder="Np. Cancer, Jargolek, SPICYBob..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-purple-500" />
+          <p class="text-[11px] text-slate-400 mt-1">Dzięki temu po zakończeniu sezonu 2v2 punkty trafią bezpośrednio na konto tego gracza.</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeEditMemberModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Anuluj</button>
+        <button onclick="saveEditMember()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white">💾 Zapisz zmiany</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL KONFIGURACJI ================= -->
+  <div id="configModal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass rounded-2xl max-w-xl w-full p-6 border border-slate-700 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-white">⚙️ Konfiguracja Systemu (Gemini AI & Firebase)</h3>
+        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+
+      <div class="space-y-2">
+        <label class="block text-xs font-bold uppercase tracking-wider text-indigo-400">
+          1. Klucz Google Gemini API (Sędzia ELO + Vision 2v2 + Prezentacje)
+        </label>
+        <input type="password" id="cfgGeminiKey" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        <p class="text-[11px] text-slate-400">
+          Obsługuje zarówno Sędziego AI w Głównym Rankingu, jak i odczytywanie zrzutów ekranu (Ctrl+V) oraz slajdy w Lidze Dwójek.
+        </p>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex justify-between items-center">
+          <label class="block text-xs font-bold uppercase tracking-wider text-purple-400">
+            2. Model AI Gemini
+          </label>
+          <button type="button" onclick="detectAvailableModels()" class="text-xs text-indigo-400 hover:underline font-semibold">🔍 Wykryj obsługiwany model</button>
+        </div>
+        <input type="text" id="cfgGeminiModel" placeholder="gemini-2.5-flash" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-purple-500" />
+        <p id="modelDetectStatus" class="text-[11px] text-emerald-400 hidden"></p>
+      </div>
+
+      <div class="space-y-2 pt-2 border-t border-slate-800">
+        <label class="block text-xs font-bold uppercase tracking-wider text-emerald-400">
+          3. Adres URL Bazy Firebase (Realtime Database URL)
+        </label>
+        <input type="text" id="cfgFirebaseUrl" placeholder="https://twoja-baza-default-rtdb.europe-west1.firebasedatabase.app" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
+        <p class="text-[11px] text-slate-400">
+          Synchronizuje na żywo zarówno Główny Ranking Ekipy, jak i tabelę Ligi Dwójek 2v2.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-2 pt-2">
+        <button onclick="saveConfig()" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition">
+          💾 Zapisz ustawienia
+        </button>
+        <button onclick="copyMagicLink()" class="px-4 py-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition">
+          🔗 Skopiuj Magic-Link dla znajomych
+        </button>
+        <button onclick="exportDataJson()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition">
+          ⬇️ Eksportuj JSON
+        </button>
+        <button onclick="resetDemoData()" class="px-3 py-2 rounded-lg bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-800/50 text-xs font-medium transition ml-auto">
+          🔄 Przywróć dane startowe
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ================= SYSTEM POWIADOMIEŃ TOAST I POTWIERDZEŃ MODALNYCH =================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const colors = {
+        info: 'bg-slate-900/95 border-indigo-500/50 text-slate-100',
+        success: 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200',
+        error: 'bg-rose-950/95 border-rose-500/50 text-rose-200',
+        warn: 'bg-amber-950/95 border-amber-500/50 text-amber-200'
+      };
+      const icons = { info: '💡', success: '✅', error: '⚠️', warn: '🔔' };
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto border rounded-xl px-4 py-3 shadow-2xl backdrop-blur-md flex items-start gap-2.5 text-xs sm:text-sm font-medium transition-all duration-300 ${colors[type] || colors.info}`;
+      el.innerHTML = `<span class="text-base shrink-0">${icons[type] || '💡'}</span><div class="flex-1 leading-snug">${escapeHtml(message)}</div>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(8px)';
+        setTimeout(() => el.remove(), 300);
+      }, 4200);
+    }
+
+    function askConfirmation(title, message, onConfirm) {
+      const modal = document.getElementById('confirmDialogModal');
+      document.getElementById('confirmDialogTitle').textContent = title;
+      document.getElementById('confirmDialogMessage').textContent = message;
+      modal.classList.remove('hidden');
+
+      const cancelBtn = document.getElementById('confirmDialogCancelBtn');
+      const okBtn = document.getElementById('confirmDialogOkBtn');
+
+      const cleanup = () => {
+        modal.classList.add('hidden');
+        cancelBtn.onclick = null;
+        okBtn.onclick = null;
+      };
+
+      cancelBtn.onclick = cleanup;
+      okBtn.onclick = async () => {
+        cleanup();
+        await onConfirm();
+      };
+    }
+
+    function copyTextToClipboard(text, successMsg = 'Skopiowano do schowka!') {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg, 'success');
+      } catch (err) {
+        showToast('Nie udało się skopiować tekstu.', 'error');
+      }
+      document.body.removeChild(ta);
+    }
+
+    // ================= KATEGORIE I PARAMETRY SYSTEMU ELO =================
+    const CATEGORIES = {
+      IRL_SPORT: {
+        label: '⚽ IRL Sport / Ruch',
+        kFactor: 48,
+        baseShield: 14,
+        isIrl: true,
+        badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+      },
+      ONLINE_GAMING: {
+        label: '🎮 Online (LoL 2v2 / Gry)',
+        kFactor: 28,
+        baseShield: 5,
+        isIrl: false,
+        badge: 'bg-sky-500/20 text-sky-300 border-sky-500/30'
+      },
+      IRL_CHILL: {
+        label: '🍻 IRL Spotkanie / Planszówki',
+        kFactor: 24,
+        baseShield: 12,
+        isIrl: true,
+        badge: 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+      },
+      IRL_TRIP: {
+        label: '⛰️ IRL Wyjazd / Duży Event',
+        kFactor: 60,
+        baseShield: 30,
+        isIrl: true,
+        badge: 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+      },
+      SEASON_2V2: {
+        label: '🏆 Transfer Sezonu Ligi 2v2',
+        kFactor: 0,
+        baseShield: 0,
+        isIrl: false,
+        badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+      }
+    };
+
+    const ALIAS_MAP_2V2 = {
+      "canc3r07": "Cancer", "cancer": "Cancer",
+      "spicybob": "SPICYBob", "przypro": "Przypro",
+      "jargolek": "Jargolek", "firstu": "Firstu",
+      "dokti1337": "DokTi1337", "leryen": "Leryen"
+    };
+
+    const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"];
+    const START_ELO = 1000;
+    const STORAGE_KEY_STATE = 'ekipa_elo_unified_state_2026_v4';
+    const STORAGE_KEY_CFG = 'ekipa_elo_unified_cfg_2026_v4';
+    const AVATAR_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#a855f7', '#ef4444', '#14b8a6', '#84cc16'];
+
+    // Zintegrowany stan domyślny (zawiera członków ekipy powiązanych z nickami 2v2 oraz bieżący sezon Ligi Dwójek)
+    const DEFAULT_STATE = {
+      members: [
+        { id: 'm1', name: 'Tomek', role: 'Playmaker / Dominator 2v2', alias2v2: 'Cancer', color: '#6366f1' },
+        { id: 'm2', name: 'Michał', role: 'Król Orlika / Ivern Main', alias2v2: 'Jargolek', color: '#10b981' },
+        { id: 'm3', name: 'Kuba', role: 'LoL 2v2 Tryhard (Rekord DMG)', alias2v2: 'SPICYBob', color: '#f59e0b' },
+        { id: 'm4', name: 'Janek', role: 'Walczak (Zawsze Obecny)', alias2v2: 'Firstu', color: '#ec4899' },
+        { id: 'm5', name: 'Piotrek', role: 'Snajper / Taktyk', alias2v2: 'DokTi1337', color: '#06b6d4' },
+        { id: 'm6', name: 'Mateusz', role: 'Niedzielny Gracz', alias2v2: 'Przypro', color: '#a855f7' },
+        { id: 'm7', name: 'Leryen', role: 'Specjalista Areny 2v2', alias2v2: 'Leryen', color: '#14b8a6' }
+      ],
+      events: [
+        {
+          id: 'ev1',
+          title: 'Piłka na Orliku 3v3 (10:7)',
+          category: 'IRL_SPORT',
+          mode: 'VERSUS',
+          date: '2026-11-01',
+          duration: 120,
+          aiBonus: 2,
+          winners: ['m1', 'm2', 'm4'],
+          losers: ['m3', 'm5', 'm6'],
+          comment: 'Sędzia AI: Zacięty mecz w 6 osób! Wygrani zgarniają pełną pulę ELO, a przegrani są chronieni Tarczą IRL.'
+        },
+        {
+          id: 'ev2',
+          title: 'LoL 2v2 Custom – Wieczorne granie',
+          category: 'ONLINE_GAMING',
+          mode: 'VERSUS',
+          date: '2026-11-03',
+          duration: 60,
+          aiBonus: 0,
+          winners: ['m3', 'm5'],
+          losers: ['m1', 'm4'],
+          comment: 'Sędzia AI: Kuba i Piotrek ogrywają faworytów z niższego pułapu ELO – duży transfer punktów!'
+        },
+        {
+          id: 'ev3',
+          title: 'Piłka na hali 2v2 (Dogrywka)',
+          category: 'IRL_SPORT',
+          mode: 'VERSUS',
+          date: '2026-11-05',
+          duration: 90,
+          aiBonus: 3,
+          winners: ['m1', 'm2'],
+          losers: ['m4', 'm5'],
+          comment: 'Sędzia AI: Janek przegrywa drugi mecz z rzędu, ale dzięki Tarczy Frekwencji IRL nadal ma ponad 1000 ELO!'
+        },
+        {
+          id: 'ev4',
+          title: 'Wspólne kręgle i pizza po meczu',
+          category: 'IRL_CHILL',
+          mode: 'COOP',
+          date: '2026-11-07',
+          duration: 180,
+          aiBonus: 4,
+          winners: ['m1', 'm2', 'm3', 'm4', 'm5'],
+          losers: [],
+          comment: 'Sędzia AI: Wydarzenie kooperacyjne – wszyscy obecni zgarniają Tarczę Aktywności IRL + bonus grupowy!'
+        }
+      ],
+      league2v2: {
+        seasonNumber: 1,
+        players: {
+          Cancer:    { name: "Cancer",    elo: 1116, w: 22, l: 14, form: ["W", "W", "W", "L", "L"], streak: 3 },
+          Jargolek:  { name: "Jargolek",  elo: 1075, w: 26, l: 19, form: ["L", "L", "L", "W", "W"], streak: -3 },
+          DokTi1337: { name: "DokTi1337", elo: 1002, w: 2,  l: 2,  form: ["W", "L", "W", "L"], streak: 0 },
+          Firstu:    { name: "Firstu",    elo: 989,  w: 12, l: 14, form: ["W", "W", "W", "L", "L"], streak: 3 },
+          SPICYBob:  { name: "SPICYBob",  elo: 971,  w: 22, l: 23, form: ["L", "L", "L", "L", "W"], streak: -4 },
+          Leryen:    { name: "Leryen",    elo: 968,  w: 1,  l: 3,  form: ["L", "L", "W", "L"], streak: -2 },
+          Przypro:   { name: "Przypro",   elo: 879,  w: 9,  l: 19, form: ["W", "L", "L", "L", "L"], streak: 1 }
+        },
+        records: {
+          maxElo: { value: 1129, player: "Jargolek" },
+          minElo: { value: 862,  player: "Przypro" },
+          maxDmg: { value: 203679, player: "SPICYBob", champion: "Shyvana" },
+          longestGame: { duration: "36:26", desc: "SPICYBob & Cancer vs Jargolek & Firstu" },
+          maxWinStreak: { value: 8, player: "Jargolek" },
+          maxLossStreak: { value: 6, player: "Przypro" }
+        },
+        lastMatchReport: null,
+        currentSessionMatches: [],
+        slides: [],
+        history: []
+      }
+    };
+
+    let appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    let participantRoles = {};
+    let appConfig = { geminiKey: '', firebaseUrl: '', model: 'gemini-2.5-flash' };
+    let currentSlideIndex2v2 = 0;
+    let autoPlayActive2v2 = false;
+
+    // ================= INICJALIZACJA =================
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('evDate').value = new Date().toISOString().split('T')[0];
+      loadConfig();
+      await loadState();
+      initDefaultRoles();
+      renderAll();
+    });
+
+    function initDefaultRoles() {
+      participantRoles = {};
+      const mode = document.getElementById('evMode').value;
+      if (mode === 'COOP') {
+        appState.members.slice(0, 3).forEach(m => { participantRoles[m.id] = 'COOP'; });
+      } else {
+        if (appState.members[0]) participantRoles[appState.members[0].id] = 'WIN';
+        if (appState.members[1]) participantRoles[appState.members[1].id] = 'WIN';
+        if (appState.members[2]) participantRoles[appState.members[2].id] = 'LOSE';
+        if (appState.members[3]) participantRoles[appState.members[3].id] = 'LOSE';
+      }
+    }
+
+    function ensureCompleteStateStructure(rawState) {
+      const merged = rawState || {};
+      if (!Array.isArray(merged.members)) merged.members = JSON.parse(JSON.stringify(DEFAULT_STATE.members));
+      if (!Array.isArray(merged.events)) merged.events = JSON.parse(JSON.stringify(DEFAULT_STATE.events));
+      if (!merged.league2v2 || !merged.league2v2.players) {
+        merged.league2v2 = JSON.parse(JSON.stringify(DEFAULT_STATE.league2v2));
+      } else {
+        if (!merged.league2v2.seasonNumber) merged.league2v2.seasonNumber = 1;
+        if (!merged.league2v2.records) merged.league2v2.records = JSON.parse(JSON.stringify(DEFAULT_STATE.league2v2.records));
+        if (!Array.isArray(merged.league2v2.currentSessionMatches)) merged.league2v2.currentSessionMatches = [];
+        if (!Array.isArray(merged.league2v2.slides)) merged.league2v2.slides = [];
+        if (!Array.isArray(merged.league2v2.history)) merged.league2v2.history = [];
+      }
+      return merged;
+    }
+
+    function loadConfig() {
+      const hash = window.location.hash;
+      if (hash.includes('fb=') || hash.includes('cfg=')) {
+        try {
+          const params = new URLSearchParams(hash.slice(1));
+          const fbFromUrl = decodeURIComponent(params.get('fb') || params.get('cfg') || '');
+          if (fbFromUrl) {
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_CFG) || '{}');
+            saved.firebaseUrl = fbFromUrl;
+            localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(saved));
+            history.replaceState(null, '', window.location.pathname);
+          }
+        } catch (e) {}
+      }
+
+      const raw = localStorage.getItem(STORAGE_KEY_CFG);
+      if (raw) {
+        try { appConfig = { ...appConfig, ...JSON.parse(raw) }; } catch (e) {}
+      }
+      updateConfigStatuses();
+    }
+
+    function updateConfigStatuses() {
+      const dot = document.getElementById('syncStatusDot');
+      const txt = document.getElementById('syncStatusText');
+      if (appConfig.firebaseUrl && appConfig.firebaseUrl.startsWith('http')) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        txt.textContent = 'Połączono z Firebase (Wspólny Ranking + Liga 2v2)';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+        txt.textContent = 'Tryb lokalny (localStorage)';
+      }
+
+      const aiBadge = document.getElementById('aiModeBadge');
+      if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
+        aiBadge.textContent = `⚡ Aktywny: ${appConfig.model || 'gemini-2.5-flash'}`;
+        aiBadge.className = 'text-[11px] text-emerald-400 font-medium';
+      } else {
+        aiBadge.textContent = '🧠 Tryb: Lokalny Sędzia AI';
+        aiBadge.className = 'text-[11px] text-slate-400';
+      }
+    }
+
+    async function loadState() {
+      if (appConfig.firebaseUrl && appConfig.firebaseUrl.startsWith('http')) {
+        try {
+          const cleanUrl = appConfig.firebaseUrl.replace(/\/$/, '');
+          const res = await fetch(`${cleanUrl}/ekipaEloState.json`);
+          if (res.ok) {
+            const remoteData = await res.json();
+            if (remoteData && Array.isArray(remoteData.members)) {
+              appState = ensureCompleteStateStructure(remoteData);
+              localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(appState));
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn('Błąd odczytu z Firebase, używam localStorage:', err);
+        }
+      }
+
+      const localRaw = localStorage.getItem(STORAGE_KEY_STATE);
+      if (localRaw) {
+        try {
+          appState = ensureCompleteStateStructure(JSON.parse(localRaw));
+          return;
+        } catch (e) {}
+      }
+      appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      await persistState();
+    }
+
+    async function persistState() {
+      localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(appState));
+      if (appConfig.firebaseUrl && appConfig.firebaseUrl.startsWith('http')) {
+        try {
+          const cleanUrl = appConfig.firebaseUrl.replace(/\/$/, '');
+          await fetch(`${cleanUrl}/ekipaEloState.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(appState)
+          });
+        } catch (err) {
+          console.error('Błąd zapisu do Firebase:', err);
+        }
+      }
+    }
+
+    // ================= POWIĄZANIE GRACZY LIGI 2V2 Z GŁÓWNYM RANKINGIEM =================
+    function findMemberFor2v2Nick(nick2v2) {
+      if (!nick2v2) return null;
+      const clean = nick2v2.trim().toLowerCase();
+      return appState.members.find(m =>
+        (m.alias2v2 && m.alias2v2.trim().toLowerCase() === clean) ||
+        m.name.trim().toLowerCase() === clean
+      ) || null;
+    }
+
+    function ensureMemberFor2v2Nick(nick2v2) {
+      let member = findMemberFor2v2Nick(nick2v2);
+      if (!member) {
+        member = {
+          id: 'm_2v2_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          name: nick2v2.trim(),
+          role: 'Gracz Ligi 2v2',
+          alias2v2: nick2v2.trim(),
+          color: AVATAR_COLORS[appState.members.length % AVATAR_COLORS.length]
+        };
+        appState.members.push(member);
+      }
+      return member;
+    }
+
+    // ================= SILNIK MATEMATYCZNY: INFLATIONARY ELO + TRANSFERY SEZONOWE 2V2 =================
+    function computeMatchDelta(ev, currentRatingsMap) {
+      // Specjalny tryb: Zamknięcie Sezonu Ligi Dwójek 2v2
+      if (ev.mode === 'SEASON_TRANSFER' || ev.category === 'SEASON_2V2') {
+        return {
+          winnerDelta: 0,
+          loserDelta: 0,
+          eloSwing: 0,
+          shield: 0,
+          winProb: 1.0,
+          isCoop: false,
+          isSeasonTransfer: true,
+          customDeltas: ev.customDeltas || {}
+        };
+      }
+
+      const cat = CATEGORIES[ev.category] || CATEGORIES.IRL_SPORT;
+      const winners = (ev.winners || []).filter(id => currentRatingsMap[id] !== undefined);
+      const losers = (ev.losers || []).filter(id => currentRatingsMap[id] !== undefined);
+      const totalParticipants = winners.length + losers.length;
+
+      if (totalParticipants === 0) {
+        return { winnerDelta: 0, loserDelta: 0, eloSwing: 0, shield: 0, winProb: 0.5, isCoop: true };
+      }
+
+      const synergyMultiplier = cat.isIrl ? (1 + 0.10 * Math.max(0, totalParticipants - 2)) : 1.0;
+      const shield = Math.round((cat.baseShield * synergyMultiplier + (Number(ev.aiBonus) || 0)) * 10) / 10;
+
+      if (ev.mode === 'COOP' || losers.length === 0 || winners.length === 0) {
+        const coopGain = Math.round(shield * 10) / 10;
+        return {
+          winnerDelta: coopGain,
+          loserDelta: coopGain,
+          eloSwing: 0,
+          shield: coopGain,
+          winProb: 1.0,
+          isCoop: true
+        };
+      }
+
+      const avgWinElo = winners.reduce((s, id) => s + currentRatingsMap[id], 0) / winners.length;
+      const avgLoseElo = losers.reduce((s, id) => s + currentRatingsMap[id], 0) / losers.length;
+
+      const expectedWin = 1 / (1 + Math.pow(10, (avgLoseElo - avgWinElo) / 400));
+      const eloSwing = Math.round(cat.kFactor * (1 - expectedWin) * 10) / 10;
+
+      const winnerDelta = Math.round((eloSwing + shield) * 10) / 10;
+      const loserDelta = Math.round((-eloSwing + shield) * 10) / 10;
+
+      return {
+        winnerDelta,
+        loserDelta,
+        eloSwing,
+        shield,
+        winProb: expectedWin,
+        avgWinElo: Math.round(avgWinElo),
+        avgLoseElo: Math.round(avgLoseElo),
+        isCoop: false
+      };
+    }
+
+    function runChronologicalSimulation() {
+      const statsMap = {};
+      const ratingsMap = {};
+
+      appState.members.forEach(m => {
+        ratingsMap[m.id] = START_ELO;
+        statsMap[m.id] = {
+          member: m,
+          elo: START_ELO,
+          wins: 0,
+          losses: 0,
+          coops: 0,
+          skillEloNet: 0,
+          shieldEloNet: 0,
+          season2v2Net: 0,
+          irlCount: 0,
+          onlineCount: 0,
+          totalMinutes: 0,
+          form: []
+        };
+      });
+
+      const chronologicalEvents = [...appState.events].sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return String(a.id).localeCompare(String(b.id));
+      });
+
+      const eventComputedMap = {};
+
+      chronologicalEvents.forEach(ev => {
+        const calc = computeMatchDelta(ev, ratingsMap);
+        eventComputedMap[ev.id] = calc;
+        const cat = CATEGORIES[ev.category] || CATEGORIES.IRL_SPORT;
+
+        // Obsługa transferu sezonowego z Ligi Dwójek 2v2
+        if (calc.isSeasonTransfer && ev.customDeltas) {
+          Object.entries(ev.customDeltas).forEach(([pid, rawDelta]) => {
+            const delta = Math.round((Number(rawDelta) || 0) * 10) / 10;
+            if (statsMap[pid] !== undefined) {
+              ratingsMap[pid] = Math.round((ratingsMap[pid] + delta) * 10) / 10;
+              const st = statsMap[pid];
+              st.elo = ratingsMap[pid];
+              st.season2v2Net = Math.round((st.season2v2Net + delta) * 10) / 10;
+              st.onlineCount += 1;
+              if (delta > 0) st.form.push('W');
+              else if (delta < 0) st.form.push('L');
+              else st.form.push('C');
+            }
+          });
+          return;
+        }
+
+        const winners = (ev.winners || []).filter(id => statsMap[id]);
+        const losers = (ev.losers || []).filter(id => statsMap[id]);
+
+        if (calc.isCoop) {
+          [...winners, ...losers].forEach(pid => {
+            ratingsMap[pid] = Math.round((ratingsMap[pid] + calc.winnerDelta) * 10) / 10;
+            const st = statsMap[pid];
+            st.elo = ratingsMap[pid];
+            st.coops += 1;
+            st.shieldEloNet += calc.shield;
+            if (cat.isIrl) st.irlCount += 1; else st.onlineCount += 1;
+            st.totalMinutes += Number(ev.duration) || 0;
+            st.form.push('C');
+          });
+        } else {
+          winners.forEach(pid => {
+            ratingsMap[pid] = Math.round((ratingsMap[pid] + calc.winnerDelta) * 10) / 10;
+            const st = statsMap[pid];
+            st.elo = ratingsMap[pid];
+            st.wins += 1;
+            st.skillEloNet += calc.eloSwing;
+            st.shieldEloNet += calc.shield;
+            if (cat.isIrl) st.irlCount += 1; else st.onlineCount += 1;
+            st.totalMinutes += Number(ev.duration) || 0;
+            st.form.push('W');
+          });
+
+          losers.forEach(pid => {
+            ratingsMap[pid] = Math.round((ratingsMap[pid] + calc.loserDelta) * 10) / 10;
+            const st = statsMap[pid];
+            st.elo = ratingsMap[pid];
+            st.losses += 1;
+            st.skillEloNet -= calc.eloSwing;
+            st.shieldEloNet += calc.shield;
+            if (cat.isIrl) st.irlCount += 1; else st.onlineCount += 1;
+            st.totalMinutes += Number(ev.duration) || 0;
+            st.form.push('L');
+          });
+        }
+      });
+
+      const sortedLeaderboard = Object.values(statsMap).sort((a, b) => b.elo - a.elo || b.wins - a.wins);
+      return { sortedLeaderboard, ratingsMap, eventComputedMap };
+    }
+
+    // ================= PODGLĄD KALKULATORA ELO W FORMULARZU GŁÓWNYM =================
+    function recalculatePreview() {
+      const { ratingsMap } = runChronologicalSimulation();
+      const catKey = document.getElementById('evCategory').value;
+      const mode = document.getElementById('evMode').value;
+      const aiBonus = Number(document.getElementById('evAiBonus').value) || 0;
+
+      const winners = Object.keys(participantRoles).filter(id => participantRoles[id] === 'WIN' || participantRoles[id] === 'COOP');
+      const losers = Object.keys(participantRoles).filter(id => participantRoles[id] === 'LOSE');
+
+      const sim = computeMatchDelta({ category: catKey, mode, aiBonus, winners, losers }, ratingsMap);
+
+      const winDeltaEl = document.getElementById('previewWinnersDelta');
+      const loseDeltaEl = document.getElementById('previewLosersDelta');
+      const winSubEl = document.getElementById('previewWinnersSub');
+      const loseSubEl = document.getElementById('previewLosersSub');
+      const probBadge = document.getElementById('eloWinProbBadge');
+      const avgNetEl = document.getElementById('avgNetGainText');
+
+      if (sim.isCoop) {
+        probBadge.textContent = 'Tryb Kooperacji / Wszyscy zyskują';
+        winDeltaEl.textContent = `+${sim.winnerDelta.toFixed(1)} ELO`;
+        winSubEl.textContent = `Tarcza Aktywności (+${sim.shield.toFixed(1)})`;
+        loseDeltaEl.textContent = `Brak przegranych`;
+        loseDeltaEl.className = 'text-base font-bold text-slate-400 mt-1';
+        loseSubEl.textContent = 'Każdy obecny dostaje bonus';
+        avgNetEl.textContent = `+${sim.shield.toFixed(1)} ELO`;
+      } else {
+        const winPct = Math.round(sim.winProb * 100);
+        probBadge.textContent = `Śr. ELO: ${sim.avgWinElo} vs ${sim.avgLoseElo} (${winPct}%)`;
+
+        winDeltaEl.textContent = `+${sim.winnerDelta.toFixed(1)} ELO`;
+        winSubEl.textContent = `+${sim.eloSwing.toFixed(1)} (Mecz) + ${sim.shield.toFixed(1)} (Tarcza)`;
+
+        const loseSign = sim.loserDelta >= 0 ? '+' : '';
+        loseDeltaEl.textContent = `${loseSign}${sim.loserDelta.toFixed(1)} ELO`;
+        loseDeltaEl.className = sim.loserDelta >= 0
+          ? 'text-xl font-extrabold text-amber-400 mt-0.5 font-mono'
+          : 'text-xl font-extrabold text-rose-400 mt-0.5 font-mono';
+        loseSubEl.textContent = `-${sim.eloSwing.toFixed(1)} (Strata) + ${sim.shield.toFixed(1)} (Tarcza)`;
+
+        avgNetEl.textContent = `+${sim.shield.toFixed(1)} ELO`;
+      }
+    }
+
+    function handleModeChange() {
+      const mode = document.getElementById('evMode').value;
+      Object.keys(participantRoles).forEach(id => {
+        if (mode === 'COOP') participantRoles[id] = 'COOP';
+        else if (participantRoles[id] === 'COOP') participantRoles[id] = 'WIN';
+      });
+      renderParticipantsSelector();
+      recalculatePreview();
+    }
+
+    function cycleParticipantRole(memberId) {
+      const mode = document.getElementById('evMode').value;
+      const current = participantRoles[memberId];
+
+      if (mode === 'COOP') {
+        if (current) delete participantRoles[memberId];
+        else participantRoles[memberId] = 'COOP';
+      } else {
+        if (!current) participantRoles[memberId] = 'WIN';
+        else if (current === 'WIN') participantRoles[memberId] = 'LOSE';
+        else delete participantRoles[memberId];
+      }
+      renderParticipantsSelector();
+      recalculatePreview();
+    }
+
+    function clearParticipantRoles() {
+      participantRoles = {};
+      renderParticipantsSelector();
+      recalculatePreview();
+    }
+
+    function renderParticipantsSelector() {
+      const container = document.getElementById('participantsSelector');
+      const { ratingsMap } = runChronologicalSimulation();
+
+      if (appState.members.length === 0) {
+        container.innerHTML = `<span class="text-xs text-slate-500 py-2">Brak osób w ekipie – dodaj kogoś poniżej!</span>`;
+        return;
+      }
+
+      container.innerHTML = appState.members.map(m => {
+        const role = participantRoles[m.id];
+        const elo = Math.round(ratingsMap[m.id] || START_ELO);
+        let styleClass = 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-600';
+        let badgeIcon = '';
+
+        if (role === 'WIN') {
+          styleClass = 'role-win';
+          badgeIcon = '🏆 Wygrany';
+        } else if (role === 'LOSE') {
+          styleClass = 'role-lose';
+          badgeIcon = '💀 Przegrany';
+        } else if (role === 'COOP') {
+          styleClass = 'role-coop';
+          badgeIcon = '🤝 Obecny';
+        }
+
+        return `
+          <button type="button" onclick="cycleParticipantRole('${m.id}')"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition flex items-center gap-1.5 ${styleClass}">
+            <span class="w-2 h-2 rounded-full" style="background:${m.color}"></span>
+            <span>${escapeHtml(m.name)}</span>
+            <span class="text-[10px] opacity-80 font-mono">(${elo})</span>
+            ${badgeIcon ? `<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-black/25">${badgeIcon}</span>` : ''}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // ================= ZARZĄDZANIE CZŁONKAMI EKIPY =================
+    async function addMemberCore(name, role = 'Gracz Ekipy', alias2v2 = '') {
+      const cleanName = (name || '').trim();
+      if (!cleanName) return null;
+
+      const exists = appState.members.find(m => m.name.toLowerCase() === cleanName.toLowerCase());
+      if (exists) {
+        showToast(`Osoba "${cleanName}" już znajduje się w Ekipie!`, 'warn');
+        return exists;
+      }
+
+      const newMember = {
+        id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        name: cleanName,
+        role: (role || 'Gracz Ekipy').trim(),
+        alias2v2: (alias2v2 || '').trim(),
+        color: AVATAR_COLORS[appState.members.length % AVATAR_COLORS.length]
+      };
+
+      appState.members.push(newMember);
+      const mode = document.getElementById('evMode').value;
+      participantRoles[newMember.id] = mode === 'COOP' ? 'COOP' : 'WIN';
+      await persistState();
+      renderAll();
+      showToast(`Dodano gracza "${cleanName}" do Ekipy!`, 'success');
+      return newMember;
+    }
+
+    async function quickAddMember() {
+      const input = document.getElementById('quickMemberInput');
+      const added = await addMemberCore(input.value, 'Gracz Ekipy');
+      if (added) input.value = '';
+    }
+
+    async function handleAddMemberTab(e) {
+      e.preventDefault();
+      const nameInput = document.getElementById('newMemberNameInput');
+      const roleInput = document.getElementById('newMemberRoleInput');
+      const aliasInput = document.getElementById('newMemberAliasInput');
+      const added = await addMemberCore(nameInput.value, roleInput.value || 'Gracz Ekipy', aliasInput.value || '');
+      if (added) {
+        nameInput.value = '';
+        roleInput.value = '';
+        aliasInput.value = '';
+      }
+    }
+
+    function removeMember(memberId) {
+      const member = appState.members.find(m => m.id === memberId);
+      if (!member) return;
+
+      askConfirmation(
+        'Usuwanie gracza z Ekipy',
+        `Czy na pewno chcesz usunąć gracza "${member.name}"? Historia Głównego Rankingu ELO zostanie automatycznie przeliczona.`,
+        async () => {
+          appState.members = appState.members.filter(m => m.id !== memberId);
+          delete participantRoles[memberId];
+
+          appState.events = appState.events
+            .map(ev => {
+              const nextCustom = { ...(ev.customDeltas || {}) };
+              delete nextCustom[memberId];
+              return {
+                ...ev,
+                winners: (ev.winners || []).filter(id => id !== memberId),
+                losers: (ev.losers || []).filter(id => id !== memberId),
+                customDeltas: nextCustom
+              };
+            })
+            .filter(ev => {
+              if (ev.mode === 'SEASON_TRANSFER') return Object.keys(ev.customDeltas || {}).length > 0;
+              return (ev.winners.length + ev.losers.length) > 0;
+            });
+
+          await persistState();
+          renderAll();
+          showToast(`Usunięto gracza "${member.name}".`, 'info');
+        }
+      );
+    }
+
+    function openEditMemberModal(memberId) {
+      const member = appState.members.find(m => m.id === memberId);
+      if (!member) return;
+      document.getElementById('editMemberId').value = member.id;
+      document.getElementById('editMemberName').value = member.name;
+      document.getElementById('editMemberRole').value = member.role || '';
+      document.getElementById('editMemberAlias').value = member.alias2v2 || '';
+      document.getElementById('editMemberModal').classList.remove('hidden');
+    }
+
+    function closeEditMemberModal() {
+      document.getElementById('editMemberModal').classList.add('hidden');
+    }
+
+    async function saveEditMember() {
+      const memberId = document.getElementById('editMemberId').value;
+      const member = appState.members.find(m => m.id === memberId);
+      if (!member) return;
+
+      const newName = document.getElementById('editMemberName').value.trim();
+      if (!newName) {
+        showToast('Imię gracza nie może być puste!', 'error');
+        return;
+      }
+      member.name = newName;
+      member.role = document.getElementById('editMemberRole').value.trim() || 'Gracz Ekipy';
+      member.alias2v2 = document.getElementById('editMemberAlias').value.trim();
+
+      closeEditMemberModal();
+      await persistState();
+      renderAll();
+      showToast('Zaktualizowano profil gracza!', 'success');
+    }
+
+    // ================= ZAPISYWANIE I USUWANIE MECZÓW GŁÓWNEGO RANKINGU =================
+    async function handleSaveEvent(e) {
+      e.preventDefault();
+      const mode = document.getElementById('evMode').value;
+      const winners = Object.keys(participantRoles).filter(id => participantRoles[id] === 'WIN' || participantRoles[id] === 'COOP');
+      const losers = Object.keys(participantRoles).filter(id => participantRoles[id] === 'LOSE');
+
+      if (winners.length === 0 && losers.length === 0) {
+        showToast('Zaznacz uczestników wydarzenia!', 'warn');
+        return;
+      }
+
+      if (mode === 'VERSUS' && (winners.length === 0 || losers.length === 0)) {
+        showToast('W trybie Rywalizacji wskaż minimum 1 Wygranego i 1 Przegranego (lub wybierz Kooperację)!', 'warn');
+        return;
+      }
+
+      const newEvent = {
+        id: 'ev_' + Date.now(),
+        title: document.getElementById('evTitle').value.trim(),
+        category: document.getElementById('evCategory').value,
+        mode,
+        date: document.getElementById('evDate').value,
+        duration: Number(document.getElementById('evDuration').value) || 90,
+        aiBonus: Number(document.getElementById('evAiBonus').value) || 0,
+        winners,
+        losers: mode === 'COOP' ? [] : losers,
+        comment: document.getElementById('evComment').value.trim() || 'Zarejestrowano wynik w systemie ELO.'
+      };
+
+      appState.events.unshift(newEvent);
+      await persistState();
+
+      document.getElementById('evTitle').value = '';
+      document.getElementById('evAiBonus').value = '0';
+      document.getElementById('evComment').value = '';
+      document.getElementById('aiPromptInput').value = '';
+
+      renderAll();
+      showToast('Zapisano wydarzenie i przeliczono Główny Ranking ELO!', 'success');
+    }
+
+    function deleteEvent(eventId) {
+      askConfirmation(
+        'Usuwanie wpisu z historii ELO',
+        'Czy na pewno chcesz usunąć to wydarzenie z historii? Cały Główny Ranking ELO zostanie natychmiast przeliczony na nowo.',
+        async () => {
+          appState.events = appState.events.filter(ev => ev.id !== eventId);
+          await persistState();
+          renderAll();
+          showToast('Usunięto wydarzenie i przeliczono ranking.', 'info');
+        }
+      );
+    }
+
+    // ================= WSPÓLNY HELPER GEMINI API =================
+    async function resolveWorkingModel(apiKey) {
+      const preferred = appConfig.model || 'gemini-2.5-flash';
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+        const data = await res.json();
+        if (data.models && Array.isArray(data.models)) {
+          const supported = data.models
+            .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+            .map(m => m.name.replace(/^models\//, ''));
+          if (supported.includes(preferred)) return [preferred, ...supported.filter(x => x !== preferred)];
+          const prioritized = [
+            ...FALLBACK_MODELS.filter(m => supported.includes(m)),
+            ...supported.filter(m => m.includes('flash'))
+          ];
+          if (prioritized.length > 0) return [...new Set(prioritized)];
+        }
+      } catch (e) {}
+      return [...new Set([preferred, ...FALLBACK_MODELS])];
+    }
+
+    async function callGeminiWithFallback(apiKey, payload, statusElId = null) {
+      const candidates = await resolveWorkingModel(apiKey);
+      let lastError = null;
+      for (const modelName of candidates) {
+        if (statusElId) {
+          const statusEl = document.getElementById(statusElId);
+          if (statusEl) statusEl.textContent = `Przetwarzanie przez ${modelName}...`;
+        }
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!data.error) {
+          appConfig.model = modelName;
+          localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
+          updateConfigStatuses();
+          return data;
+        }
+        lastError = data.error.message || JSON.stringify(data.error);
+      }
+      throw new Error(lastError || 'Błąd połączenia z API Gemini.');
+    }
+
+    // ================= SĘDZIA AI (GŁÓWNY RANKING) =================
+    async function analyzeWithAI() {
+      const rawText = document.getElementById('aiPromptInput').value.trim();
+      if (!rawText) {
+        showToast('Wpisz krótki opis meczu (kto grał i kto wygrał)!', 'warn');
+        return;
+      }
+
+      const btn = document.getElementById('aiAnalyzeBtn');
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Sędzia analizuje wynik...</span>';
+
+      try {
+        if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
+          await runGeminiEloJudge(rawText);
+        } else {
+          runLocalEloHeuristicJudge(rawText);
+        }
+        showToast('Sędzia AI rozstrzygnął składy i parametry meczu!', 'success');
+      } catch (err) {
+        console.warn('Fallback do lokalnego parsera:', err);
+        runLocalEloHeuristicJudge(rawText);
+        showToast('Użyto lokalnego Sędziego AI.', 'info');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+        recalculatePreview();
+      }
+    }
+
+    async function runGeminiEloJudge(text) {
+      const memberNames = appState.members.map(m => `${m.name}${m.alias2v2 ? ` (${m.alias2v2})` : ''}`).join(', ');
+      const prompt = `Jesteś Sędzią Rankingowym ELO dla grupy znajomych.
+Lista członków ekipy: [${memberNames}].
+Opis wydarzenia: "${text}".
+Zwróć WYŁĄCZNIE czysty JSON:
+{
+  "title": "Krótka nazwa meczu i wynik",
+  "category": "IRL_SPORT" | "ONLINE_GAMING" | "IRL_CHILL" | "IRL_TRIP",
+  "mode": "VERSUS" | "COOP",
+  "duration": int_minuty,
+  "aiBonus": int_od_-5_do_15_za_pogode_zaangazowanie_lub_organizacje,
+  "winnersNames": ["ImięWygranego1"],
+  "losersNames": ["ImięPrzegranego1"],
+  "comment": "Krótki komentarz sportowy po polsku (1 zdanie)"
+}`;
+
+      const data = await callGeminiWithFallback(appConfig.geminiKey.trim(), {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json' }
+      });
+      const parsed = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || '{}');
+      applyJudgeToForm(parsed);
+    }
+
+    function runLocalEloHeuristicJudge(text) {
+      const lower = text.toLowerCase();
+      let category = 'IRL_SPORT';
+      if (/(lol|2v2|cs|valorant|discord|online|komp|custom)/.test(lower)) category = 'ONLINE_GAMING';
+      else if (/(wyjazd|góry|mazury|weekend|wypad|namiot)/.test(lower)) category = 'IRL_TRIP';
+      else if (/(grill|piwo|pizza|plansz|kino|chill|ognisko)/.test(lower)) category = 'IRL_CHILL';
+
+      let duration = category === 'ONLINE_GAMING' ? 60 : 120;
+      const hourMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(h|godz)/);
+      if (hourMatch) duration = Math.round(parseFloat(hourMatch[1].replace(',', '.')) * 60);
+
+      let mode = 'VERSUS';
+      let winnersIds = [];
+      let losersIds = [];
+
+      const findMembersInText = (segment) => {
+        const segLow = (segment || '').toLowerCase();
+        const found = [];
+        appState.members.forEach(m => {
+          const stem = m.name.toLowerCase().slice(0, Math.max(3, m.name.length - 1));
+          const aliasLow = (m.alias2v2 || '').toLowerCase();
+          if (segLow.includes(stem) || (aliasLow && segLow.includes(aliasLow))) found.push(m.id);
+        });
+        return found;
+      };
+
+      if (/(wygra|pokona|ogra|przegra|vs|\d+:\d+)/i.test(lower)) {
+        const vsSplit = text.split(/ (?:z|ze|vs|przeciwko) /i);
+        if (vsSplit.length >= 2) {
+          winnersIds = findMembersInText(vsSplit[0]);
+          losersIds = findMembersInText(vsSplit.slice(1).join(' ')).filter(id => !winnersIds.includes(id));
+        }
+      }
+
+      if (winnersIds.length === 0 || losersIds.length === 0) {
+        const allDetected = findMembersInText(text);
+        if (category === 'IRL_CHILL' || category === 'IRL_TRIP' || allDetected.length < 2) {
+          mode = 'COOP';
+          winnersIds = allDetected;
+          losersIds = [];
+        } else {
+          const half = Math.ceil(allDetected.length / 2);
+          winnersIds = allDetected.slice(0, half);
+          losersIds = allDetected.slice(half);
+        }
+      }
+
+      let aiBonus = 0;
+      if (/(deszcz|ulew|śnieg|mróz)/.test(lower)) aiBonus += 4;
+      if (/(transport|ogarnął|kierowc)/.test(lower)) aiBonus += 3;
+
+      applyJudgeToForm({
+        title: text.length > 50 ? text.slice(0, 50).trim() + '...' : text,
+        category,
+        mode,
+        duration,
+        aiBonus,
+        winnersIds,
+        losersIds,
+        comment: `Sędzia AI: Rozpoznano ${mode === 'VERSUS' ? 'pojedynek ELO' : 'kooperację'} (${CATEGORIES[category].label}).`
+      });
+    }
+
+    function applyJudgeToForm(res) {
+      if (res.title) document.getElementById('evTitle').value = res.title;
+      if (res.category && CATEGORIES[res.category]) document.getElementById('evCategory').value = res.category;
+      if (res.mode) document.getElementById('evMode').value = res.mode;
+      if (res.duration) document.getElementById('evDuration').value = res.duration;
+      if (typeof res.aiBonus === 'number') document.getElementById('evAiBonus').value = res.aiBonus;
+      if (res.comment) document.getElementById('evComment').value = res.comment;
+
+      participantRoles = {};
+      const matchName = (name) => {
+        const clean = String(name).toLowerCase().slice(0, 3);
+        return appState.members.find(m =>
+          m.name.toLowerCase().includes(clean) ||
+          (m.alias2v2 && m.alias2v2.toLowerCase().includes(clean))
+        );
+      };
+
+      if (Array.isArray(res.winnersIds)) {
+        res.winnersIds.forEach(id => { participantRoles[id] = res.mode === 'COOP' ? 'COOP' : 'WIN'; });
+      } else if (Array.isArray(res.winnersNames)) {
+        res.winnersNames.forEach(n => {
+          const m = matchName(n);
+          if (m) participantRoles[m.id] = res.mode === 'COOP' ? 'COOP' : 'WIN';
+        });
+      }
+
+      if (res.mode !== 'COOP') {
+        if (Array.isArray(res.losersIds)) {
+          res.losersIds.forEach(id => { if (!participantRoles[id]) participantRoles[id] = 'LOSE'; });
+        } else if (Array.isArray(res.losersNames)) {
+          res.losersNames.forEach(n => {
+            const m = matchName(n);
+            if (m && !participantRoles[m.id]) participantRoles[m.id] = 'LOSE';
+          });
+        }
+      }
+
+      renderParticipantsSelector();
+    }
+
+    // ================= LOGIKA LIGI DWÓJEK (2v2) =================
+    function normalizePlayerName2v2(rawName) {
+      if (!rawName) return '';
+      const trimmed = rawName.trim();
+      const lower = trimmed.toLowerCase();
+      if (ALIAS_MAP_2V2[lower]) return ALIAS_MAP_2V2[lower];
+      const existingKey = Object.keys(appState.league2v2.players).find(k => k.toLowerCase() === lower);
+      if (existingKey) return existingKey;
+      const byMemberAlias = appState.members.find(m => m.alias2v2 && m.alias2v2.toLowerCase() === lower);
+      if (byMemberAlias) return byMemberAlias.alias2v2;
+      return trimmed;
+    }
+
+    function updatePlayers2v2Datalist() {
+      const dl = document.getElementById('players2v2Datalist');
+      const names = new Set([
+        ...Object.keys(appState.league2v2.players || {}),
+        ...appState.members.map(m => m.alias2v2 || m.name)
+      ]);
+      dl.innerHTML = [...names].filter(Boolean).map(p => `<option value="${escapeHtml(p)}"></option>`).join('');
+    }
+
+    function checkNewPlayersNotice2v2() {
+      const ids = ['w1_name', 'w2_name', 'l1_name', 'l2_name'];
+      const newNames = [];
+      ids.forEach(id => {
+        const val = normalizePlayerName2v2(document.getElementById(id).value);
+        if (val && !appState.league2v2.players[val]) newNames.push(val);
+      });
+      const notice = document.getElementById('newPlayerNotice2v2');
+      if (newNames.length > 0) {
+        notice.textContent = `✨ Wykryto nowych graczy w Lidze 2v2: ${newNames.join(', ')} (Startują z 1000 ELO i zostaną automatycznie powiązani z Ekipą)`;
+        notice.classList.remove('hidden');
+      } else {
+        notice.classList.add('hidden');
+      }
+      update2v2LiveDeltaPreview();
+    }
+
+    function update2v2LiveDeltaPreview() {
+      const pMap = appState.league2v2.players || {};
+      const getElo = (id) => {
+        const name = normalizePlayerName2v2(document.getElementById(id).value);
+        return pMap[name]?.elo || 1000;
+      };
+      const winTeamElo = (getElo('w1_name') + getElo('w2_name')) / 2;
+      const loseTeamElo = (getElo('l1_name') + getElo('l2_name')) / 2;
+      const expectedWin = 1 / (1 + Math.pow(10, (loseTeamElo - winTeamElo) / 400));
+      const delta = Math.round(32 * (1 - expectedWin));
+
+      document.getElementById('preview2v2WinDelta').textContent = `+${delta} Sezon ELO`;
+      document.getElementById('preview2v2LoseDelta').textContent = `-${delta} Sezon ELO`;
+    }
+
+    function swapTeams2v2() {
+      const fields = ['name', 'champ', 'dmg'];
+      fields.forEach(f => {
+        const t1 = document.getElementById(`w1_${f}`).value;
+        const t2 = document.getElementById(`w2_${f}`).value;
+        document.getElementById(`w1_${f}`).value = document.getElementById(`l1_${f}`).value;
+        document.getElementById(`w2_${f}`).value = document.getElementById(`l2_${f}`).value;
+        document.getElementById(`l1_${f}`).value = t1;
+        document.getElementById(`l2_${f}`).value = t2;
+      });
+      checkNewPlayersNotice2v2();
+    }
+
+    function openManualMatch2v2() {
+      document.getElementById('w1_name').value = 'Cancer';
+      document.getElementById('w1_champ').value = 'Xerath';
+      document.getElementById('w1_dmg').value = '64200';
+
+      document.getElementById('w2_name').value = 'Jargolek';
+      document.getElementById('w2_champ').value = 'Ivern';
+      document.getElementById('w2_dmg').value = '28900';
+
+      document.getElementById('l1_name').value = 'Firstu';
+      document.getElementById('l1_champ').value = 'Samira';
+      document.getElementById('l1_dmg').value = '51400';
+
+      document.getElementById('l2_name').value = 'SPICYBob';
+      document.getElementById('l2_champ').value = 'Shyvana';
+      document.getElementById('l2_dmg').value = '58300';
+
+      document.getElementById('match_duration').value = '19:45';
+      document.getElementById('match_trivia').value = 'Dominacja zasięgowa Xeratha i tarcze Iverna przesądziły o końcówce.';
+      document.getElementById('verifyPanel2v2').classList.remove('hidden');
+      checkNewPlayersNotice2v2();
+    }
+
+    function closeVerifyPanel2v2() {
+      document.getElementById('verifyPanel2v2').classList.add('hidden');
+    }
+
+    function ensurePlayer2v2Exists(name) {
+      if (!appState.league2v2.players[name]) {
+        appState.league2v2.players[name] = { name, elo: 1000, w: 0, l: 0, form: [], streak: 0 };
+      }
+      // Upewnij się też, że gracz istnieje lub ma odpowiednik w głównej ekipie
+      ensureMemberFor2v2Nick(name);
+      return appState.league2v2.players[name];
+    }
+
+    async function confirmMatch2v2() {
+      const w1Name = normalizePlayerName2v2(document.getElementById('w1_name').value);
+      const w2Name = normalizePlayerName2v2(document.getElementById('w2_name').value);
+      const l1Name = normalizePlayerName2v2(document.getElementById('l1_name').value);
+      const l2Name = normalizePlayerName2v2(document.getElementById('l2_name').value);
+
+      const chosen = new Set([w1Name.toLowerCase(), w2Name.toLowerCase(), l1Name.toLowerCase(), l2Name.toLowerCase()].filter(Boolean));
+      if (chosen.size !== 4) {
+        showToast('Musisz podać 4 różnych graczy w meczu 2v2!', 'warn');
+        return;
+      }
+
+      const l2v2 = appState.league2v2;
+      const snapshot = JSON.parse(JSON.stringify({
+        players: l2v2.players,
+        records: l2v2.records,
+        lastMatchReport: l2v2.lastMatchReport,
+        currentSessionMatches: l2v2.currentSessionMatches
+      }));
+
+      const pW1 = ensurePlayer2v2Exists(w1Name);
+      const pW2 = ensurePlayer2v2Exists(w2Name);
+      const pL1 = ensurePlayer2v2Exists(l1Name);
+      const pL2 = ensurePlayer2v2Exists(l2Name);
+
+      const winTeamElo = (pW1.elo + pW2.elo) / 2;
+      const loseTeamElo = (pL1.elo + pL2.elo) / 2;
+      const expectedWin = 1 / (1 + Math.pow(10, (loseTeamElo - winTeamElo) / 400));
+      const delta = Math.round(32 * (1 - expectedWin));
+
+      const report = {
+        w1: { name: pW1.name, oldElo: pW1.elo, newElo: pW1.elo + delta, champ: document.getElementById('w1_champ').value || '-', dmg: Number(document.getElementById('w1_dmg').value) || 0 },
+        w2: { name: pW2.name, oldElo: pW2.elo, newElo: pW2.elo + delta, champ: document.getElementById('w2_champ').value || '-', dmg: Number(document.getElementById('w2_dmg').value) || 0 },
+        l1: { name: pL1.name, oldElo: pL1.elo, newElo: pL1.elo - delta, champ: document.getElementById('l1_champ').value || '-', dmg: Number(document.getElementById('l1_dmg').value) || 0 },
+        l2: { name: pL2.name, oldElo: pL2.elo, newElo: pL2.elo - delta, champ: document.getElementById('l2_champ').value || '-', dmg: Number(document.getElementById('l2_dmg').value) || 0 },
+        delta,
+        duration: document.getElementById('match_duration').value || '20:00',
+        trivia: document.getElementById('match_trivia').value || 'Zarejestrowano mecz Ligi 2v2'
+      };
+
+      [pW1, pW2].forEach(p => {
+        p.elo += delta;
+        p.w += 1;
+        p.form.unshift('W');
+        p.form = p.form.slice(0, 5);
+        p.streak = p.streak > 0 ? p.streak + 1 : 1;
+        if (p.elo > l2v2.records.maxElo.value) l2v2.records.maxElo = { value: p.elo, player: p.name };
+        if (p.streak > l2v2.records.maxWinStreak.value) l2v2.records.maxWinStreak = { value: p.streak, player: p.name };
+      });
+
+      [pL1, pL2].forEach(p => {
+        p.elo -= delta;
+        p.l += 1;
+        p.form.unshift('L');
+        p.form = p.form.slice(0, 5);
+        p.streak = p.streak < 0 ? p.streak - 1 : -1;
+        if (p.elo < l2v2.records.minElo.value) l2v2.records.minElo = { value: p.elo, player: p.name };
+      });
+
+      [report.w1, report.w2, report.l1, report.l2].forEach(entry => {
+        if (entry.dmg > l2v2.records.maxDmg.value) {
+          l2v2.records.maxDmg = { value: entry.dmg, player: entry.name, champion: entry.champ };
+        }
+      });
+
+      l2v2.lastMatchReport = report;
+      l2v2.currentSessionMatches.push(report);
+      l2v2.history.push({ snapshot, report, timestamp: new Date().toISOString() });
+
+      closeVerifyPanel2v2();
+      await persistState();
+      renderAll();
+      showToast(`Zatwierdzono mecz 2v2! Wygrani +${delta} ELO, Przegrani -${delta} ELO.`, 'success');
+    }
+
+    function undoLastMatch2v2() {
+      const l2v2 = appState.league2v2;
+      if (!l2v2.history || l2v2.history.length === 0) {
+        showToast('Brak meczów 2v2 w tym sezonie do cofnięcia.', 'warn');
+        return;
+      }
+      askConfirmation(
+        'Cofnij ostatni mecz 2v2',
+        'Czy na pewno chcesz cofnąć ostatni zatwierdzony mecz w Lidze Dwójek?',
+        async () => {
+          const last = l2v2.history.pop();
+          l2v2.players = last.snapshot.players;
+          l2v2.records = last.snapshot.records;
+          l2v2.lastMatchReport = last.snapshot.lastMatchReport;
+          l2v2.currentSessionMatches = last.snapshot.currentSessionMatches;
+          await persistState();
+          renderAll();
+          showToast('Cofnięto ostatni mecz 2v2.', 'info');
+        }
+      );
+    }
+
+    // ================= ZAKOŃCZENIE SEZONU LIGI 2V2 -> TRANSFER DO GŁÓWNEGO RANKINGU =================
+    function openEndSeasonModal() {
+      const sNum = appState.league2v2.seasonNumber || 1;
+      document.getElementById('seasonTransferTitle').value = `🏆 Koniec Sezonu #${sNum} Ligi Dwójek (2v2)`;
+      renderEndSeasonPreviewTable();
+      document.getElementById('endSeasonModal').classList.remove('hidden');
+    }
+
+    function closeEndSeasonModal() {
+      document.getElementById('endSeasonModal').classList.add('hidden');
+    }
+
+    function setSeasonPercent(val) {
+      document.getElementById('seasonTransferPercent').value = val;
+      renderEndSeasonPreviewTable();
+    }
+
+    function setSeasonGameBonus(val) {
+      document.getElementById('seasonPerGameBonus').value = val;
+      renderEndSeasonPreviewTable();
+    }
+
+    function computeSeasonTransferRows() {
+      const { ratingsMap } = runChronologicalSimulation();
+      const pct = Number(document.getElementById('seasonTransferPercent').value) || 10;
+      const perGame = Number(document.getElementById('seasonPerGameBonus').value) || 0;
+
+      const players2v2 = Object.values(appState.league2v2.players || {}).sort((a, b) => b.elo - a.elo);
+
+      return players2v2.map(p => {
+        const linkedMember = findMemberFor2v2Nick(p.name);
+        const currentMainElo = linkedMember ? (ratingsMap[linkedMember.id] || START_ELO) : START_ELO;
+        const totalGames = (p.w || 0) + (p.l || 0);
+        const diffFrom1000 = (p.elo || 1000) - 1000;
+        const skillTransfer = diffFrom1000 * (pct / 100);
+        const activityBonus = totalGames * perGame;
+        const totalDelta = Math.round((skillTransfer + activityBonus) * 10) / 10;
+        const newMainElo = Math.round((currentMainElo + totalDelta) * 10) / 10;
+
+        return {
+          player2v2: p,
+          linkedMember,
+          currentMainElo,
+          totalGames,
+          totalDelta,
+          newMainElo
+        };
+      });
+    }
+
+    function renderEndSeasonPreviewTable() {
+      const rows = computeSeasonTransferRows();
+      const tbody = document.getElementById('endSeasonPreviewBody');
+
+      tbody.innerHTML = rows.map(r => {
+        const p = r.player2v2;
+        const sign = r.totalDelta >= 0 ? '+' : '';
+        const deltaColor = r.totalDelta > 0 ? 'text-emerald-400' : r.totalDelta < 0 ? 'text-rose-400' : 'text-slate-400';
+        const memberBadge = r.linkedMember
+          ? `<span class="inline-flex items-center gap-1.5 font-semibold text-white"><span class="w-2 h-2 rounded-full" style="background:${r.linkedMember.color}"></span>${escapeHtml(r.linkedMember.name)}</span>`
+          : `<span class="text-amber-300 text-[11px]">✨ Zostanie utworzony: ${escapeHtml(p.name)}</span>`;
+
+        return `
+          <tr class="hover:bg-slate-900/60">
+            <td class="py-2.5 px-3 font-mono font-bold text-purple-300">${escapeHtml(p.name)}</td>
+            <td class="py-2.5 px-3">${memberBadge}</td>
+            <td class="py-2.5 px-3 text-center font-mono text-slate-300">${r.totalGames} (${p.w}W-${p.l}L)</td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-indigo-300">${Math.round(p.elo)}</td>
+            <td class="py-2.5 px-3 text-right font-mono text-slate-300">${r.currentMainElo.toFixed(1)}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-extrabold ${deltaColor}">${sign}${r.totalDelta.toFixed(1)} ELO</td>
+            <td class="py-2.5 px-3 text-right font-mono font-extrabold text-white">${r.newMainElo.toFixed(1)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function confirmEndSeasonTransfer() {
+      const rows = computeSeasonTransferRows();
+      const pct = Number(document.getElementById('seasonTransferPercent').value) || 10;
+      const perGame = Number(document.getElementById('seasonPerGameBonus').value) || 0;
+      const title = document.getElementById('seasonTransferTitle').value.trim() || `🏆 Koniec Sezonu #${appState.league2v2.seasonNumber} Ligi Dwójek`;
+
+      const customDeltas = {};
+      const winners = [];
+      const losers = [];
+
+      rows.forEach(r => {
+        const member = ensureMemberFor2v2Nick(r.player2v2.name);
+        if (r.totalDelta !== 0 || r.totalGames > 0) {
+          customDeltas[member.id] = r.totalDelta;
+          if (r.totalDelta >= 0) winners.push(member.id);
+          else losers.push(member.id);
+        }
+      });
+
+      const seasonEvent = {
+        id: 'ev_season_' + Date.now(),
+        title,
+        category: 'SEASON_2V2',
+        mode: 'SEASON_TRANSFER',
+        date: new Date().toISOString().split('T')[0],
+        duration: rows.reduce((acc, r) => acc + r.totalGames * 20, 0) || 120,
+        aiBonus: 0,
+        winners,
+        losers,
+        customDeltas,
+        comment: `Oficjalny transfer po zakończeniu Sezonu #${appState.league2v2.seasonNumber} Ligi Dwójek (Przelicznik: ${pct}% od 1000 ELO${perGame > 0 ? ` + ${perGame} pkt/mecz` : ''}).`
+      };
+
+      // 1. Dodaj wydarzenie do Głównego Rankingu
+      appState.events.unshift(seasonEvent);
+
+      // 2. Zresetuj tabelę sezonową Ligi Dwójek na nowy sezon
+      Object.values(appState.league2v2.players).forEach(p => {
+        p.elo = 1000;
+        p.w = 0;
+        p.l = 0;
+        p.streak = 0;
+        p.form = [];
+      });
+      appState.league2v2.seasonNumber = (appState.league2v2.seasonNumber || 1) + 1;
+      appState.league2v2.lastMatchReport = null;
+      appState.league2v2.currentSessionMatches = [];
+      appState.league2v2.slides = [];
+      appState.league2v2.history = [];
+
+      closeEndSeasonModal();
+      await persistState();
+      renderAll();
+      showToast(`Sezon zakończony! Punkty zostały przelane do Głównego Rankingu ELO, a Liga 2v2 rozpoczęła Sezon #${appState.league2v2.seasonNumber}.`, 'success');
+    }
+
+    // ================= OBSŁUGA ZRZUTÓW EKRANU (VISION 2v2) =================
+    window.addEventListener('paste', e => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let item of items) {
+        if (item.type.startsWith('image/')) {
+          switchTab('league2v2');
+          processScreenshot2v2(item.getAsFile());
+          break;
+        }
+      }
+    });
+
+    function handleFileSelect2v2(e) {
+      const file = e.target.files?.[0];
+      if (file) processScreenshot2v2(file);
+    }
+
+    async function processScreenshot2v2(file) {
+      if (!appConfig.geminiKey || appConfig.geminiKey.trim().length < 10) {
+        openConfigModal();
+        showToast('Wklej klucz API Gemini w Konfiguracji, aby automatycznie odczytywać zrzuty ekranu (lub kliknij "Symuluj / Wypełnij ręcznie").', 'warn');
+        return;
+      }
+
+      document.getElementById('dropzoneContent2v2').classList.add('hidden');
+      document.getElementById('loadingOverlay2v2').classList.remove('hidden');
+
+      try {
+        const reader = new FileReader();
+        const base64Data = await new Promise((res, rej) => {
+          reader.onload = () => res(reader.result.split(',')[1]);
+          reader.onerror = rej;
+          reader.readAsDataURL(file);
+        });
+
+        const prompt = `Analiza zrzutu ekranu 2v2 (LoL).
+Zwróć czysty JSON:
+{
+  "winners": [{"name": "Jargolek", "champion": "Maokai", "dmg": 23332}, {"name": "Firstu", "champion": "Samira", "dmg": 50900}],
+  "losers": [{"name": "SPICYBob", "champion": "Varus", "dmg": 30299}, {"name": "Cancer", "champion": "Xin Zhao", "dmg": 54734}],
+  "duration": "17:33",
+  "trivia": "Zwięzły, jednozdaniowy opis."
+}
+Brak użycia jakichkolwiek emoji w odpowiedzi!`;
+
+        const data = await callGeminiWithFallback(appConfig.geminiKey.trim(), {
+          contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: file.type, data: base64Data } }] }],
+          generationConfig: { responseMimeType: 'application/json' }
+        }, 'loadingStatusText2v2');
+
+        const parsed = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim());
+
+        document.getElementById('w1_name').value = normalizePlayerName2v2(parsed.winners?.[0]?.name);
+        document.getElementById('w1_champ').value = parsed.winners?.[0]?.champion || '';
+        document.getElementById('w1_dmg').value = parsed.winners?.[0]?.dmg || 0;
+
+        document.getElementById('w2_name').value = normalizePlayerName2v2(parsed.winners?.[1]?.name);
+        document.getElementById('w2_champ').value = parsed.winners?.[1]?.champion || '';
+        document.getElementById('w2_dmg').value = parsed.winners?.[1]?.dmg || 0;
+
+        document.getElementById('l1_name').value = normalizePlayerName2v2(parsed.losers?.[0]?.name);
+        document.getElementById('l1_champ').value = parsed.losers?.[0]?.champion || '';
+        document.getElementById('l1_dmg').value = parsed.losers?.[0]?.dmg || 0;
+
+        document.getElementById('l2_name').value = normalizePlayerName2v2(parsed.losers?.[1]?.name);
+        document.getElementById('l2_champ').value = parsed.losers?.[1]?.champion || '';
+        document.getElementById('l2_dmg').value = parsed.losers?.[1]?.dmg || 0;
+
+        document.getElementById('match_duration').value = parsed.duration || '20:00';
+        document.getElementById('match_trivia').value = parsed.trivia || '';
+
+        checkNewPlayersNotice2v2();
+        document.getElementById('verifyPanel2v2').classList.remove('hidden');
+        showToast('Zrzut ekranu odczytany pomyślnie! Zweryfikuj dane i zatwierdź wynik.', 'success');
+      } catch (err) {
+        showToast('Błąd analizy obrazu: ' + err.message, 'error');
+      } finally {
+        document.getElementById('dropzoneContent2v2').classList.remove('hidden');
+        document.getElementById('loadingOverlay2v2').classList.add('hidden');
+      }
+    }
+
+    // ================= PREZENTACJA SLAJDÓW I LEKTOR TTS (LIGA 2V2) =================
+    function renderSlide2v2() {
+      const slides = appState.league2v2.slides || [];
+      const badge = document.getElementById('slideBadge2v2');
+      const title = document.getElementById('slideTitle2v2');
+      const text = document.getElementById('slideText2v2');
+
+      if (slides.length === 0) {
+        badge.textContent = 'Brak slajdów';
+        title.textContent = 'W oczekiwaniu na mecze sesji';
+        text.textContent = 'Dodaj lub wklej mecze w Lidze Dwójek, a następnie kliknij "Generuj Prezentację". AI przygotuje 10 slajdów podsumowujących obrażenia, serie i zmiany ELO oraz przeczyta je na głos.';
+        return;
+      }
+
+      if (currentSlideIndex2v2 >= slides.length) currentSlideIndex2v2 = 0;
+      if (currentSlideIndex2v2 < 0) currentSlideIndex2v2 = slides.length - 1;
+
+      const s = slides[currentSlideIndex2v2];
+      badge.textContent = `Slajd ${currentSlideIndex2v2 + 1} / ${slides.length}`;
+      title.textContent = s.title || `Informacja #${currentSlideIndex2v2 + 1}`;
+      text.textContent = s.text || '';
+    }
+
+    function nextSlide2v2() {
+      const slides = appState.league2v2.slides || [];
+      if (slides.length === 0) return;
+      currentSlideIndex2v2 = (currentSlideIndex2v2 + 1) % slides.length;
+      renderSlide2v2();
+      if (autoPlayActive2v2) speakCurrentSlide2v2(true);
+    }
+
+    function prevSlide2v2() {
+      const slides = appState.league2v2.slides || [];
+      if (slides.length === 0) return;
+      currentSlideIndex2v2 = (currentSlideIndex2v2 - 1 + slides.length) % slides.length;
+      renderSlide2v2();
+    }
+
+    function stopTTS2v2() {
+      autoPlayActive2v2 = false;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      document.getElementById('ttsStatus2v2').classList.add('hidden');
+    }
+
+    function speakCurrentSlide2v2(continueAuto = false) {
+      if (!('speechSynthesis' in window)) return;
+      const slides = appState.league2v2.slides || [];
+      if (slides.length === 0) {
+        showToast('Najpierw wygeneruj prezentację sesji!', 'warn');
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+      const s = slides[currentSlideIndex2v2];
+      const utterance = new SpeechSynthesisUtterance(`${s.title}. ${s.text}`);
+      utterance.lang = 'pl-PL';
+      utterance.rate = 1.05;
+
+      const voices = window.speechSynthesis.getVoices();
+      const plVoice = voices.find(v => v.lang.startsWith('pl'));
+      if (plVoice) utterance.voice = plVoice;
+
+      document.getElementById('ttsStatus2v2').classList.remove('hidden');
+
+      utterance.onend = () => {
+        document.getElementById('ttsStatus2v2').classList.add('hidden');
+        if (continueAuto && autoPlayActive2v2) {
+          if (currentSlideIndex2v2 < slides.length - 1) {
+            currentSlideIndex2v2++;
+            renderSlide2v2();
+            speakCurrentSlide2v2(true);
+          } else {
+            autoPlayActive2v2 = false;
+          }
+        }
+      };
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function autoPlayPresentation2v2() {
+      const slides = appState.league2v2.slides || [];
+      if (slides.length === 0) {
+        showToast('Brak wygenerowanej prezentacji sesji.', 'warn');
+        return;
+      }
+      autoPlayActive2v2 = true;
+      currentSlideIndex2v2 = 0;
+      renderSlide2v2();
+      speakCurrentSlide2v2(true);
+    }
+
+    async function endSessionAndGenerateSlides2v2() {
+      const sessionMatches = appState.league2v2.currentSessionMatches || [];
+      if (sessionMatches.length === 0) {
+        showToast('Brak nierozliczonych meczów w bieżącej sesji 2v2! Zatwierdź najpierw mecz.', 'warn');
+        return;
+      }
+
+      document.getElementById('slideTitle2v2').textContent = 'Generowanie prezentacji sesji...';
+      document.getElementById('slideText2v2').textContent = `Analiza ${sessionMatches.length} meczów z dzisiejszej sesji Ligi Dwójek...`;
+
+      try {
+        if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
+          const prompt = `Jesteś ekspertem analitykiem Ligi Dwójek 2v2.
+Przygotuj DOKŁADNIE 10 krótkich slajdów podsumowujących tylko tę sesję (poniższe mecze).
+Skup się na obrażeniach, seriach i zmianach ELO.
+Nie używaj ŻADNYCH emoji w tekście.
+
+Mecze sesji:
+${JSON.stringify(sessionMatches, null, 2)}
+
+Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
+[{"title": "Tytuł slajdu", "text": "Jedno zdanie analityczne bez emoji."}]`;
+
+          const data = await callGeminiWithFallback(appConfig.geminiKey.trim(), {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: 'application/json' }
+          });
+
+          const rawText = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
+          appState.league2v2.slides = JSON.parse(rawText);
+        } else {
+          // Lokalny generator slajdów gdy brak klucza API
+          const lastM = sessionMatches[sessionMatches.length - 1];
+          appState.league2v2.slides = [
+            { title: 'Podsumowanie Sesji Ligi Dwójek', text: `Rozegrano łącznie ${sessionMatches.length} emocjonujących pojedynków w bieżącej sesji.` },
+            { title: 'Ostatnie Starce na Arenie', text: `W ostatnim meczu duet ${lastM.w1.name} oraz ${lastM.w2.name} pokonał parę ${lastM.l1.name} i ${lastM.l2.name}.` },
+            { title: 'Transfer Punktów ELO', text: `Stawka ostatniego pojedynku wyniosła ${lastM.delta} punktów sezonowego rankingu ELO.` },
+            { title: 'Lider Obrażeń Ostatniego Meczu', text: `Największe obrażenia w ostatnim starciu wykręcił bohater ${lastM.w1.dmg >= lastM.w2.dmg ? lastM.w1.champ : lastM.w2.champ}.` },
+            { title: 'Walka o Główny Ranking', text: `Każde 10 punktów przewagi nad pułapem 1000 ELO to gwarantowany +1.0 punkt w Głównym Rankingu Ekipy na koniec sezonu.` }
+          ];
+        }
+
+        appState.league2v2.currentSessionMatches = [];
+        currentSlideIndex2v2 = 0;
+        await persistState();
+        renderAll();
+        autoPlayPresentation2v2();
+        showToast('Wygenerowano prezentację sesji 2v2!', 'success');
+      } catch (err) {
+        showToast('Błąd generowania prezentacji: ' + err.message, 'error');
+        renderSlide2v2();
+      }
+    }
+
+    // ================= RENDEROWANIE CAŁEGO WIDOKU =================
+    function renderAll() {
+      document.getElementById('navMemberCount').textContent = appState.members.length;
+      const sNum = appState.league2v2.seasonNumber || 1;
+      document.getElementById('navSeasonBadge').textContent = `S${sNum}`;
+      document.getElementById('leagueSeasonHeaderBadge').textContent = `SEZON #${sNum}`;
+
+      const simData = runChronologicalSimulation();
+
+      renderParticipantsSelector();
+      recalculatePreview();
+      renderMemberFilterDropdown();
+      renderLeaderboard(simData.sortedLeaderboard);
+      renderEventsLog(simData.eventComputedMap);
+      renderLeague2v2Tab(simData.ratingsMap);
+      renderMembersManagementTab(simData.sortedLeaderboard);
+      renderWrappedStats(simData.sortedLeaderboard);
+    }
+
+    function renderLeague2v2Tab(mainRatingsMap) {
+      updatePlayers2v2Datalist();
+      const l2v2 = appState.league2v2;
+      document.getElementById('sessionCountLabel2v2').textContent = (l2v2.currentSessionMatches || []).length;
+
+      const tbody = document.getElementById('standings2v2Body');
+      const sorted = Object.values(l2v2.players || {}).sort((a, b) => b.elo - a.elo || b.w - a.w);
+
+      tbody.innerHTML = sorted.map((p, idx) => {
+        const linkedMember = findMemberFor2v2Nick(p.name);
+        const mainElo = linkedMember ? (mainRatingsMap[linkedMember.id] || START_ELO) : START_ELO;
+        const total = p.w + p.l;
+        const wr = total > 0 ? Math.round((p.w / total) * 100) : 0;
+
+        // Prognoza transferu 10% do głównego rankingu
+        const projectedTransfer = Math.round(((p.elo - 1000) * 0.10) * 10) / 10;
+        const projSign = projectedTransfer >= 0 ? '+' : '';
+        const projClass = projectedTransfer > 0 ? 'text-emerald-400' : projectedTransfer < 0 ? 'text-rose-400' : 'text-slate-400';
+
+        const formHTML = (p.form || []).slice(0, 5).map(f => {
+          if (f === 'W') return `<span class="w-4 h-4 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold inline-flex items-center justify-center mx-0.5">W</span>`;
+          return `<span class="w-4 h-4 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold inline-flex items-center justify-center mx-0.5">L</span>`;
+        }).join('');
+
+        let streakBadge = '<span class="text-xs text-slate-500">—</span>';
+        if (p.streak > 0) streakBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">${p.streak}W</span>`;
+        else if (p.streak < 0) streakBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">${Math.abs(p.streak)}L</span>`;
+
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3 px-2.5 font-bold text-slate-300">${medal}</td>
+            <td class="py-3 px-2.5">
+              <div class="font-bold text-white font-mono">${escapeHtml(p.name)}</div>
+              <div class="text-[11px] text-slate-400">
+                ${linkedMember ? `🔗 Konto główne: <strong class="text-slate-200">${escapeHtml(linkedMember.name)}</strong>` : 'Brak przypisania (utworzy nowe)'}
+              </div>
+            </td>
+            <td class="py-3 px-2.5 text-right font-mono font-bold text-slate-200">${mainElo.toFixed(1)}</td>
+            <td class="py-3 px-2.5 text-right font-mono font-extrabold text-indigo-400 text-base">${Math.round(p.elo)}</td>
+            <td class="py-3 px-2.5 text-right font-mono font-bold ${projClass}">${projSign}${projectedTransfer.toFixed(1)} ELO</td>
+            <td class="py-3 px-2.5 text-center text-xs font-mono">
+              <span class="text-emerald-400 font-semibold">${p.w}</span>-<span class="text-rose-400 font-semibold">${p.l}</span>
+            </td>
+            <td class="py-3 px-2.5 text-center text-xs font-bold text-slate-200">${wr}%</td>
+            <td class="py-3 px-2.5 text-center">${streakBadge}</td>
+            <td class="py-3 px-2.5 text-center">${formHTML || '—'}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const r = l2v2.records;
+      document.getElementById('records2v2Grid').innerHTML = `
+        <div class="bg-slate-900/90 border border-emerald-500/30 p-3.5 rounded-xl">
+          <div class="text-[10px] uppercase font-bold text-emerald-400">📈 Max Sezon ELO</div>
+          <div class="text-base font-extrabold text-white font-mono mt-1">${r.maxElo.value} <span class="text-xs font-sans font-normal text-slate-400">(${escapeHtml(r.maxElo.player)})</span></div>
+        </div>
+        <div class="bg-slate-900/90 border border-rose-500/30 p-3.5 rounded-xl">
+          <div class="text-[10px] uppercase font-bold text-rose-400">📉 Min Sezon ELO</div>
+          <div class="text-base font-extrabold text-white font-mono mt-1">${r.minElo.value} <span class="text-xs font-sans font-normal text-slate-400">(${escapeHtml(r.minElo.player)})</span></div>
+        </div>
+        <div class="bg-slate-900/90 border border-amber-500/30 p-3.5 rounded-xl">
+          <div class="text-[10px] uppercase font-bold text-amber-400">💥 Rekord Obrażeń</div>
+          <div class="text-base font-extrabold text-white font-mono mt-1">${Number(r.maxDmg.value).toLocaleString('pl-PL')} <span class="text-xs font-sans font-normal text-slate-400">(${escapeHtml(r.maxDmg.player)} • ${escapeHtml(r.maxDmg.champion)})</span></div>
+        </div>
+        <div class="bg-slate-900/90 border border-indigo-500/30 p-3.5 rounded-xl">
+          <div class="text-[10px] uppercase font-bold text-indigo-400">🔥 Najdłuższa Seria</div>
+          <div class="text-base font-extrabold text-white font-mono mt-1">${r.maxWinStreak.value}W <span class="text-xs font-sans font-normal text-slate-400">(${escapeHtml(r.maxWinStreak.player)})</span></div>
+        </div>
+      `;
+
+      document.getElementById('protocolOutput2v2').textContent = generateMarkdownProtocol2v2(mainRatingsMap);
+      renderSlide2v2();
+    }
+
+    function generateMarkdownProtocol2v2(mainRatingsMap) {
+      const l2v2 = appState.league2v2;
+      const allRows = Object.values(l2v2.players || {}).sort((a, b) => b.elo - a.elo);
+      const tableLines = [
+        `--- TABELA LIGI DWÓJEK (SEZON #${l2v2.seasonNumber || 1}) ---`,
+        `| Gracz 2v2 | Main ELO | Sezon ELO | Prognoza (10%) | W-L | WR % |`,
+        `| :--- | :---: | :---: | :---: | :---: | :---: |`
+      ];
+      allRows.forEach(p => {
+        const linked = findMemberFor2v2Nick(p.name);
+        const mainElo = linked ? (mainRatingsMap[linked.id] || START_ELO) : START_ELO;
+        const total = p.w + p.l;
+        const wr = total > 0 ? Math.round((p.w / total) * 100) : 0;
+        const proj = Math.round(((p.elo - 1000) * 0.10) * 10) / 10;
+        const sign = proj >= 0 ? '+' : '';
+        tableLines.push(`| ${p.name} | ${mainElo.toFixed(1)} | ${Math.round(p.elo)} | ${sign}${proj.toFixed(1)} | ${p.w}-${p.l} | ${wr}% |`);
+      });
+
+      if (!l2v2.lastMatchReport) return tableLines.join('\n');
+
+      const m = l2v2.lastMatchReport;
+      const matchBlock = [
+        'OSTATNI WYNIK MECZU 2v2:',
+        `Wygrani: ${m.w1.name} (${m.w1.champ}, ${m.w1.dmg} DMG), ${m.w2.name} (${m.w2.champ}, ${m.w2.dmg} DMG)`,
+        `Przegrani: ${m.l1.name} (${m.l1.champ}, ${m.l1.dmg} DMG), ${m.l2.name} (${m.l2.champ}, ${m.l2.dmg} DMG)`,
+        '',
+        'ZMIANY SEZONOWE ELO:',
+        `${m.w1.name}: ${m.w1.oldElo} -> ${m.w1.newElo} (+${m.delta})`,
+        `${m.w2.name}: ${m.w2.oldElo} -> ${m.w2.newElo} (+${m.delta})`,
+        `${m.l1.name}: ${m.l1.oldElo} -> ${m.l1.newElo} (-${m.delta})`,
+        `${m.l2.name}: ${m.l2.oldElo} -> ${m.l2.newElo} (-${m.delta})`,
+        ''
+      ];
+      return [...matchBlock, ...tableLines].join('\n');
+    }
+
+    function copyProtocol2v2() {
+      copyTextToClipboard(document.getElementById('protocolOutput2v2').textContent, 'Skopiowano raport Ligi Dwójek do schowka!');
+    }
+
+    function renderMemberFilterDropdown() {
+      const sel = document.getElementById('filterMember');
+      const current = sel.value || 'ALL';
+      sel.innerHTML = `<option value="ALL">Wszyscy gracze (${appState.members.length})</option>` +
+        appState.members.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+      sel.value = appState.members.some(m => m.id === current) ? current : 'ALL';
+    }
+
+    function getRankTierBadge(elo) {
+      if (elo >= 1120) return `<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">💎 Challenger</span>`;
+      if (elo >= 1050) return `<span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold">🔥 Master</span>`;
+      if (elo >= 1000) return `<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">⚔️ Gold</span>`;
+      return `<span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 font-medium">🛡️ Silver</span>`;
+    }
+
+    function renderLeaderboard(rows) {
+      const tbody = document.getElementById('leaderboardBody');
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-500">Brak graczy w ekipie. Dodaj kogoś w zakładce "Ekipa"!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map((row, idx) => {
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+        const totalCompetitive = row.wins + row.losses;
+        const winRate = totalCompetitive > 0 ? Math.round((row.wins / totalCompetitive) * 100) + '%' : '—';
+        const diffFromStart = Math.round((row.elo - START_ELO) * 10) / 10;
+        const diffStr = diffFromStart >= 0 ? `+${diffFromStart.toFixed(1)}` : `${diffFromStart.toFixed(1)}`;
+        const skillSign = row.skillEloNet >= 0 ? '+' : '';
+        const s2v2Sign = row.season2v2Net >= 0 ? '+' : '';
+
+        const last5 = row.form.slice(-5).map(f => {
+          if (f === 'W') return `<span class="w-5 h-5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold inline-flex items-center justify-center">W</span>`;
+          if (f === 'L') return `<span class="w-5 h-5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold inline-flex items-center justify-center">L</span>`;
+          return `<span class="w-5 h-5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[10px] font-bold inline-flex items-center justify-center">C</span>`;
+        }).join(' ');
+
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3 px-2 font-bold text-slate-300">${medal}</td>
+            <td class="py-3 px-2">
+              <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold text-white shadow shrink-0" style="background:${row.member.color}">
+                  ${escapeHtml(row.member.name.slice(0, 2).toUpperCase())}
+                </span>
+                <div>
+                  <div class="font-bold text-white flex flex-wrap items-center gap-1.5">
+                    <span>${escapeHtml(row.member.name)}</span>
+                    ${row.member.alias2v2 ? `<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30">🎮 ${escapeHtml(row.member.alias2v2)}</span>` : ''}
+                    ${getRankTierBadge(row.elo)}
+                  </div>
+                  <div class="text-[11px] text-slate-400">${escapeHtml(row.member.role || 'Gracz Ekipy')} • ${row.irlCount} IRL / ${row.onlineCount} Online</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-2 text-right font-mono">
+              <div class="font-extrabold text-indigo-400 text-base">${row.elo.toFixed(1)}</div>
+              <div class="text-[10px] ${diffFromStart >= 0 ? 'text-emerald-400' : 'text-rose-400'}">(${diffStr})</div>
+            </td>
+            <td class="py-3 px-2 text-center text-xs font-semibold font-mono">
+              <span class="text-emerald-400">${row.wins}W</span>-<span class="text-rose-400">${row.losses}L</span>
+              ${row.coops > 0 ? `<span class="text-indigo-300">(${row.coops}C)</span>` : ''}
+            </td>
+            <td class="py-3 px-2 text-center text-xs font-bold text-slate-200">${winRate}</td>
+            <td class="py-3 px-2 text-right text-xs font-mono">
+              <span class="${row.skillEloNet >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-semibold" title="Pojedynki">${skillSign}${row.skillEloNet.toFixed(0)}</span>
+              <span class="text-slate-600">/</span>
+              <span class="text-indigo-300 font-semibold" title="Tarcza Aktywności">+${row.shieldEloNet.toFixed(0)}🛡️</span>
+              ${row.season2v2Net !== 0 ? `<span class="text-slate-600">/</span> <span class="text-amber-300 font-bold" title="Punkty z zamkniętych sezonów 2v2">${s2v2Sign}${row.season2v2Net.toFixed(1)}🏆</span>` : ''}
+            </td>
+            <td class="py-3 px-2 text-center">${last5 || '<span class="text-xs text-slate-500">—</span>'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderEventsLog(eventComputedMap) {
+      const container = document.getElementById('eventsLogContainer');
+      const catFilter = document.getElementById('filterCategory').value;
+      const memFilter = document.getElementById('filterMember').value;
+
+      const filtered = appState.events.filter(ev => {
+        if (catFilter !== 'ALL' && ev.category !== catFilter) return false;
+        const customIds = Object.keys(ev.customDeltas || {});
+        const allInEv = [...(ev.winners || []), ...(ev.losers || []), ...customIds];
+        if (memFilter !== 'ALL' && !allInEv.includes(memFilter)) return false;
+        return true;
+      });
+
+      document.getElementById('eventsCountBadge').textContent = filtered.length;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-sm text-slate-500">Brak zarejestrowanych wydarzeń dla wybranych filtrów.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(ev => {
+        const cat = CATEGORIES[ev.category] || CATEGORIES.IRL_SPORT;
+        const calc = eventComputedMap[ev.id] || { winnerDelta: 0, loserDelta: 0, eloSwing: 0, shield: 0, isCoop: true };
+
+        // Specjalny wygląd dla karty Zakończenia Sezonu Ligi 2v2
+        if (ev.mode === 'SEASON_TRANSFER' || ev.category === 'SEASON_2V2') {
+          const badges = Object.entries(ev.customDeltas || {}).map(([pid, rawDelta]) => {
+            const m = appState.members.find(x => x.id === pid);
+            if (!m) return '';
+            const d = Number(rawDelta) || 0;
+            const sign = d >= 0 ? '+' : '';
+            const cls = d >= 0
+              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+              : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+            return `<span class="px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold border ${cls}">${escapeHtml(m.name)}: ${sign}${d.toFixed(1)} ELO</span>`;
+          }).join('');
+
+          return `
+            <div class="bg-gradient-to-r from-amber-950/30 via-slate-900/90 to-purple-950/30 border border-amber-500/40 rounded-xl p-4 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-[11px] px-2.5 py-0.5 rounded-full border font-bold ${cat.badge}">${cat.label}</span>
+                    <span class="text-xs text-slate-400">📅 ${ev.date}</span>
+                  </div>
+                  <h3 class="text-sm font-extrabold text-white mt-1.5">${escapeHtml(ev.title)}</h3>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="text-xs font-bold text-amber-300">Oficjalny Transfer Sezonowy</span>
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-1.5 mt-3">${badges}</div>
+              <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-300">
+                <span class="italic">${escapeHtml(ev.comment || '')}</span>
+                <button onclick="deleteEvent('${ev.id}')" class="text-rose-400 hover:text-rose-300 font-semibold ml-3">Cofnij transfer</button>
+              </div>
+            </div>
+          `;
+        }
+
+        const winBadges = (ev.winners || []).map(pid => {
+          const m = appState.members.find(x => x.id === pid);
+          if (!m) return '';
+          return `<span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">🏆 ${escapeHtml(m.name)} (+${calc.winnerDelta.toFixed(1)})</span>`;
+        }).join('');
+
+        const loseBadges = (ev.losers || []).map(pid => {
+          const m = appState.members.find(x => x.id === pid);
+          if (!m) return '';
+          const sign = calc.loserDelta >= 0 ? '+' : '';
+          return `<span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30">💀 ${escapeHtml(m.name)} (${sign}${calc.loserDelta.toFixed(1)})</span>`;
+        }).join('');
+
+        return `
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 hover:border-slate-700 transition">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-[11px] px-2 py-0.5 rounded-full border font-semibold ${cat.badge}">${cat.label}</span>
+                  <span class="text-xs text-slate-400">📅 ${ev.date} • ⏱️ ${ev.duration} min</span>
+                </div>
+                <h3 class="text-sm font-bold text-white mt-1.5">${escapeHtml(ev.title)}</h3>
+              </div>
+              <div class="text-right shrink-0 font-mono">
+                <div class="text-xs font-bold text-emerald-400">Wygrani: +${calc.winnerDelta.toFixed(1)} ELO</div>
+                ${!calc.isCoop ? `<div class="text-xs font-bold text-rose-400">Przegrani: ${calc.loserDelta >= 0 ? '+' : ''}${calc.loserDelta.toFixed(1)} ELO</div>` : ''}
+                <div class="text-[10px] text-slate-400">Tarcza: +${calc.shield.toFixed(1)}</div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 mt-3">
+              ${winBadges}
+              ${loseBadges}
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+              <span class="italic">${escapeHtml(ev.comment || '')}</span>
+              <button onclick="deleteEvent('${ev.id}')" class="text-rose-400 hover:text-rose-300 font-medium ml-3">Usuń</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderMembersManagementTab(stats) {
+      const container = document.getElementById('membersManagementList');
+      if (stats.length === 0) {
+        container.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-500">Brak graczy w ekipie. Dodaj pierwszą osobę powyżej!</div>`;
+        return;
+      }
+
+      container.innerHTML = stats.map(st => {
+        const m = st.member;
+        return `
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white shadow shrink-0" style="background:${m.color}">
+                ${escapeHtml(m.name.slice(0, 2).toUpperCase())}
+              </div>
+              <div>
+                <div class="font-bold text-white text-sm flex items-center gap-2">
+                  <span>${escapeHtml(m.name)}</span>
+                  ${m.alias2v2 ? `<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">🎮 2v2: ${escapeHtml(m.alias2v2)}</span>` : '<span class="text-[10px] text-slate-500">Brak nicku 2v2</span>'}
+                </div>
+                <div class="text-xs text-slate-400 mt-0.5">${escapeHtml(m.role || 'Gracz Ekipy')} • <span class="text-indigo-400 font-bold font-mono">${st.elo.toFixed(1)} ELO</span> (${st.wins}W-${st.losses}L)</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="openEditMemberModal('${m.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition">
+                ✏️ Edytuj
+              </button>
+              <button onclick="removeMember('${m.id}')" class="px-2.5 py-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 text-xs text-rose-300 border border-rose-800/60 transition">
+                🗑️ Usuń
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================= STATYSTYKI / WRAPPED =================
+    function renderWrappedStats(stats) {
+      if (stats.length > 0) {
+        const skillSorted = [...stats].sort((a, b) => (b.skillEloNet + b.season2v2Net) - (a.skillEloNet + a.season2v2Net));
+        const grindSorted = [...stats].sort((a, b) => b.shieldEloNet - a.shieldEloNet);
+
+        const topSkillVal = skillSorted[0].skillEloNet + skillSorted[0].season2v2Net;
+        document.getElementById('statSkillKing').textContent = skillSorted[0].member.name;
+        document.getElementById('statSkillKingSub').textContent = `${topSkillVal >= 0 ? '+' : ''}${topSkillVal.toFixed(1)} ELO z rywalizacji i sezonów 2v2`;
+
+        document.getElementById('statGrindKing').textContent = grindSorted[0].member.name;
+        document.getElementById('statGrindKingSub').textContent = `+${grindSorted[0].shieldEloNet.toFixed(1)} ELO z Tarczy Aktywności`;
+      }
+
+      const rivalCounts = {};
+      const duoWinCounts = {};
+
+      appState.events.forEach(ev => {
+        if (ev.mode === 'SEASON_TRANSFER') return;
+        const w = ev.winners || [];
+        const l = ev.losers || [];
+        for (let i = 0; i < w.length; i++) {
+          for (let j = i + 1; j < w.length; j++) {
+            const k = [w[i], w[j]].sort().join('|');
+            duoWinCounts[k] = (duoWinCounts[k] || 0) + 1;
+          }
+        }
+        w.forEach(wid => {
+          l.forEach(lid => {
+            const k = [wid, lid].sort().join('|');
+            rivalCounts[k] = (rivalCounts[k] || 0) + 1;
+          });
+        });
+      });
+
+      const topPair = (map) => {
+        let bestK = null, bestV = 0;
+        Object.entries(map).forEach(([k, v]) => { if (v > bestV) { bestV = v; bestK = k; } });
+        return { bestK, bestV };
+      };
+
+      const nem = topPair(rivalCounts);
+      if (nem.bestK) {
+        const [a, b] = nem.bestK.split('|');
+        const n1 = appState.members.find(m => m.id === a)?.name || '?';
+        const n2 = appState.members.find(m => m.id === b)?.name || '?';
+        document.getElementById('statNemesis').textContent = `${n1} vs ${n2}`;
+        document.getElementById('statNemesisSub').textContent = `${nem.bestV} meczów przeciwko sobie`;
+      }
+
+      const duo = topPair(duoWinCounts);
+      if (duo.bestK) {
+        const [a, b] = duo.bestK.split('|');
+        const n1 = appState.members.find(m => m.id === a)?.name || '?';
+        const n2 = appState.members.find(m => m.id === b)?.name || '?';
+        document.getElementById('statBestDuo').textContent = `${n1} & ${n2}`;
+        document.getElementById('statBestDuoSub').textContent = `${duo.bestV} wspólnych zwycięstw`;
+      }
+
+      document.getElementById('eloBreakdownChart').innerHTML = stats.map(st => {
+        const skillSign = st.skillEloNet >= 0 ? '+' : '';
+        const s2v2Sign = st.season2v2Net >= 0 ? '+' : '';
+        return `
+          <div class="bg-slate-950/70 border border-slate-800 rounded-lg p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="font-bold text-white">${escapeHtml(st.member.name)}</div>
+            <div class="flex flex-wrap items-center gap-3 font-mono">
+              <span class="${st.skillEloNet >= 0 ? 'text-emerald-400' : 'text-rose-400'}">Skill: <strong>${skillSign}${st.skillEloNet.toFixed(1)}</strong></span>
+              <span class="text-indigo-300">Tarcza: <strong>+${st.shieldEloNet.toFixed(1)}</strong></span>
+              <span class="text-amber-300">Sezony 2v2: <strong>${s2v2Sign}${st.season2v2Net.toFixed(1)}</strong></span>
+              <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold">Razem: ${st.elo.toFixed(1)}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const daysNames = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+      const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+      appState.events.forEach(ev => {
+        const d = new Date(ev.date);
+        if (!isNaN(d)) dayCounts[d.getDay()] += 1;
+      });
+      const maxDay = Math.max(1, ...dayCounts);
+      const order = [1, 2, 3, 4, 5, 6, 0];
+      document.getElementById('weekdayChart').innerHTML = order.map(idx => {
+        const pct = Math.round((dayCounts[idx] / maxDay) * 100);
+        return `
+          <div class="flex items-center gap-3 text-xs">
+            <span class="w-24 text-slate-300">${daysNames[idx]}</span>
+            <div class="flex-1 bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+              <div class="bg-indigo-500 h-full rounded-full" style="width:${pct}%"></div>
+            </div>
+            <span class="w-8 text-right font-bold font-mono text-slate-200">${dayCounts[idx]}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================= NAWIGACJA I KONFIGURACJA =================
+    function switchTab(tabName) {
+      ['dashboard', 'league2v2', 'members', 'wrapped'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tabName);
+        const btn = document.getElementById(`tabBtn-${t}`);
+        if (t === 'league2v2') {
+          btn.className = t === tabName
+            ? 'px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white flex items-center gap-1.5'
+            : 'px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5';
+        } else {
+          btn.className = t === tabName
+            ? 'px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white'
+            : 'px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white';
+        }
+      });
+    }
+
+    function openConfigModal() {
+      document.getElementById('cfgGeminiKey').value = appConfig.geminiKey || '';
+      document.getElementById('cfgGeminiModel').value = appConfig.model || 'gemini-2.5-flash';
+      document.getElementById('cfgFirebaseUrl').value = appConfig.firebaseUrl || '';
+      document.getElementById('configModal').classList.remove('hidden');
+    }
+
+    function closeConfigModal() {
+      document.getElementById('configModal').classList.add('hidden');
+    }
+
+    async function detectAvailableModels() {
+      const key = document.getElementById('cfgGeminiKey').value.trim();
+      if (!key) {
+        showToast('Wpisz najpierw klucz Gemini API!', 'warn');
+        return;
+      }
+      const status = document.getElementById('modelDetectStatus');
+      status.classList.remove('hidden');
+      status.textContent = 'Sprawdzanie dostępnych modeli...';
+      try {
+        const models = await resolveWorkingModel(key);
+        document.getElementById('cfgGeminiModel').value = models[0];
+        status.textContent = `✅ Wybrano obsługiwany model: ${models[0]}`;
+        status.className = 'text-[11px] text-emerald-400';
+      } catch (e) {
+        status.textContent = 'Błąd weryfikacji klucza.';
+        status.className = 'text-[11px] text-rose-400';
+      }
+    }
+
+    async function saveConfig() {
+      appConfig.geminiKey = document.getElementById('cfgGeminiKey').value.trim();
+      appConfig.model = document.getElementById('cfgGeminiModel').value.trim() || 'gemini-2.5-flash';
+      appConfig.firebaseUrl = document.getElementById('cfgFirebaseUrl').value.trim();
+      localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
+      updateConfigStatuses();
+      await loadState();
+      await persistState();
+      closeConfigModal();
+      renderAll();
+      showToast('Zapisano konfigurację systemu!', 'success');
+    }
+
+    function copyMagicLink() {
+      const fb = document.getElementById('cfgFirebaseUrl').value.trim();
+      if (!fb) {
+        showToast('Wklej najpierw adres URL bazy Firebase!', 'warn');
+        return;
+      }
+      const magicUrl = `${window.location.origin}${window.location.pathname}#fb=${encodeURIComponent(fb)}`;
+      copyTextToClipboard(magicUrl, 'Skopiowano Magic-Link! Wyślij go znajomym.');
+    }
+
+    function exportDataJson() {
+      const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ekipa-elo-backup-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      showToast('Wyeksportowano plik JSON z bazą danych.', 'success');
+    }
+
+    function resetDemoData() {
+      askConfirmation(
+        'Przywracanie danych startowych',
+        'Czy na pewno chcesz zresetować bazę i przywrócić domyślną Ekipę oraz tabelę Ligi Dwójek 2v2?',
+        async () => {
+          appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+          initDefaultRoles();
+          await persistState();
+          closeConfigModal();
+          renderAll();
+          showToast('Przywrócono domyślne dane startowe!', 'success');
+        }
+      );
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
