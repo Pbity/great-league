@@ -387,9 +387,12 @@
               </div>
             </div>
 
-            <div id="loadingOverlay2v2" class="hidden py-6 space-y-3">
+            <div id="loadingOverlay2v2" class="hidden py-6 space-y-3" onclick="event.stopPropagation()">
               <div class="animate-spin mx-auto w-7 h-7 border-2 border-indigo-400 border-t-transparent rounded-full"></div>
-              <p id="loadingStatusText2v2" class="text-xs text-indigo-300 font-semibold uppercase tracking-wider">Przetwarzanie zrzutu ekranu przez Gemini Vision...</p>
+              <p id="loadingStatusText2v2" class="text-xs text-indigo-300 font-semibold uppercase tracking-wider">Kompresja obrazu i analiza przez Gemini Vision...</p>
+              <button type="button" onclick="abortScreenshotProcessing2v2()" class="px-3 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/60 text-[11px] font-semibold transition">
+                ✕ Przerwij i wpisz ręcznie
+              </button>
             </div>
           </div>
 
@@ -1334,6 +1337,13 @@
         if (!Array.isArray(b.winnerIds)) b.winnerIds = [];
       });
 
+      if (merged.sharedConfig && merged.sharedConfig.geminiKey && (!appConfig.geminiKey || appConfig.geminiKey.length < 10)) {
+        appConfig.geminiKey = merged.sharedConfig.geminiKey;
+        if (merged.sharedConfig.model) appConfig.model = merged.sharedConfig.model;
+        localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
+        updateConfigStatuses();
+        populateConfigInputs();
+      }
       if (!merged.league2v2 || !merged.league2v2.players) {
         merged.league2v2 = JSON.parse(JSON.stringify(DEFAULT_STATE.league2v2));
       } else {
@@ -1485,6 +1495,12 @@
 
     async function persistState() {
       appState.lastUpdated = Date.now();
+      if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
+        appState.sharedConfig = {
+          geminiKey: appConfig.geminiKey.trim(),
+          model: appConfig.model || 'gemini-2.5-flash'
+        };
+      }
       localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(appState));
       const baseUrl = getCleanFirebaseUrl();
       if (baseUrl) {
@@ -1989,48 +2005,118 @@
       );
     }
 
-    // ================= WSPÓLNY HELPER GEMINI API =================
-    async function resolveWorkingModel(apiKey) {
-      const preferred = appConfig.model || 'gemini-2.5-flash';
+    // ================= WSPÓLNY HELPER GEMINI API (SZYBKI + TIMEOUT + OBSŁUGA THINKING) =================
+    let cachedWorkingModels = null;
+    let currentVisionAbortController = null;
+
+    async function resolveWorkingModel(apiKey, forceRefresh = false) {
+      const preferred = (appConfig.model || 'gemini-2.5-flash').trim();
+      if (!forceRefresh && Array.isArray(cachedWorkingModels) && cachedWorkingModels.length > 0) {
+        return [...new Set([preferred, ...cachedWorkingModels])].slice(0, 3);
+      }
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+        const ctrl = new AbortController();
+        const tId = setTimeout(() => ctrl.abort(), 5000);
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`, {
+          signal: ctrl.signal
+        });
+        clearTimeout(tId);
         const data = await res.json();
         if (data.models && Array.isArray(data.models)) {
           const supported = data.models
             .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
-            .map(m => m.name.replace(/^models\//, ''));
-          if (supported.includes(preferred)) return [preferred, ...supported.filter(x => x !== preferred)];
-          const prioritized = [
-            ...FALLBACK_MODELS.filter(m => supported.includes(m)),
-            ...supported.filter(m => m.includes('flash'))
-          ];
-          if (prioritized.length > 0) return [...new Set(prioritized)];
+            .map(m => m.name.replace(/^models\//, ''))
+            // Odrzucamy modele eksperymentalne/TTS/embedding, które zawieszają zapytania Vision
+            .filter(name => !/(tts|embedding|aqa|imagen|veo|audio|learnlm|thinking)/i.test(name));
+
+          const fastCandidates = [
+            preferred,
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
+            'gemini-2.0-flash-lite',
+            'gemini-1.5-flash'
+          ].filter(m => supported.includes(m));
+
+          if (fastCandidates.length > 0) {
+            cachedWorkingModels = [...new Set(fastCandidates)].slice(0, 3);
+            return cachedWorkingModels;
+          }
         }
       } catch (e) {}
-      return [...new Set([preferred, ...FALLBACK_MODELS])];
+      return [...new Set([preferred, 'gemini-2.5-flash', 'gemini-2.0-flash'])].slice(0, 3);
     }
 
-    async function callGeminiWithFallback(apiKey, payload, statusElId = null) {
+    function extractTextFromGeminiData(data) {
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      // W gemini-2.5-flash pierwszy element parts[] może być blokiem myślowym { thought: true, text: "..." },
+      // dlatego łączymy wszystkie części niebędące czystym thought lub szukamy części z właściwym tekstem/JSON-em
+      const nonThoughtParts = parts.filter(p => !p.thought && typeof p.text === 'string');
+      if (nonThoughtParts.length > 0) {
+        return nonThoughtParts.map(p => p.text).join('\n').trim();
+      }
+      return parts.map(p => p.text || '').join('\n').trim();
+    }
+
+    function parseJsonFromGeminiText(rawText) {
+      const cleaned = (rawText || '').replace(/```json|```/gi, '').trim();
+      try {
+        return JSON.parse(cleaned);
+      } catch (e) {
+        // Wyciągnij pierwszy obiekt { ... } lub tablicę [ ... ] z odpowiedzi
+        const objMatch = cleaned.match(/\{[\s\S]*\}/);
+        const arrMatch = cleaned.match(/\[[\s\S]*\]/);
+        if (objMatch) return JSON.parse(objMatch[0]);
+        if (arrMatch) return JSON.parse(arrMatch[0]);
+        throw new Error('Model nie zwrócił poprawnego formatu JSON.');
+      }
+    }
+
+    async function callGeminiWithFallback(apiKey, payload, statusElId = null, customAbortCtrl = null) {
       const candidates = await resolveWorkingModel(apiKey);
       let lastError = null;
+
       for (const modelName of candidates) {
+        if (customAbortCtrl?.signal?.aborted) {
+          throw new Error('Przerwano przez użytkownika.');
+        }
         if (statusElId) {
           const statusEl = document.getElementById(statusElId);
-          if (statusEl) statusEl.textContent = `Przetwarzanie przez ${modelName}...`;
+          if (statusEl) statusEl.textContent = `Analiza przez ${modelName}...`;
         }
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await response.json();
-        if (!data.error) {
-          appConfig.model = modelName;
-          localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
-          updateConfigStatuses();
-          return data;
+
+        const timeoutCtrl = new AbortController();
+        const timeoutId = setTimeout(() => timeoutCtrl.abort(), 20000);
+        const onUserAbort = () => timeoutCtrl.abort();
+        if (customAbortCtrl) customAbortCtrl.signal.addEventListener('abort', onUserAbort, { once: true });
+
+        try {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: timeoutCtrl.signal
+          });
+          clearTimeout(timeoutId);
+
+          const data = await response.json();
+          if (!data.error && data.candidates && data.candidates.length > 0) {
+            appConfig.model = modelName;
+            localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
+            updateConfigStatuses();
+            return data;
+          }
+          lastError = data.error?.message || 'Brak odpowiedzi od modelu ' + modelName;
+        } catch (err) {
+          clearTimeout(timeoutId);
+          if (customAbortCtrl?.signal?.aborted) {
+            throw new Error('Anulowano analizę zrzutu.');
+          }
+          lastError = err.name === 'AbortError'
+            ? `Przekroczono czas oczekiwania (20s) dla modelu ${modelName}`
+            : err.message;
+        } finally {
+          if (customAbortCtrl) customAbortCtrl.signal.removeEventListener('abort', onUserAbort);
         }
-        lastError = data.error.message || JSON.stringify(data.error);
       }
       throw new Error(lastError || 'Błąd połączenia z API Gemini.');
     }
@@ -2093,7 +2179,7 @@ Zwróć WYŁĄCZNIE czysty JSON:
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { responseMimeType: 'application/json' }
       });
-      const parsed = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || '{}');
+      const parsed = parseJsonFromGeminiText(extractTextFromGeminiData(data));
       applyJudgeToForm(parsed);
     }
 
@@ -2603,69 +2689,153 @@ Zwróć WYŁĄCZNIE czysty JSON:
 
     function handleFileSelect2v2(e) {
       const file = e.target.files?.[0];
-      if (file) processScreenshot2v2(file);
+      if (file) {
+        processScreenshot2v2(file);
+      }
+      e.target.value = '';
+    }
+
+    function abortScreenshotProcessing2v2() {
+      if (currentVisionAbortController) {
+        currentVisionAbortController.abort();
+        currentVisionAbortController = null;
+      }
+      document.getElementById('dropzoneContent2v2').classList.remove('hidden');
+      document.getElementById('loadingOverlay2v2').classList.add('hidden');
+      openManualMatch2v2();
+      showToast('Przerwano analizę obrazu – otwarto formularz ręcznego wpisania meczu.', 'info');
+    }
+
+    // Szybka kompresja dużych zrzutów ekranu (np. 4K PNG 8MB -> JPEG ~180KB),
+    // dzięki czemu wysyłka do Gemini trwa ułamek sekundy zamiast 30 sekund!
+    async function compressImageForVision(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Nie udało się odczytać pliku obrazu.'));
+        reader.onload = () => {
+          const dataUrl = reader.result;
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const MAX_DIM = 1600;
+              let w = img.naturalWidth || img.width;
+              let h = img.naturalHeight || img.height;
+              if (w > MAX_DIM || h > MAX_DIM) {
+                if (w >= h) {
+                  h = Math.round((h * MAX_DIM) / w);
+                  w = MAX_DIM;
+                } else {
+                  w = Math.round((w * MAX_DIM) / h);
+                  h = MAX_DIM;
+                }
+              }
+              const canvas = document.createElement('canvas');
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, w, h);
+              const compressedUrl = canvas.toDataURL('image/jpeg', 0.84);
+              resolve({
+                mimeType: 'image/jpeg',
+                base64Data: compressedUrl.split(',')[1]
+              });
+            } catch (err) {
+              resolve({
+                mimeType: file.type || 'image/png',
+                base64Data: String(dataUrl).split(',')[1]
+              });
+            }
+          };
+          img.onerror = () => {
+            resolve({
+              mimeType: file.type || 'image/png',
+              base64Data: String(dataUrl).split(',')[1]
+            });
+          };
+          img.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+      });
     }
 
     async function processScreenshot2v2(file) {
       if (!appConfig.geminiKey || appConfig.geminiKey.trim().length < 10) {
+        await pullFromCloudIfNewer(true);
+      }
+      if (!appConfig.geminiKey || appConfig.geminiKey.trim().length < 10) {
         openConfigModal();
-        showToast('Wklej klucz API Gemini w Konfiguracji, aby automatycznie odczytywać zrzuty ekranu (lub kliknij "Symuluj / Wypełnij ręcznie").', 'warn');
+        showToast('Wklej klucz API Gemini w zakładce Konfiguracja, aby automatycznie odczytywać zrzuty ekranu (lub kliknij "Dodaj mecz ręcznie").', 'warn');
         return;
       }
 
       document.getElementById('dropzoneContent2v2').classList.add('hidden');
       document.getElementById('loadingOverlay2v2').classList.remove('hidden');
+      const statusEl = document.getElementById('loadingStatusText2v2');
+      if (statusEl) statusEl.textContent = 'Optymalizacja zrzutu ekranu...';
+
+      currentVisionAbortController = new AbortController();
 
       try {
-        const reader = new FileReader();
-        const base64Data = await new Promise((res, rej) => {
-          reader.onload = () => res(reader.result.split(',')[1]);
-          reader.onerror = rej;
-          reader.readAsDataURL(file);
-        });
+        const { mimeType, base64Data } = await compressImageForVision(file);
 
-        const prompt = `Analiza zrzutu ekranu 2v2 (LoL).
-Zwróć czysty JSON:
+        const knownPlayersList = Object.keys(appState.league2v2.players || {}).join(', ');
+        const prompt = `Przeanalizuj zrzut ekranu z podsumowania meczu 2v2 (League of Legends).
+Znani gracze w lidze: [${knownPlayersList}].
+Odczytaj 2 graczy zwycięskiej drużyny (winners) oraz 2 graczy przegranej drużyny (losers), ich bohaterów (champion), zadane obrażenia bohaterom (dmg jako liczba całkowita) oraz czas trwania meczu (duration MM:SS).
+Zwróć WYŁĄCZNIE czysty JSON:
 {
-  "winners": [{"name": "Jargolek", "champion": "Maokai", "dmg": 23332}, {"name": "Firstu", "champion": "Samira", "dmg": 50900}],
-  "losers": [{"name": "SPICYBob", "champion": "Varus", "dmg": 30299}, {"name": "Cancer", "champion": "Xin Zhao", "dmg": 54734}],
+  "winners": [{"name": "Nick1", "champion": "Bohater1", "dmg": 23332}, {"name": "Nick2", "champion": "Bohater2", "dmg": 50900}],
+  "losers": [{"name": "Nick3", "champion": "Bohater3", "dmg": 30299}, {"name": "Nick4", "champion": "Bohater4", "dmg": 54734}],
   "duration": "17:33",
-  "trivia": "Zwięzły, jednozdaniowy opis."
-}
-Brak użycia jakichkolwiek emoji w odpowiedzi!`;
+  "trivia": "Krótki, jednozdaniowy opis przebiegu meczu bez emoji."
+}`;
 
-        const data = await callGeminiWithFallback(appConfig.geminiKey.trim(), {
-          contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: file.type, data: base64Data } }] }],
-          generationConfig: { responseMimeType: 'application/json' }
-        }, 'loadingStatusText2v2');
+        const data = await callGeminiWithFallback(
+          appConfig.geminiKey.trim(),
+          {
+            contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType, data: base64Data } }] }],
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
+          },
+          'loadingStatusText2v2',
+          currentVisionAbortController
+        );
 
-        const parsed = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim());
+        const rawResponseText = extractTextFromGeminiData(data);
+        const parsed = parseJsonFromGeminiText(rawResponseText);
+
+        const parseDmgNum = (val) => {
+          if (typeof val === 'number') return Math.round(val);
+          return parseInt(String(val || '0').replace(/[^0-9]/g, ''), 10) || 0;
+        };
 
         document.getElementById('w1_name').value = normalizePlayerName2v2(parsed.winners?.[0]?.name);
         document.getElementById('w1_champ').value = parsed.winners?.[0]?.champion || '';
-        document.getElementById('w1_dmg').value = parsed.winners?.[0]?.dmg || 0;
+        document.getElementById('w1_dmg').value = parseDmgNum(parsed.winners?.[0]?.dmg);
 
         document.getElementById('w2_name').value = normalizePlayerName2v2(parsed.winners?.[1]?.name);
         document.getElementById('w2_champ').value = parsed.winners?.[1]?.champion || '';
-        document.getElementById('w2_dmg').value = parsed.winners?.[1]?.dmg || 0;
+        document.getElementById('w2_dmg').value = parseDmgNum(parsed.winners?.[1]?.dmg);
 
         document.getElementById('l1_name').value = normalizePlayerName2v2(parsed.losers?.[0]?.name);
         document.getElementById('l1_champ').value = parsed.losers?.[0]?.champion || '';
-        document.getElementById('l1_dmg').value = parsed.losers?.[0]?.dmg || 0;
+        document.getElementById('l1_dmg').value = parseDmgNum(parsed.losers?.[0]?.dmg);
 
         document.getElementById('l2_name').value = normalizePlayerName2v2(parsed.losers?.[1]?.name);
         document.getElementById('l2_champ').value = parsed.losers?.[1]?.champion || '';
-        document.getElementById('l2_dmg').value = parsed.losers?.[1]?.dmg || 0;
+        document.getElementById('l2_dmg').value = parseDmgNum(parsed.losers?.[1]?.dmg);
 
         document.getElementById('match_duration').value = parsed.duration || '20:00';
         document.getElementById('match_trivia').value = parsed.trivia || '';
 
         checkNewPlayersNotice2v2();
         document.getElementById('verifyPanel2v2').classList.remove('hidden');
-        showToast('Zrzut ekranu odczytany pomyślnie! Zweryfikuj dane i zatwierdź wynik.', 'success');
+        showToast('Zrzut ekranu odczytany błyskawicznie! Zweryfikuj dane i zatwierdź wynik.', 'success');
       } catch (err) {
-        showToast('Błąd analizy obrazu: ' + err.message, 'error');
+        if (err.message !== 'Anulowano analizę zrzutu.') {
+          showToast('Błąd analizy obrazu: ' + err.message, 'error');
+        }
       } finally {
+        currentVisionAbortController = null;
         document.getElementById('dropzoneContent2v2').classList.remove('hidden');
         document.getElementById('loadingOverlay2v2').classList.add('hidden');
       }
@@ -2790,8 +2960,7 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
             generationConfig: { responseMimeType: 'application/json' }
           });
 
-          const rawText = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
-          appState.league2v2.slides = JSON.parse(rawText);
+          appState.league2v2.slides = parseJsonFromGeminiText(extractTextFromGeminiData(data));
         } else {
           // Lokalny generator slajdów gdy brak klucza API
           const lastM = sessionMatches[sessionMatches.length - 1];
@@ -3610,7 +3779,7 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
           const data = await callGeminiWithFallback(appConfig.geminiKey.trim(), {
             contents: [{ parts: [{ text: fullPrompt }] }]
           });
-          const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Brak odpowiedzi od modelu.';
+          const reply = extractTextFromGeminiData(data) || 'Brak odpowiedzi od modelu.';
           resultBox.textContent = reply.trim();
         } else {
           const top = sortedLeaderboard[0];
