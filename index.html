@@ -50,7 +50,7 @@
   <header class="sticky top-0 z-30 glass border-b border-slate-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-extrabold text-xl shadow-lg">
+        <div onclick="handleSecretLogoClick()" title="Ekipa ELO" class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-extrabold text-xl shadow-lg cursor-pointer select-none">
           ⚔️
         </div>
         <div>
@@ -639,7 +639,10 @@
           <button type="button" onclick="exportDataJson()" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition">
             ⬇️ Eksportuj JSON
           </button>
-          <button type="button" onclick="resetDemoData()" class="px-3.5 py-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-800/50 text-xs font-medium transition ml-auto">
+          <button type="button" onclick="openAdminPinModal()" class="px-3.5 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-800 text-xs font-medium transition ml-auto flex items-center gap-1.5">
+            <span>🔒 Korekta Punktów (Admin)</span>
+          </button>
+          <button type="button" onclick="resetDemoData()" class="px-3.5 py-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-800/50 text-xs font-medium transition">
             🔄 Przywróć dane startowe
           </button>
         </div>
@@ -928,6 +931,142 @@
         <button type="button" onclick="confirmResolveBet()" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30">
           ✅ Zatwierdź wynik i przelej punkty ELO
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL WERYFIKACJI PINU ADMINA (3030) ================= -->
+  <div id="adminPinModal" class="fixed inset-0 z-[65] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-dark rounded-2xl max-w-xs w-full p-6 border border-amber-500/40 shadow-2xl space-y-4 text-center">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-2xl">
+        🔒
+      </div>
+      <div>
+        <h3 class="text-base font-bold text-white">Autoryzacja Administratora</h3>
+        <p class="text-xs text-slate-400 mt-1">Podaj kod PIN, aby odblokować ręczną edycję i reset punktów ELO</p>
+      </div>
+      <form onsubmit="verifyAdminPinSubmit(event)" class="space-y-3">
+        <input type="password" id="adminPinInput" inputmode="numeric" maxlength="8" placeholder="••••" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-center text-lg font-mono tracking-widest text-amber-300 focus:outline-none focus:border-amber-500" />
+        <div class="flex gap-2 pt-1">
+          <button type="button" onclick="closeAdminPinModal()" class="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition">
+            Anuluj
+          </button>
+          <button type="submit" class="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-lg transition">
+            Odblokuj
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL ADMINA: RĘCZNA MODYFIKACJA I RESET PUNKTÓW (RANKING GŁÓWNY & LIGA 2V2) ================= -->
+  <div id="adminEditorModal" class="fixed inset-0 z-[65] hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+    <div class="glass-dark rounded-2xl max-w-4xl w-full p-5 sm:p-6 border border-amber-500/50 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl">🛠️</div>
+          <div>
+            <h3 class="text-base sm:text-lg font-extrabold text-white">Panel Administratora – Ręczna Korekta i Reset Punktów</h3>
+            <p class="text-xs text-slate-400">Zmieniaj bezpośrednio Główne ELO, punkty i bilanse w Lidze Dwójek 2v2 oraz rekordy</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAdminEditorModal()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+
+      <!-- Szybkie akcje resetowania -->
+      <div class="bg-rose-950/25 border border-rose-500/30 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2">
+        <div class="text-xs text-slate-300">
+          <strong class="text-rose-300">⚡ Szybkie Resety Punktów:</strong> Możesz wyzerować same korekty, zresetować tabelę sezonu 2v2 do 1000 lub wyzerować Główny Ranking do 1000.
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" onclick="adminResetMainOffsets()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition">
+            Wyzeruj korekty Głównego ELO
+          </button>
+          <button type="button" onclick="adminResetMainRankingTo1000()" class="px-3 py-1.5 rounded-lg bg-rose-900/60 hover:bg-rose-800 text-xs font-bold text-rose-200 border border-rose-700/50 transition">
+            Resetuj wszystkim Główne ELO na 1000
+          </button>
+          <button type="button" onclick="adminResetLeague2v2To1000()" class="px-3 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-xs font-bold text-purple-200 border border-purple-700/50 transition">
+            Resetuj tabelę Ligi 2v2 na 1000 (0W-0L)
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- Kolumna 1: Główny Ranking ELO -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h4 class="text-xs sm:text-sm font-bold text-indigo-300 uppercase tracking-wider">🏆 1. Główny Ranking ELO (Docelowe punkty)</h4>
+            <span class="text-[11px] text-slate-400">Wpisz dokładną wartość ELO</span>
+          </div>
+          <div id="adminMainEloList" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Kolumna 2: Liga Dwójek 2v2 -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h4 class="text-xs sm:text-sm font-bold text-purple-300 uppercase tracking-wider">🎮 2. Liga Dwójek 2v2 (ELO / W / L / Seria)</h4>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[11px] text-slate-400">Sezon #</span>
+              <input type="number" id="adminSeasonNumberInput" min="1" max="99" class="w-14 bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-xs text-purple-300 font-mono text-center" />
+            </div>
+          </div>
+          <div class="grid grid-cols-12 gap-1.5 text-[10px] uppercase font-bold text-slate-400 px-1">
+            <div class="col-span-4">Nick 2v2</div>
+            <div class="col-span-3 text-right">Sezon ELO</div>
+            <div class="col-span-2 text-center">W</div>
+            <div class="col-span-2 text-center">L</div>
+            <div class="col-span-1 text-center">Str</div>
+          </div>
+          <div id="adminLeague2v2List" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+
+      <!-- Edycja Rekordów Ligi 2v2 -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+        <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider border-b border-slate-800 pb-2">🏅 3. Korekta Rekordów Historycznych Ligi 2v2</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+          <div>
+            <label class="text-[11px] text-slate-400">Max Sezon ELO (Wartość / Gracz)</label>
+            <div class="flex gap-1.5 mt-1">
+              <input type="number" id="admRecMaxEloVal" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
+              <input type="text" id="admRecMaxEloPlayer" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
+            </div>
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400">Min Sezon ELO (Wartość / Gracz)</label>
+            <div class="flex gap-1.5 mt-1">
+              <input type="number" id="admRecMinEloVal" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
+              <input type="text" id="admRecMinEloPlayer" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
+            </div>
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400">Rekord DMG (Wartość / Gracz / Champ)</label>
+            <div class="flex gap-1 mt-1">
+              <input type="number" id="admRecMaxDmgVal" class="w-24 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
+              <input type="text" id="admRecMaxDmgPlayer" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
+              <input type="text" id="admRecMaxDmgChamp" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
+            </div>
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400">Max Seria Wygranych (Wartość / Gracz)</label>
+            <div class="flex gap-1.5 mt-1">
+              <input type="number" id="admRecMaxStreakVal" class="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
+              <input type="text" id="admRecMaxStreakPlayer" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800">
+        <span class="text-[11px] text-slate-400">💡 Kliknięcie „Zapisz wszystkie korekty” natychmiast zaktualizuje stan lokalny oraz bazę Firebase u wszystkich graczy.</span>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeAdminEditorModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition">
+            Anuluj
+          </button>
+          <button type="button" onclick="saveAdminAllAdjustments()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/25 transition">
+            💾 Zapisz wszystkie korekty w bazie
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1459,10 +1598,13 @@
       const ratingsMap = {};
 
       appState.members.forEach(m => {
-        ratingsMap[m.id] = START_ELO;
+        const offset = Number(m.eloOffset) || 0;
+        const initialElo = Math.round((START_ELO + offset) * 10) / 10;
+        ratingsMap[m.id] = initialElo;
         statsMap[m.id] = {
           member: m,
-          elo: START_ELO,
+          elo: initialElo,
+          adminOffset: offset,
           wins: 0,
           losses: 0,
           coops: 0,
@@ -3096,6 +3238,7 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
               <span class="${st.skillEloNet >= 0 ? 'text-emerald-400' : 'text-rose-400'}">Skill: <strong>${skillSign}${st.skillEloNet.toFixed(1)}</strong></span>
               <span class="text-indigo-300">Tarcza: <strong>+${st.shieldEloNet.toFixed(1)}</strong></span>
               <span class="text-amber-300">Sezony 2v2: <strong>${s2v2Sign}${st.season2v2Net.toFixed(1)}</strong></span>
+              ${st.adminOffset ? `<span class="text-rose-300">Korekta: <strong>${st.adminOffset > 0 ? '+' : ''}${st.adminOffset.toFixed(1)}</strong></span>` : ''}
               <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold">Razem: ${st.elo.toFixed(1)}</span>
             </div>
           </div>
@@ -3573,19 +3716,242 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
       showToast('Wyeksportowano plik JSON z bazą danych.', 'success');
     }
 
-    function resetDemoData() {
+    // ================= PANEL ADMINISTRATORA CHOWANY ZA PINEM (3030) =================
+    const ADMIN_PIN = '3030';
+    let secretLogoClicks = 0;
+    let secretLogoTimer = null;
+    let pendingPinCallback = null;
+
+    function handleSecretLogoClick() {
+      secretLogoClicks += 1;
+      if (secretLogoTimer) clearTimeout(secretLogoTimer);
+      if (secretLogoClicks >= 3) {
+        secretLogoClicks = 0;
+        openAdminPinModal();
+      } else {
+        secretLogoTimer = setTimeout(() => { secretLogoClicks = 0; }, 1200);
+      }
+    }
+
+    function openAdminPinModal(onSuccessCallback = null) {
+      pendingPinCallback = onSuccessCallback || (() => openAdminEditorModal());
+      const input = document.getElementById('adminPinInput');
+      if (input) input.value = '';
+      document.getElementById('adminPinModal').classList.remove('hidden');
+      setTimeout(() => { if (input) input.focus(); }, 60);
+    }
+
+    function closeAdminPinModal() {
+      document.getElementById('adminPinModal').classList.add('hidden');
+      pendingPinCallback = null;
+    }
+
+    function verifyAdminPinSubmit(e) {
+      e.preventDefault();
+      const entered = (document.getElementById('adminPinInput').value || '').trim();
+      if (entered !== ADMIN_PIN) {
+        showToast('Nieprawidłowy kod PIN administratora!', 'error');
+        document.getElementById('adminPinInput').value = '';
+        return;
+      }
+      const cb = pendingPinCallback;
+      closeAdminPinModal();
+      if (cb) cb();
+    }
+
+    async function openAdminEditorModal() {
+      await ensureFreshStateBeforeWrite();
+      populateAdminEditorFields();
+      document.getElementById('adminEditorModal').classList.remove('hidden');
+    }
+
+    function closeAdminEditorModal() {
+      document.getElementById('adminEditorModal').classList.add('hidden');
+    }
+
+    function populateAdminEditorFields() {
+      const { sortedLeaderboard } = runChronologicalSimulation();
+
+      // 1. Główny Ranking ELO
+      const mainList = document.getElementById('adminMainEloList');
+      mainList.innerHTML = sortedLeaderboard.map(row => {
+        const m = row.member;
+        const currentTotalElo = Math.round(row.elo * 10) / 10;
+        const currentOffset = Number(m.eloOffset) || 0;
+        const baseEloWithoutOffset = Math.round((currentTotalElo - currentOffset) * 10) / 10;
+        return `
+          <div class="flex items-center justify-between gap-2 bg-slate-950/90 border border-slate-800 rounded-lg px-3 py-2 text-xs">
+            <div class="flex items-center gap-2 truncate">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${m.color}"></span>
+              <span class="font-bold text-white truncate">${escapeHtml(m.name)}</span>
+              <span class="text-[10px] text-slate-400 font-mono">(Z meczów: ${baseEloWithoutOffset.toFixed(1)})</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <input type="number" step="0.1" data-admin-member-id="${m.id}" data-base-elo="${baseEloWithoutOffset}" value="${currentTotalElo}" class="w-24 bg-slate-900 border border-indigo-500/40 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-indigo-300 focus:outline-none focus:border-amber-400" />
+              <span class="text-[10px] text-slate-400 font-mono">ELO</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 2. Liga Dwójek 2v2
+      const l2v2 = appState.league2v2 || {};
+      document.getElementById('adminSeasonNumberInput').value = l2v2.seasonNumber || 1;
+      const players2v2 = Object.values(l2v2.players || {}).sort((a, b) => b.elo - a.elo);
+
+      const l2v2List = document.getElementById('adminLeague2v2List');
+      l2v2List.innerHTML = players2v2.map(p => `
+        <div class="grid grid-cols-12 gap-1.5 items-center bg-slate-950/90 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs" data-admin-2v2-player="${escapeHtml(p.name)}">
+          <div class="col-span-4 font-mono font-bold text-purple-300 truncate" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</div>
+          <div class="col-span-3">
+            <input type="number" step="1" data-field="elo" value="${Math.round(p.elo)}" class="w-full bg-slate-900 border border-purple-500/40 rounded px-2 py-1 text-right font-mono font-bold text-white" />
+          </div>
+          <div class="col-span-2">
+            <input type="number" step="1" min="0" data-field="w" value="${p.w || 0}" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-center font-mono text-emerald-400" />
+          </div>
+          <div class="col-span-2">
+            <input type="number" step="1" min="0" data-field="l" value="${p.l || 0}" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-center font-mono text-rose-400" />
+          </div>
+          <div class="col-span-1">
+            <input type="number" step="1" data-field="streak" value="${p.streak || 0}" class="w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-center font-mono text-slate-300" />
+          </div>
+        </div>
+      `).join('');
+
+      // 3. Rekordy 2v2
+      const rec = l2v2.records || DEFAULT_STATE.league2v2.records;
+      document.getElementById('admRecMaxEloVal').value = rec.maxElo?.value ?? 1000;
+      document.getElementById('admRecMaxEloPlayer').value = rec.maxElo?.player ?? '-';
+      document.getElementById('admRecMinEloVal').value = rec.minElo?.value ?? 1000;
+      document.getElementById('admRecMinEloPlayer').value = rec.minElo?.player ?? '-';
+      document.getElementById('admRecMaxDmgVal').value = rec.maxDmg?.value ?? 0;
+      document.getElementById('admRecMaxDmgPlayer').value = rec.maxDmg?.player ?? '-';
+      document.getElementById('admRecMaxDmgChamp').value = rec.maxDmg?.champion ?? '-';
+      document.getElementById('admRecMaxStreakVal').value = rec.maxWinStreak?.value ?? 0;
+      document.getElementById('admRecMaxStreakPlayer').value = rec.maxWinStreak?.player ?? '-';
+    }
+
+    async function saveAdminAllAdjustments() {
+      await ensureFreshStateBeforeWrite();
+
+      // 1. Zapisz korekty Głównego ELO
+      const memberInputs = document.querySelectorAll('input[data-admin-member-id]');
+      memberInputs.forEach(inp => {
+        const memId = inp.getAttribute('data-admin-member-id');
+        const baseElo = Number(inp.getAttribute('data-base-elo')) || START_ELO;
+        const targetElo = Number(inp.value);
+        const member = appState.members.find(m => m.id === memId);
+        if (member && !isNaN(targetElo)) {
+          member.eloOffset = Math.round((targetElo - baseElo) * 10) / 10;
+        }
+      });
+
+      // 2. Zapisz sezon i tabelę Ligi 2v2
+      const newSeasonNum = Number(document.getElementById('adminSeasonNumberInput').value) || 1;
+      appState.league2v2.seasonNumber = newSeasonNum;
+
+      const rows2v2 = document.querySelectorAll('div[data-admin-2v2-player]');
+      rows2v2.forEach(row => {
+        const pName = row.getAttribute('data-admin-2v2-player');
+        const playerObj = appState.league2v2.players?.[pName];
+        if (playerObj) {
+          const newElo = Number(row.querySelector('input[data-field="elo"]')?.value);
+          const newW = Number(row.querySelector('input[data-field="w"]')?.value);
+          const newL = Number(row.querySelector('input[data-field="l"]')?.value);
+          const newStreak = Number(row.querySelector('input[data-field="streak"]')?.value);
+          if (!isNaN(newElo)) playerObj.elo = Math.round(newElo);
+          if (!isNaN(newW)) playerObj.w = Math.max(0, Math.round(newW));
+          if (!isNaN(newL)) playerObj.l = Math.max(0, Math.round(newL));
+          if (!isNaN(newStreak)) playerObj.streak = Math.round(newStreak);
+        }
+      });
+
+      // 3. Zapisz rekordy Ligi 2v2
+      if (!appState.league2v2.records) appState.league2v2.records = {};
+      appState.league2v2.records.maxElo = {
+        value: Number(document.getElementById('admRecMaxEloVal').value) || 1000,
+        player: document.getElementById('admRecMaxEloPlayer').value.trim() || '-'
+      };
+      appState.league2v2.records.minElo = {
+        value: Number(document.getElementById('admRecMinEloVal').value) || 1000,
+        player: document.getElementById('admRecMinEloPlayer').value.trim() || '-'
+      };
+      appState.league2v2.records.maxDmg = {
+        value: Number(document.getElementById('admRecMaxDmgVal').value) || 0,
+        player: document.getElementById('admRecMaxDmgPlayer').value.trim() || '-',
+        champion: document.getElementById('admRecMaxDmgChamp').value.trim() || '-'
+      };
+      appState.league2v2.records.maxWinStreak = {
+        value: Number(document.getElementById('admRecMaxStreakVal').value) || 0,
+        player: document.getElementById('admRecMaxStreakPlayer').value.trim() || '-'
+      };
+
+      closeAdminEditorModal();
+      await persistState();
+      renderAll();
+      showToast('Zapisano ręczne korekty punktów w Głównym Rankingu oraz Lidze 2v2!', 'success');
+    }
+
+    async function adminResetMainOffsets() {
+      await ensureFreshStateBeforeWrite();
+      appState.members.forEach(m => { m.eloOffset = 0; });
+      await persistState();
+      populateAdminEditorFields();
+      renderAll();
+      showToast('Wyzerowano ręczne korekty Głównego Rankingu (punkty wynikają wyłącznie z historii meczów).', 'info');
+    }
+
+    function adminResetMainRankingTo1000() {
       askConfirmation(
-        'Przywracanie danych startowych',
-        'Czy na pewno chcesz zresetować bazę i przywrócić domyślną Ekipę oraz tabelę Ligi Dwójek 2v2?',
+        'Reset Głównego Rankingu do 1000 ELO',
+        'Czy chcesz ustawić wszystkim graczom w Głównym Rankingu równe 1000.0 ELO?',
         async () => {
-          appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
-          initDefaultRoles();
-          await persistState();
-          closeConfigModal();
-          renderAll();
-          showToast('Przywrócono domyślne dane startowe!', 'success');
+          document.querySelectorAll('input[data-admin-member-id]').forEach(inp => {
+            inp.value = '1000';
+          });
+          await saveAdminAllAdjustments();
         }
       );
+    }
+
+    function adminResetLeague2v2To1000() {
+      askConfirmation(
+        'Reset Tabeli Ligi Dwójek (2v2)',
+        'Czy na pewno chcesz zresetować wszystkim graczom w Lidze 2v2 punkty do 1000 ELO oraz wyzerować bilans W-L w tym sezonie?',
+        async () => {
+          await ensureFreshStateBeforeWrite();
+          Object.values(appState.league2v2.players || {}).forEach(p => {
+            p.elo = 1000;
+            p.w = 0;
+            p.l = 0;
+            p.streak = 0;
+            p.form = [];
+          });
+          appState.league2v2.currentSessionMatches = [];
+          appState.league2v2.history = [];
+          appState.league2v2.lastMatchReport = null;
+          await persistState();
+          populateAdminEditorFields();
+          renderAll();
+          showToast('Zresetowano tabelę Ligi Dwójek 2v2 do 1000 ELO (0W-0L)!', 'success');
+        }
+      );
+    }
+
+    function resetDemoData() {
+      openAdminPinModal(() => {
+        askConfirmation(
+          'Przywracanie danych startowych',
+          'Czy na pewno chcesz zresetować bazę i przywrócić domyślną Ekipę oraz tabelę Ligi Dwójek 2v2?',
+          async () => {
+            appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+            initDefaultRoles();
+            await persistState();
+            renderAll();
+            showToast('Przywrócono domyślne dane startowe!', 'success');
+          }
+        );
+      });
     }
 
     function escapeHtml(str) {
