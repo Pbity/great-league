@@ -270,11 +270,11 @@
                 <thead>
                   <tr class="border-b border-slate-800 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                     <th class="py-3 px-2">#</th>
-                    <th class="py-3 px-2">Gracz (Alias 2v2)</th>
-                    <th class="py-3 px-2 text-right">Główne ELO</th>
+                    <th class="py-3 px-2">Gracz</th>
+                    <th class="py-3 px-2 text-right">ELO</th>
                     <th class="py-3 px-2 text-center">Bilans (W-L-C)</th>
                     <th class="py-3 px-2 text-center">Win%</th>
-                    <th class="py-3 px-2 text-right" title="Punkty ze zwycięstw/porażek vs punkty za samą aktywność vs transfer z sezonów 2v2">Skill / Tarcza / 2v2</th>
+                    <th class="py-3 px-2 text-right" title="Punkty z rywalizacji i zakładów vs punkty z Tarczy Aktywności">Skill / Tarcza</th>
                     <th class="py-3 px-2 text-center">Forma</th>
                   </tr>
                 </thead>
@@ -286,11 +286,10 @@
           <!-- DZIENNIK MECZÓW I AKTYWNOŚCI -->
           <div class="glass rounded-2xl p-6 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h2 class="text-lg font-bold text-white">📜 Historia Meczów i Transferów Sezonowych (<span id="eventsCountBadge">0</span>)</h2>
+              <h2 class="text-lg font-bold text-white">📜 Historia Meczów i Zakładów (<span id="eventsCountBadge">0</span>)</h2>
               <div class="flex flex-wrap items-center gap-2">
                 <select id="filterCategory" onchange="renderAll()" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
                   <option value="ALL">Wszystkie kategorie</option>
-                  <option value="SEASON_2V2">🏆 Transfery Sezonu Ligi 2v2</option>
                   <option value="BET_ELO">🎲 Zakłady Punktowe ELO</option>
                   <option value="IRL_SPORT">⚽ IRL Sport</option>
                   <option value="ONLINE_GAMING">🎮 Online (LoL / Gry)</option>
@@ -453,36 +452,31 @@
 
     </div>
 
-    <!-- ================= ZAKŁADKA 2: LIGA DWÓJEK (2v2) ZINTEGROWANA W STYLU GLASS/INDIGO ================= -->
+    <!-- ================= ZAKŁADKA 2: LIGA DWÓJEK (2v2) – NIEZALEŻNY RANKING 2V2 ================= -->
     <div id="tab-league2v2" class="hidden space-y-6">
 
-      <!-- Górny pasek Ligi Dwójek z przyciskiem Zakończ Sezon -->
-      <div class="glass rounded-2xl p-5 border border-purple-500/30 flex flex-wrap items-center justify-between gap-4 shadow-xl">
-        <div class="flex items-center gap-3.5">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-2xl shadow-lg shadow-purple-600/30">
+      <!-- Górny pasek Ligi Dwójek -->
+      <div class="glass rounded-2xl p-4 border border-purple-500/30 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xl shadow-md">
             🎮
           </div>
-          <div>
-            <div class="flex flex-wrap items-center gap-2">
-              <h2 class="text-lg sm:text-xl font-extrabold text-white tracking-tight">LIGA DWÓJEK – SYSTEM ELO 2v2</h2>
-              <span id="leagueSeasonHeaderBadge" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                SEZON #1
-              </span>
-            </div>
-            <p class="text-xs text-slate-300 mt-0.5">
-              Płaskie ELO sezonowe (start: <span class="font-mono text-white font-semibold">1000</span>, stawka <span class="font-mono text-white font-semibold">K=32</span>). Zakończenie sezonu przelicza wypracowaną nadwyżkę/stratę i dopisuje punkty do <strong class="text-indigo-300">Głównego Rankingu Ekipy</strong>!
-            </p>
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-base sm:text-lg font-extrabold text-white tracking-tight">LIGA DWÓJEK – RANKING 2v2</h2>
+            <span id="leagueSeasonHeaderBadge" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+              SEZON #1
+            </span>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="openEndSeasonModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-amber-500/25 transition flex items-center gap-2">
-            <span>🏆 Zakończ Sezon (Transfer do Głównego ELO)</span>
+          <button onclick="startNewSeason2v2()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition">
+            🏆 Nowy Sezon 2v2 (Reset 1000)
           </button>
-          <button onclick="openManualMatch2v2()" class="px-3.5 py-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition">
+          <button onclick="openManualMatch2v2()" class="px-3.5 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition">
             ✍️ Dodaj mecz ręcznie
           </button>
-          <button onclick="undoLastMatch2v2()" class="px-3.5 py-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-800/50 text-xs font-semibold transition">
+          <button onclick="undoLastMatch2v2()" class="px-3.5 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-800/50 text-xs font-semibold transition">
             ↩️ Cofnij Mecz
           </button>
         </div>
@@ -596,26 +590,17 @@
 
           <!-- Tabela Sezonowa Ligi Dwójek -->
           <div class="glass rounded-2xl p-6 shadow-xl space-y-4">
-            <div class="flex flex-wrap justify-between items-center gap-2">
-              <div>
-                <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                  <span>📊 Tabela Sezonowa Ligi Dwójek</span>
-                </h3>
-                <p class="text-xs text-slate-400">
-                  Kolumna <strong class="text-amber-300">Prognoza Transferu (10%)</strong> pokazuje, ile punktów gracz dopisze do Głównego Rankingu po kliknięciu "Zakończ Sezon".
-                </p>
-              </div>
-            </div>
+            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <span>📊 Tabela Ligi Dwójek (2v2)</span>
+            </h3>
 
             <div class="overflow-x-auto">
               <table class="w-full text-left border-collapse">
                 <thead>
                   <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400 tracking-wider font-semibold">
                     <th class="py-3 px-2.5">#</th>
-                    <th class="py-3 px-2.5">Gracz 2v2 (Konto Główne)</th>
-                    <th class="py-3 px-2.5 text-right">Główne ELO</th>
-                    <th class="py-3 px-2.5 text-right text-indigo-300">Sezon 2v2 ELO</th>
-                    <th class="py-3 px-2.5 text-right text-amber-300">Prognoza (10%)</th>
+                    <th class="py-3 px-2.5">Gracz 2v2</th>
+                    <th class="py-3 px-2.5 text-right text-indigo-300">2v2 ELO</th>
                     <th class="py-3 px-2.5 text-center">W-L</th>
                     <th class="py-3 px-2.5 text-center">WR %</th>
                     <th class="py-3 px-2.5 text-center">Seria</th>
@@ -626,68 +611,17 @@
               </table>
             </div>
           </div>
+        </div>
+
+        <!-- PRAWA KOLUMNA LIGI 2v2 (5 kolumn): Rekordy + Protokół Markdown -->
+        <div class="lg:col-span-5 space-y-6">
 
           <!-- Rekordy Ligi Dwójek -->
           <div class="glass rounded-2xl p-6 shadow-xl space-y-4">
             <h3 class="text-base font-bold text-white flex items-center gap-2">
-              <span>🏅 Rekordy Historyczne Ligi Dwójek</span>
+              <span>🏅 Rekordy Ligi Dwójek (2v2)</span>
             </h3>
-            <div id="records2v2Grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 text-sm"></div>
-          </div>
-        </div>
-
-        <!-- PRAWA KOLUMNA LIGI 2v2 (5 kolumn): Prezentacja Slajdów TTS + Protokół Markdown -->
-        <div class="lg:col-span-5 space-y-6">
-
-          <!-- Prezentacja Sesji & Lektor TTS -->
-          <div class="glass rounded-2xl p-6 shadow-xl space-y-5">
-            <div class="flex flex-wrap justify-between items-center gap-2">
-              <div>
-                <h3 class="text-base font-bold text-white flex items-center gap-2">
-                  <span>🎙️ Podsumowanie Sesji 2v2 (AI + Lektor TTS)</span>
-                </h3>
-                <p class="text-xs text-slate-400 mt-0.5">
-                  Nierozliczonych meczów w sesji: <span id="sessionCountLabel2v2" class="text-indigo-400 font-mono font-bold">0</span>
-                </p>
-              </div>
-              <button onclick="endSessionAndGenerateSlides2v2()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow transition">
-                ✨ Generuj Prezentację (10 Slajdów)
-              </button>
-            </div>
-
-            <!-- Odtwarzacz Slajdów -->
-            <div id="slideViewer2v2" class="bg-slate-950/90 border border-slate-800 rounded-xl p-5 min-h-[220px] flex flex-col justify-between relative">
-              <div class="flex justify-between items-center text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                <span id="slideBadge2v2" class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Brak slajdów</span>
-                <span id="ttsStatus2v2" class="text-emerald-400 hidden animate-pulse">🔊 Odtwarzanie lektora TTS...</span>
-              </div>
-
-              <div class="my-5 space-y-2.5">
-                <h4 id="slideTitle2v2" class="text-base font-bold text-white leading-snug">W oczekiwaniu na mecze sesji</h4>
-                <p id="slideText2v2" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  Dodaj lub wklej mecze w Lidze Dwójek, a następnie kliknij "Generuj Prezentację". Sztuczna inteligencja przygotuje 10 slajdów podsumowujących obrażenia, serie i zmiany ELO oraz przeczyta je na głos.
-                </p>
-              </div>
-
-              <!-- Kontrolki Slajdów -->
-              <div class="flex flex-wrap justify-between items-center gap-2 pt-3 border-t border-slate-800/80">
-                <div class="flex items-center gap-1.5">
-                  <button onclick="prevSlide2v2()" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 font-medium transition">◀ Poprzedni</button>
-                  <button onclick="nextSlide2v2()" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 font-medium transition">Następny ▶</button>
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <button onclick="speakCurrentSlide2v2()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-indigo-300 border border-slate-700 transition">
-                    🔊 Czytaj
-                  </button>
-                  <button onclick="autoPlayPresentation2v2()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition">
-                    ▶ Auto-Play
-                  </button>
-                  <button onclick="stopTTS2v2()" class="px-2.5 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-xs text-rose-300 border border-rose-800/50 transition">
-                    ⏹ Stop
-                  </button>
-                </div>
-              </div>
-            </div>
+            <div id="records2v2Grid" class="grid grid-cols-2 gap-3.5 text-sm"></div>
           </div>
 
           <!-- Raport / Protokół Markdown -->
@@ -792,10 +726,8 @@
       <div class="glass rounded-2xl p-6 shadow-xl max-w-5xl mx-auto">
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
           <div>
-            <h2 class="text-xl font-bold text-white">👥 Zarządzanie Ekipą & Powiązania Nicków Ligi 2v2</h2>
-            <p class="text-xs text-slate-400 mt-1">
-              Każda osoba startuje z pułapu <strong>1000 ELO</strong>. Możesz edytować imię, rolę oraz przypisać nick z <strong>Ligi Dwójek (2v2)</strong> (np. <code>Cancer</code>, <code>Jargolek</code>), aby punkty po zakończeniu sezonu trafiały na właściwe konto!
-            </p>
+            <h2 class="text-xl font-bold text-white">👥 Zarządzanie Ekipą (Główny Ranking)</h2>
+
           </div>
         </div>
 
@@ -818,7 +750,7 @@
         <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
             <h2 class="text-xl font-extrabold text-white">📊 Ekipa ELO Wrapped – Statystyki Całoroczne & AI</h2>
-            <p class="text-xs text-slate-400">Analiza składowych ELO: Pojedynki (Skill), Tarcza Aktywności IRL, Zakłady oraz Punkty Sezonowe z Ligi Dwójek 2v2</p>
+            <p class="text-xs text-slate-400">Analiza Głównego Rankingu ELO: Pojedynki (Skill), Zakłady oraz Tarcza Aktywności IRL</p>
           </div>
         </div>
 
@@ -845,7 +777,7 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div class="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-4">
-            <div class="text-xs font-semibold uppercase text-emerald-400">👑 Dominator Skilla (Pojedynki + 2v2)</div>
+            <div class="text-xs font-semibold uppercase text-emerald-400">👑 Dominator Skilla (Pojedynki & Zakłady)</div>
             <div id="statSkillKing" class="text-lg font-extrabold text-white mt-1">-</div>
             <div id="statSkillKingSub" class="text-xs text-slate-400 mt-0.5">Najwięcej punktów z czystej rywalizacji</div>
           </div>
@@ -873,7 +805,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5">
             <h3 class="text-sm font-bold text-white mb-2">📊 Skąd bierze się Główne ELO graczy?</h3>
-            <p class="text-xs text-slate-400 mb-4">Rozbicie na: Skill z meczów, Tarczę Obecności oraz Transfery z Sezonów Ligi 2v2:</p>
+            <p class="text-xs text-slate-400 mb-4">Rozbicie na: Skill (Pojedynki + Zakłady) oraz Tarczę Obecności IRL:</p>
             <div id="eloBreakdownChart" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1"></div>
           </div>
 
@@ -1089,6 +1021,7 @@
       <div class="space-y-3.5 text-xs">
         <div>
           <label class="block font-medium text-slate-300 mb-1">Pytanie / Wydarzenie do obstawienia</label>
+          <input type="hidden" id="cmEditMarketId" value="" />
           <input type="text" id="cmTitleInput" placeholder="Np. Kto wykręci najwięcej DMG w tym meczu? / Czy Tomek rzuci powyżej 120 pkt?" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500" />
         </div>
 
@@ -2797,9 +2730,32 @@ Zwróć WYŁĄCZNIE czysty JSON:
       if (!appState.league2v2.players[name]) {
         appState.league2v2.players[name] = { name, elo: 1000, w: 0, l: 0, form: [], streak: 0 };
       }
-      // Upewnij się też, że gracz istnieje lub ma odpowiednik w głównej ekipie
-      ensureMemberFor2v2Nick(name);
       return appState.league2v2.players[name];
+    }
+
+    function startNewSeason2v2() {
+      const sNum = appState.league2v2.seasonNumber || 1;
+      askConfirmation(
+        `Nowy Sezon Ligi Dwójek (Sezon #${sNum + 1})`,
+        `Czy chcesz zakończyć Sezon #${sNum} Ligi 2v2 i zresetować tabelę 2v2 na nowy sezon (wszyscy gracze 2v2 wracają na 1000 ELO, 0W-0L)? Główny Ranking pozostaje bez zmian.`,
+        async () => {
+          await ensureFreshStateBeforeWrite();
+          Object.values(appState.league2v2.players || {}).forEach(p => {
+            p.elo = 1000;
+            p.w = 0;
+            p.l = 0;
+            p.streak = 0;
+            p.form = [];
+          });
+          appState.league2v2.seasonNumber = (appState.league2v2.seasonNumber || 1) + 1;
+          appState.league2v2.lastMatchReport = null;
+          appState.league2v2.currentSessionMatches = [];
+          appState.league2v2.history = [];
+          await persistState();
+          renderAll();
+          showToast(`Rozpoczęto Sezon #${appState.league2v2.seasonNumber} w Lidze Dwójek 2v2!`, 'success');
+        }
+      );
     }
 
     async function confirmMatch2v2() {
@@ -3379,25 +3335,16 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       renderWrappedStats(simData.sortedLeaderboard);
     }
 
-    function renderLeague2v2Tab(mainRatingsMap) {
+    function renderLeague2v2Tab() {
       updatePlayers2v2Datalist();
       const l2v2 = appState.league2v2;
-      document.getElementById('sessionCountLabel2v2').textContent = (l2v2.currentSessionMatches || []).length;
 
       const tbody = document.getElementById('standings2v2Body');
       const sorted = Object.values(l2v2.players || {}).sort((a, b) => b.elo - a.elo || b.w - a.w);
 
       tbody.innerHTML = sorted.map((p, idx) => {
-        const linkedMember = findMemberFor2v2Nick(p.name);
-        const mainElo = linkedMember ? (mainRatingsMap[linkedMember.id] || START_ELO) : START_ELO;
         const total = p.w + p.l;
         const wr = total > 0 ? Math.round((p.w / total) * 100) : 0;
-
-        // Prognoza transferu 10% do głównego rankingu
-        const sPct = (Number(appState?.multipliers?.season2v2TransferPct ?? 10)) / 100;
-        const projectedTransfer = Math.round(((p.elo - 1000) * sPct) * 10) / 10;
-        const projSign = projectedTransfer >= 0 ? '+' : '';
-        const projClass = projectedTransfer > 0 ? 'text-emerald-400' : projectedTransfer < 0 ? 'text-rose-400' : 'text-slate-400';
 
         const formHTML = (p.form || []).slice(0, 5).map(f => {
           if (f === 'W') return `<span class="w-4 h-4 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold inline-flex items-center justify-center mx-0.5">W</span>`;
@@ -3413,15 +3360,8 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
         return `
           <tr class="hover:bg-slate-800/40 transition">
             <td class="py-3 px-2.5 font-bold text-slate-300">${medal}</td>
-            <td class="py-3 px-2.5">
-              <div class="font-bold text-white font-mono">${escapeHtml(p.name)}</div>
-              <div class="text-[11px] text-slate-400">
-                ${linkedMember ? `🔗 Konto główne: <strong class="text-slate-200">${escapeHtml(linkedMember.name)}</strong>` : 'Brak przypisania (utworzy nowe)'}
-              </div>
-            </td>
-            <td class="py-3 px-2.5 text-right font-mono font-bold text-slate-200">${mainElo.toFixed(1)}</td>
+            <td class="py-3 px-2.5 font-bold text-white font-mono">${escapeHtml(p.name)}</td>
             <td class="py-3 px-2.5 text-right font-mono font-extrabold text-indigo-400 text-base">${Math.round(p.elo)}</td>
-            <td class="py-3 px-2.5 text-right font-mono font-bold ${projClass}">${projSign}${projectedTransfer.toFixed(1)} ELO</td>
             <td class="py-3 px-2.5 text-center text-xs font-mono">
               <span class="text-emerald-400 font-semibold">${p.w}</span>-<span class="text-rose-400 font-semibold">${p.l}</span>
             </td>
@@ -3435,11 +3375,11 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       const r = l2v2.records;
       document.getElementById('records2v2Grid').innerHTML = `
         <div class="bg-slate-900/90 border border-emerald-500/30 p-3.5 rounded-xl">
-          <div class="text-[10px] uppercase font-bold text-emerald-400">📈 Max Sezon ELO</div>
+          <div class="text-[10px] uppercase font-bold text-emerald-400">📈 Max 2v2 ELO</div>
           <div class="text-base font-extrabold text-white font-mono mt-1">${r.maxElo.value} <span class="text-xs font-sans font-normal text-slate-400">(${escapeHtml(r.maxElo.player)})</span></div>
         </div>
         <div class="bg-slate-900/90 border border-rose-500/30 p-3.5 rounded-xl">
-          <div class="text-[10px] uppercase font-bold text-rose-400">📉 Min Sezon ELO</div>
+          <div class="text-[10px] uppercase font-bold text-rose-400">📉 Min 2v2 ELO</div>
           <div class="text-base font-extrabold text-white font-mono mt-1">${r.minElo.value} <span class="text-xs font-sans font-normal text-slate-400">(${escapeHtml(r.minElo.player)})</span></div>
         </div>
         <div class="bg-slate-900/90 border border-amber-500/30 p-3.5 rounded-xl">
@@ -3452,26 +3392,21 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
         </div>
       `;
 
-      document.getElementById('protocolOutput2v2').textContent = generateMarkdownProtocol2v2(mainRatingsMap);
-      renderSlide2v2();
+      document.getElementById('protocolOutput2v2').textContent = generateMarkdownProtocol2v2();
     }
 
-    function generateMarkdownProtocol2v2(mainRatingsMap) {
+    function generateMarkdownProtocol2v2() {
       const l2v2 = appState.league2v2;
       const allRows = Object.values(l2v2.players || {}).sort((a, b) => b.elo - a.elo);
       const tableLines = [
         `--- TABELA LIGI DWÓJEK (SEZON #${l2v2.seasonNumber || 1}) ---`,
-        `| Gracz 2v2 | Main ELO | Sezon ELO | Prognoza (10%) | W-L | WR % |`,
-        `| :--- | :---: | :---: | :---: | :---: | :---: |`
+        `| Gracz 2v2 | 2v2 ELO | W-L | WR % |`,
+        `| :--- | :---: | :---: | :---: |`
       ];
       allRows.forEach(p => {
-        const linked = findMemberFor2v2Nick(p.name);
-        const mainElo = linked ? (mainRatingsMap[linked.id] || START_ELO) : START_ELO;
         const total = p.w + p.l;
         const wr = total > 0 ? Math.round((p.w / total) * 100) : 0;
-        const proj = Math.round(((p.elo - 1000) * 0.10) * 10) / 10;
-        const sign = proj >= 0 ? '+' : '';
-        tableLines.push(`| ${p.name} | ${mainElo.toFixed(1)} | ${Math.round(p.elo)} | ${sign}${proj.toFixed(1)} | ${p.w}-${p.l} | ${wr}% |`);
+        tableLines.push(`| ${p.name} | ${Math.round(p.elo)} | ${p.w}-${p.l} | ${wr}% |`);
       });
 
       if (!l2v2.lastMatchReport) return tableLines.join('\n');
@@ -3544,7 +3479,6 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
                 <div>
                   <div class="font-bold text-white flex flex-wrap items-center gap-1.5">
                     <span>${escapeHtml(row.member.name)}</span>
-                    ${row.member.alias2v2 ? `<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30">🎮 ${escapeHtml(row.member.alias2v2)}</span>` : ''}
                     ${getRankTierBadge(row.elo)}
                   </div>
                   <div class="text-[11px] text-slate-400">${escapeHtml(row.member.role || 'Gracz Ekipy')} • ${row.irlCount} IRL / ${row.onlineCount} Online</div>
@@ -3561,10 +3495,9 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
             </td>
             <td class="py-3 px-2 text-center text-xs font-bold text-slate-200">${winRate}</td>
             <td class="py-3 px-2 text-right text-xs font-mono">
-              <span class="${row.skillEloNet >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-semibold" title="Pojedynki">${skillSign}${row.skillEloNet.toFixed(0)}</span>
+              <span class="${row.skillEloNet >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-semibold" title="Pojedynki i Zakłady">${skillSign}${row.skillEloNet.toFixed(0)}</span>
               <span class="text-slate-600">/</span>
               <span class="text-indigo-300 font-semibold" title="Tarcza Aktywności">+${row.shieldEloNet.toFixed(0)}🛡️</span>
-              ${row.season2v2Net !== 0 ? `<span class="text-slate-600">/</span> <span class="text-amber-300 font-bold" title="Punkty z zamkniętych sezonów 2v2">${s2v2Sign}${row.season2v2Net.toFixed(1)}🏆</span>` : ''}
             </td>
             <td class="py-3 px-2 text-center">${last5 || '<span class="text-xs text-slate-500">—</span>'}</td>
           </tr>
@@ -3715,12 +3648,12 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
     // ================= STATYSTYKI / WRAPPED =================
     function renderWrappedStats(stats) {
       if (stats.length > 0) {
-        const skillSorted = [...stats].sort((a, b) => (b.skillEloNet + b.season2v2Net) - (a.skillEloNet + a.season2v2Net));
+        const skillSorted = [...stats].sort((a, b) => b.skillEloNet - a.skillEloNet);
         const grindSorted = [...stats].sort((a, b) => b.shieldEloNet - a.shieldEloNet);
 
-        const topSkillVal = skillSorted[0].skillEloNet + skillSorted[0].season2v2Net;
+        const topSkillVal = skillSorted[0].skillEloNet;
         document.getElementById('statSkillKing').textContent = skillSorted[0].member.name;
-        document.getElementById('statSkillKingSub').textContent = `${topSkillVal >= 0 ? '+' : ''}${topSkillVal.toFixed(1)} ELO z rywalizacji i sezonów 2v2`;
+        document.getElementById('statSkillKingSub').textContent = `${topSkillVal >= 0 ? '+' : ''}${topSkillVal.toFixed(1)} ELO z czystej rywalizacji i zakładów`;
 
         document.getElementById('statGrindKing').textContent = grindSorted[0].member.name;
         document.getElementById('statGrindKingSub').textContent = `+${grindSorted[0].shieldEloNet.toFixed(1)} ELO z Tarczy Aktywności`;
@@ -3780,7 +3713,7 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
             <div class="flex flex-wrap items-center gap-3 font-mono">
               <span class="${st.skillEloNet >= 0 ? 'text-emerald-400' : 'text-rose-400'}">Skill: <strong>${skillSign}${st.skillEloNet.toFixed(1)}</strong></span>
               <span class="text-indigo-300">Tarcza: <strong>+${st.shieldEloNet.toFixed(1)}</strong></span>
-              <span class="text-amber-300">Sezony 2v2: <strong>${s2v2Sign}${st.season2v2Net.toFixed(1)}</strong></span>
+              
               ${st.adminOffset ? `<span class="text-rose-300">Korekta: <strong>${st.adminOffset > 0 ? '+' : ''}${st.adminOffset.toFixed(1)}</strong></span>` : ''}
               <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold">Razem: ${st.elo.toFixed(1)}</span>
             </div>
@@ -4187,7 +4120,7 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       try {
         const { sortedLeaderboard } = runChronologicalSimulation();
         const playersSummary = sortedLeaderboard.map(r => `${r.member.name}${r.member.alias2v2 ? ` (${r.member.alias2v2})` : ''}: ${r.elo.toFixed(0)} ELO (${r.wins}W-${r.losses}L)`).join(', ');
-        const l2v2Summary = Object.values(appState.league2v2.players || {}).map(p => `${p.name}: ${p.elo} ELO (seria ${p.streak})`).join(', ');
+        const l2v2Summary = '';
         const defaultMode = document.getElementById('betAiDefaultModeSelect')?.value || 'AI_HOUSE';
 
         if (!appConfig.geminiKey || appConfig.geminiKey.trim().length < 10) {
@@ -4197,7 +4130,6 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
         if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
           const prompt = `Jesteś Krupierem AI i Bukmacherem dla grupy znajomych.
 Członkowie ekipy i ich Główne ELO: [${playersSummary}].
-Statystyki Ligi 2v2: [${l2v2Summary}].
 Kontekst / opis wydarzenia od użytkownika: "${contextText || 'Przeanalizuj załączony obraz i wymyśl zakłady dopasowane do sytuacji.'}"
 
 Stwórz DOKŁADNIE 3 angażujące, konkretne zakłady do obstawiania punktami ELO (np. 1 główny o wynik rywalizacji, 1 statystyczny typu Over/Under i 1 zabawny/specjalny nawiązujący do graczy lub screena).
@@ -4283,6 +4215,51 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
       }
     }
 
+    // Edycja wygenerowanych przez AI propozycji zakładów na żywo przed publikacją
+    function updateAiSuggestedField(idx, field, val) {
+      if (!aiSuggestedMarketsBuffer[idx]) return;
+      if (field === 'defaultStake') {
+        aiSuggestedMarketsBuffer[idx].defaultStake = Math.max(1, Math.round(Number(val) || 20));
+      } else {
+        aiSuggestedMarketsBuffer[idx][field] = String(val || '').trim();
+      }
+    }
+
+    function updateAiSuggestedOption(idx, optIdx, field, val) {
+      const m = aiSuggestedMarketsBuffer[idx];
+      if (!m || !m.options || !m.options[optIdx]) return;
+      if (field === 'odds') {
+        m.options[optIdx].odds = Math.max(1.05, Math.round((Number(val) || 1.5) * 100) / 100);
+      } else {
+        m.options[optIdx].label = String(val || '').trim();
+      }
+    }
+
+    function addAiSuggestedOption(idx) {
+      const m = aiSuggestedMarketsBuffer[idx];
+      if (!m || !Array.isArray(m.options)) return;
+      const hm = Math.min(60, Math.max(0, Number(appState?.multipliers?.houseMargin ?? 18)));
+      const defaultOdds = Math.round((2.5 * ((100 - hm) / 100)) * 100) / 100;
+      m.options.push({
+        id: 'opt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+        label: `Opcja ${m.options.length + 1}`,
+        prob: 33,
+        odds: defaultOdds,
+        evPercent: -hm
+      });
+      renderAiSuggestedBets();
+    }
+
+    function removeAiSuggestedOption(idx, optIdx) {
+      const m = aiSuggestedMarketsBuffer[idx];
+      if (!m || !Array.isArray(m.options) || m.options.length <= 2) {
+        showToast('Zakład musi mieć minimum 2 opcje!', 'warn');
+        return;
+      }
+      m.options.splice(optIdx, 1);
+      renderAiSuggestedBets();
+    }
+
     function renderAiSuggestedBets() {
       const wrap = document.getElementById('aiSuggestedBetsWrap');
       const grid = document.getElementById('aiSuggestedBetsGrid');
@@ -4295,26 +4272,37 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
 
       wrap.classList.remove('hidden');
       grid.innerHTML = aiSuggestedMarketsBuffer.map((m, idx) => {
-        const optsHtml = m.options.map(o => `
-          <div class="flex items-center justify-between bg-slate-950/90 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs">
-            <span class="text-slate-200 font-medium">${escapeHtml(o.label)}</span>
-            <span class="font-mono text-[11px] text-rose-300 font-bold" title="Szansa: ${o.prob}% | Wartość oczekiwana: ${o.evPercent}%">${o.odds.toFixed(2)}x <span class="text-[10px] text-slate-500">(EV ${o.evPercent}%)</span></span>
+        const optsHtml = m.options.map((o, optIdx) => `
+          <div class="flex items-center gap-1.5 bg-slate-950/90 border border-slate-800 rounded-lg p-1.5 text-xs">
+            <input type="text" value="${escapeHtml(o.label)}" oninput="updateAiSuggestedOption(${idx}, ${optIdx}, 'label', this.value)" class="flex-1 bg-slate-900 border border-slate-700/80 rounded px-2 py-1 text-white focus:outline-none focus:border-amber-500" placeholder="Nazwa opcji" />
+            <div class="flex items-center gap-1 shrink-0" title="Kurs w grze przeciwko AI (z ujemnym EV)">
+              <span class="text-[10px] text-slate-500">Kurs:</span>
+              <input type="number" step="0.05" min="1.05" max="15" value="${Number(o.odds).toFixed(2)}" oninput="updateAiSuggestedOption(${idx}, ${optIdx}, 'odds', this.value)" class="w-16 bg-slate-900 border border-rose-500/40 rounded px-1.5 py-1 text-right font-mono text-rose-300 font-bold focus:outline-none" />
+            </div>
+            ${m.options.length > 2 ? `<button type="button" onclick="removeAiSuggestedOption(${idx}, ${optIdx})" class="text-slate-500 hover:text-rose-400 px-1" title="Usuń opcję">&times;</button>` : ''}
           </div>
         `).join('');
 
         return `
           <div class="bg-slate-900/95 border border-amber-500/40 rounded-xl p-4 flex flex-col justify-between gap-3 shadow-lg">
-            <div class="space-y-2">
-              <div class="flex items-center justify-between text-[11px]">
-                <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">Propozycja #${idx + 1}</span>
-                <span class="text-slate-400 font-mono">Stawka bazowa: ${m.defaultStake} ELO</span>
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between gap-2 text-[11px]">
+                <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">✏️ Edytuj Propozycję #${idx + 1}</span>
+                <div class="flex items-center gap-1">
+                  <span class="text-slate-400">Stawka:</span>
+                  <input type="number" min="1" max="500" step="5" value="${m.defaultStake}" oninput="updateAiSuggestedField(${idx}, 'defaultStake', this.value)" class="w-16 bg-slate-950 border border-amber-500/40 rounded px-2 py-0.5 text-right font-mono font-bold text-amber-300 focus:outline-none" />
+                  <span class="text-slate-400 font-mono">ELO</span>
+                </div>
               </div>
-              <h5 class="text-xs sm:text-sm font-bold text-white leading-snug">${escapeHtml(m.title)}</h5>
-              <div class="space-y-1.5 pt-1">${optsHtml}</div>
+              <div>
+                <input type="text" value="${escapeHtml(m.title)}" oninput="updateAiSuggestedField(${idx}, 'title', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-amber-500" placeholder="Pytanie zakładu..." />
+              </div>
+              <div class="space-y-1.5 pt-0.5">${optsHtml}</div>
+              <button type="button" onclick="addAiSuggestedOption(${idx})" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold">+ Dodaj kolejną opcję</button>
             </div>
             <div class="flex items-center gap-2 pt-2 border-t border-slate-800">
               <button type="button" onclick="publishSingleAiBet(${idx}, 'AI_HOUSE')" class="flex-1 py-1.5 px-2 rounded-lg bg-rose-600/25 hover:bg-rose-600/40 text-rose-200 border border-rose-500/40 text-[11px] font-bold transition">
-                🎰 Publikuj vs AI (Ujemne EV)
+                🎰 Publikuj vs AI
               </button>
               <button type="button" onclick="publishSingleAiBet(${idx}, 'PARIMUTUEL')" class="flex-1 py-1.5 px-2 rounded-lg bg-indigo-600/25 hover:bg-indigo-600/40 text-indigo-200 border border-indigo-500/40 text-[11px] font-bold transition">
                 👥 Publikuj (Wspólna Pula)
@@ -4331,12 +4319,18 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
       await ensureFreshStateBeforeWrite();
       if (!Array.isArray(appState.markets)) appState.markets = [];
 
+      const cleanOpts = (item.options || []).filter(o => String(o.label || '').trim().length > 0);
+      if (cleanOpts.length < 2) {
+        showToast('Zakład musi mieć minimum 2 niepuste opcje!', 'warn');
+        return;
+      }
+
       const newMarket = {
         id: 'mkt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-        title: item.title,
+        title: item.title || 'Zakład Ekipy',
         mode: chosenMode || item.mode || 'AI_HOUSE',
-        defaultStake: Number(item.defaultStake) || 20,
-        options: JSON.parse(JSON.stringify(item.options)),
+        defaultStake: Math.max(1, Number(item.defaultStake) || 20),
+        options: JSON.parse(JSON.stringify(cleanOpts)),
         wagers: [],
         status: 'ACTIVE',
         createdAt: new Date().toISOString().split('T')[0]
@@ -4357,16 +4351,19 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
       const defaultMode = document.getElementById('betAiDefaultModeSelect')?.value || 'AI_HOUSE';
 
       aiSuggestedMarketsBuffer.forEach((item, i) => {
-        appState.markets.unshift({
-          id: 'mkt_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 5),
-          title: item.title,
-          mode: defaultMode,
-          defaultStake: Number(item.defaultStake) || 20,
-          options: JSON.parse(JSON.stringify(item.options)),
-          wagers: [],
-          status: 'ACTIVE',
-          createdAt: new Date().toISOString().split('T')[0]
-        });
+        const cleanOpts = (item.options || []).filter(o => String(o.label || '').trim().length > 0);
+        if (cleanOpts.length >= 2) {
+          appState.markets.unshift({
+            id: 'mkt_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 5),
+            title: item.title || 'Zakład Ekipy',
+            mode: defaultMode,
+            defaultStake: Math.max(1, Number(item.defaultStake) || 20),
+            options: JSON.parse(JSON.stringify(cleanOpts)),
+            wagers: [],
+            status: 'ACTIVE',
+            createdAt: new Date().toISOString().split('T')[0]
+          });
+        }
       });
 
       aiSuggestedMarketsBuffer = [];
@@ -4381,21 +4378,39 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
       renderAiSuggestedBets();
     }
 
-    // Ręczne tworzenie Rynku z Opcjami (A/B/C)
-    function openCustomMarketModal() {
+    // Ręczne tworzenie lub Edycja Opublikowanego Rynku z Opcjami (A/B/C)
+    function openCustomMarketModal(editMarketId = null) {
       const hm = Math.min(60, Math.max(0, Number(appState?.multipliers?.houseMargin ?? 18)));
       const factor = (100 - hm) / 100;
       const evenOdds2Way = (2.0 * factor).toFixed(2);
       const evenOdds3Way = (3.0 * factor).toFixed(2);
-      document.getElementById('cmTitleInput').value = '';
-      document.getElementById('cmModeSelect').value = 'AI_HOUSE';
-      document.getElementById('cmDefaultStakeInput').value = '20';
-      document.getElementById('cmOpt1Label').value = 'Tak / Opcja A';
-      document.getElementById('cmOpt1Odds').value = evenOdds2Way;
-      document.getElementById('cmOpt2Label').value = 'Nie / Opcja B';
-      document.getElementById('cmOpt2Odds').value = evenOdds2Way;
-      document.getElementById('cmOpt3Label').value = '';
-      document.getElementById('cmOpt3Odds').value = evenOdds3Way;
+
+      const editIdInput = document.getElementById('cmEditMarketId');
+      if (editMarketId) {
+        const mkt = (appState.markets || []).find(m => m.id === editMarketId);
+        if (!mkt) return;
+        if (editIdInput) editIdInput.value = mkt.id;
+        document.getElementById('cmTitleInput').value = mkt.title || '';
+        document.getElementById('cmModeSelect').value = mkt.mode || 'AI_HOUSE';
+        document.getElementById('cmDefaultStakeInput').value = mkt.defaultStake || 20;
+        document.getElementById('cmOpt1Label').value = mkt.options?.[0]?.label || '';
+        document.getElementById('cmOpt1Odds').value = mkt.options?.[0]?.odds ?? evenOdds2Way;
+        document.getElementById('cmOpt2Label').value = mkt.options?.[1]?.label || '';
+        document.getElementById('cmOpt2Odds').value = mkt.options?.[1]?.odds ?? evenOdds2Way;
+        document.getElementById('cmOpt3Label').value = mkt.options?.[2]?.label || '';
+        document.getElementById('cmOpt3Odds').value = mkt.options?.[2]?.odds ?? evenOdds3Way;
+      } else {
+        if (editIdInput) editIdInput.value = '';
+        document.getElementById('cmTitleInput').value = '';
+        document.getElementById('cmModeSelect').value = 'AI_HOUSE';
+        document.getElementById('cmDefaultStakeInput').value = '20';
+        document.getElementById('cmOpt1Label').value = 'Tak / Opcja A';
+        document.getElementById('cmOpt1Odds').value = evenOdds2Way;
+        document.getElementById('cmOpt2Label').value = 'Nie / Opcja B';
+        document.getElementById('cmOpt2Odds').value = evenOdds2Way;
+        document.getElementById('cmOpt3Label').value = '';
+        document.getElementById('cmOpt3Odds').value = evenOdds3Way;
+      }
       document.getElementById('customMarketModal').classList.remove('hidden');
     }
 
@@ -4404,9 +4419,10 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
     }
 
     async function confirmCreateCustomMarket() {
+      const editId = document.getElementById('cmEditMarketId')?.value || '';
       const title = document.getElementById('cmTitleInput').value.trim();
       const mode = document.getElementById('cmModeSelect').value;
-      const defaultStake = Math.max(1, Number(document.getElementById('cmDefaultStakeInput').value) || 20);
+      const defaultStake = Math.max(1, Math.round(Number(document.getElementById('cmDefaultStakeInput').value) || 20));
 
       if (!title) {
         showToast('Wpisz pytanie / nazwę wydarzenia do obstawienia!', 'warn');
@@ -4424,15 +4440,39 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
         return;
       }
 
+      await ensureFreshStateBeforeWrite();
+      if (!Array.isArray(appState.markets)) appState.markets = [];
+
+      if (editId) {
+        const existingMkt = appState.markets.find(m => m.id === editId);
+        if (existingMkt) {
+          existingMkt.title = title;
+          existingMkt.mode = mode;
+          existingMkt.defaultStake = defaultStake;
+          existingMkt.options = rawOpts.map((o, idx) => ({
+            id: existingMkt.options?.[idx]?.id || ('opt_' + idx + '_' + Math.random().toString(36).slice(2, 5)),
+            label: o.label,
+            odds: Math.max(1.05, Math.round(o.odds * 100) / 100),
+            evPercent: -(appState?.multipliers?.houseMargin ?? 18)
+          }));
+          // W trybie PARIMUTUEL wyrównujemy stawki wszystkich dotychczasowych uczestników do stałej stawki rynku
+          if (mode === 'PARIMUTUEL' && Array.isArray(existingMkt.wagers)) {
+            existingMkt.wagers.forEach(w => { w.stake = defaultStake; });
+          }
+        }
+        closeCustomMarketModal();
+        await persistState();
+        renderAll();
+        showToast('Zaktualizowano zakład!', 'success');
+        return;
+      }
+
       const options = rawOpts.map((o, idx) => ({
         id: 'opt_' + idx + '_' + Math.random().toString(36).slice(2, 5),
         label: o.label,
         odds: Math.max(1.05, Math.round(o.odds * 100) / 100),
-        evPercent: -18
+        evPercent: -(appState?.multipliers?.houseMargin ?? 18)
       }));
-
-      await ensureFreshStateBeforeWrite();
-      if (!Array.isArray(appState.markets)) appState.markets = [];
 
       appState.markets.unshift({
         id: 'mkt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
@@ -4448,14 +4488,13 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
       closeCustomMarketModal();
       await persistState();
       renderAll();
-      showToast('Dodano nowy rynek bukmacherski!', 'success');
+      showToast('Dodano nowy rynek zakładów!', 'success');
     }
 
     async function placeMarketWager(marketId, optionId) {
       const memberSel = document.getElementById(`mktMember_${marketId}`);
       const stakeInp = document.getElementById(`mktStake_${marketId}`);
       const memberId = memberSel?.value;
-      const stake = Math.max(1, Math.round(Number(stakeInp?.value) || 20));
 
       if (!memberId) {
         showToast('Wybierz gracza z listy!', 'warn');
@@ -4470,7 +4509,12 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
       const opt = (mkt.options || []).find(o => o.id === optionId);
       if (!opt) return;
 
-      // Jeśli ten gracz już wcześniej obstawił w tym rynku, aktualizujemy jego zakład na wybraną opcję i stawkę
+      // NAPRAWA PARIMUTUEL: W trybie Wspólnej Puli (PARIMUTUEL) stawka wejścia jest ZAWSZE STAŁA (równa mkt.defaultStake),
+      // nie można wejść za dowolną kwotę!
+      const stake = mkt.mode === 'PARIMUTUEL'
+        ? (Math.max(1, Math.round(Number(mkt.defaultStake) || 20)))
+        : (Math.max(1, Math.round(Number(stakeInp?.value || mkt.defaultStake) || 20)));
+
       const existingIdx = mkt.wagers.findIndex(w => w.memberId === memberId);
       if (existingIdx !== -1) {
         mkt.wagers[existingIdx] = { memberId, optionId, stake };
@@ -4527,9 +4571,6 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
           const losers = [];
 
           if (targetMkt.mode === 'AI_HOUSE') {
-            // Tryb przeciwko Krupierowi AI (Ujemne EV):
-            // Wygrani otrzymują zysk netto = stake * (odds - 1) (pomniejszony o marżę kasyna AI!)
-            // Przegrani tracą 100% swojej stawki (-stake) na rzecz Krupiera AI!
             const odds = Number(winOpt.odds) || 1.65;
             const netMultiplier = Math.max(0.10, odds - 1);
 
@@ -4545,28 +4586,26 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
               }
             });
           } else {
-            // Tryb PARIMUTUEL (Gracze vs Gracze – Wspólna Pula):
-            // Pula przegranych dzieli się proporcjonalnie do wkładu zwycięzców!
-            const totalLostPot = losingWagers.reduce((sum, w) => sum + (Number(w.stake) || 20), 0);
-            const totalWinningStakes = winningWagers.reduce((sum, w) => sum + (Number(w.stake) || 20), 0) || 1;
+            // Tryb PARIMUTUEL (Stała stawka wejścia = targetMkt.defaultStake dla każdego uczestnika!):
+            // Każdy przegrany traci stałą stawkę wejścia (-fixedStake), a cała pula przegranych dzieli się po równo na wygranych!
+            const fixedStake = Math.max(1, Number(targetMkt.defaultStake) || 20);
+            const totalLostPot = losingWagers.length * fixedStake;
+            const gainPerWinner = Math.round((totalLostPot / winningWagers.length) * 10) / 10;
 
             winningWagers.forEach(w => {
-              const s = Number(w.stake) || 20;
-              const shareOfPot = Math.round((totalLostPot * (s / totalWinningStakes)) * 10) / 10;
-              customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) + shareOfPot;
+              customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) + gainPerWinner;
               if (!winners.includes(w.memberId)) winners.push(w.memberId);
             });
 
             losingWagers.forEach(w => {
-              const s = Number(w.stake) || 20;
-              customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) - s;
+              customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) - fixedStake;
               if (!losers.includes(w.memberId)) losers.push(w.memberId);
             });
           }
 
           const modeDesc = targetMkt.mode === 'AI_HOUSE'
             ? `🎰 Krupier AI (Kurs ${winOpt.odds.toFixed(2)}x, ujemne EV)`
-            : `👥 Wspólna Pula Graczy`;
+            : `👥 Wspólna Pula (Stała stawka ${targetMkt.defaultStake || 20} ELO)`;
 
           appState.events.unshift({
             id: 'ev_mkt_' + Date.now(),
@@ -4619,7 +4658,7 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
       if (activeMarkets.length === 0) {
         container.innerHTML = `
           <div class="col-span-full bg-slate-900/50 border border-slate-800/80 rounded-xl p-6 text-center text-xs text-slate-400">
-            Brak otwartych rynków z opcjami. Użyj <strong>🤖 Krupiera AI powyżej</strong> (wrzuć screena lub wpisz wydarzenie), aby wygenerować zakłady z ujemnym EV lub kliknij <strong>„➕ Dodaj własny rynek z opcjami”</strong>!
+            Brak otwartych rynków z opcjami. Użyj <strong>🤖 Krupiera AI powyżej</strong> lub kliknij <strong>„➕ Dodaj własny rynek z opcjami”</strong>!
           </div>
         `;
         return;
@@ -4637,28 +4676,34 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
 
       container.innerHTML = activeMarkets.map(mkt => {
         const isAiHouse = mkt.mode === 'AI_HOUSE';
+        const fixedStake = Math.max(1, Number(mkt.defaultStake) || 20);
         const wagers = mkt.wagers || [];
-        const totalPool = wagers.reduce((s, w) => s + (Number(w.stake) || 0), 0);
+        const totalPool = isAiHouse
+          ? wagers.reduce((s, w) => s + (Number(w.stake) || 0), 0)
+          : wagers.length * fixedStake;
 
         const modeBadge = isAiHouse
           ? `<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold">🎰 vs Krupier AI (EV -${appState?.multipliers?.houseMargin ?? 18}%)</span>`
-          : `<span class="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[10px] font-bold">👥 Gracze vs Gracze (Pula: ${totalPool} ELO)</span>`;
+          : `<span class="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[10px] font-bold">👥 Wspólna Pula (Stałe ${fixedStake} ELO/os. • Pula: ${totalPool} ELO)</span>`;
 
         const optionsHtml = (mkt.options || []).map(opt => {
           const optWagers = wagers.filter(w => w.optionId === opt.id);
-          const optSum = optWagers.reduce((s, w) => s + (Number(w.stake) || 0), 0);
+          const optSum = isAiHouse
+            ? optWagers.reduce((s, w) => s + (Number(w.stake) || 0), 0)
+            : optWagers.length * fixedStake;
           const netMultiplier = Math.max(0.1, (Number(opt.odds) || 1.65) - 1);
 
           const bettorsBadges = optWagers.map(w => {
             const mem = appState.members.find(x => x.id === w.memberId);
             if (!mem) return '';
+            const dispStake = isAiHouse ? w.stake : fixedStake;
             const winPreview = isAiHouse
-              ? `+${Math.round(w.stake * netMultiplier * 10) / 10}`
-              : `${w.stake}`;
+              ? `+${Math.round(dispStake * netMultiplier * 10) / 10}`
+              : `${dispStake}`;
             return `
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-[11px] text-white">
                 <span class="w-1.5 h-1.5 rounded-full" style="background:${mem.color}"></span>
-                <span>${escapeHtml(mem.name)}: <strong>${w.stake}</strong> ELO</span>
+                <span>${escapeHtml(mem.name)}: <strong>${dispStake}</strong> ELO</span>
                 ${isAiHouse ? `<span class="text-[10px] text-emerald-400 font-mono">(wygr: ${winPreview})</span>` : ''}
                 <button type="button" onclick="removeMarketWager('${mkt.id}', '${mem.id}')" class="text-rose-400 hover:text-rose-300 ml-0.5" title="Usuń zakład">&times;</button>
               </span>
@@ -4671,13 +4716,13 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
                 <div class="flex items-center gap-2">
                   <span class="text-xs sm:text-sm font-bold text-white">${escapeHtml(opt.label)}</span>
                   ${isAiHouse
-                    ? `<span class="text-xs font-mono font-extrabold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-500/30" title="Zysk netto to +${Math.round(netMultiplier*100)}% stawki, a strata to -100% stawki (Ujemne EV)">Kurs AI: ${Number(opt.odds).toFixed(2)}x (Zysk +${Math.round(netMultiplier * 100)}%)</span>`
+                    ? `<span class="text-xs font-mono font-extrabold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-500/30">Kurs AI: ${Number(opt.odds).toFixed(2)}x (Zysk +${Math.round(netMultiplier * 100)}%)</span>`
                     : `<span class="text-[11px] font-mono text-indigo-300">W puli opcji: ${optSum} ELO (${optWagers.length} os.)</span>`
                   }
                 </div>
                 <div class="flex items-center gap-1.5">
                   <button type="button" onclick="placeMarketWager('${mkt.id}', '${opt.id}')" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition">
-                    🎯 Obstaw tę opcję
+                    🎯 Obstaw (${isAiHouse ? 'wybrana stawka' : fixedStake + ' ELO'})
                   </button>
                   <button type="button" onclick="resolveMarketWithOption('${mkt.id}', '${opt.id}')" title="Rozstrzygnij: Ta opcja wygrała!" class="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-[11px] font-bold transition">
                     🏆 Wygrało
@@ -4689,13 +4734,19 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
           `;
         }).join('');
 
+        const stakeControlHtml = isAiHouse
+          ? `<span class="text-slate-400 font-medium ml-auto">Stawka ELO:</span>
+             <input type="number" id="mktStake_${mkt.id}" value="${fixedStake}" min="1" max="500" step="5" class="w-20 bg-slate-900 border border-amber-500/40 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none" />`
+          : `<span class="ml-auto px-2.5 py-1 rounded-lg bg-slate-900 border border-indigo-500/30 text-indigo-300 font-mono font-bold text-xs">🔒 Stała stawka: ${fixedStake} ELO</span>`;
+
         return `
           <div class="bg-slate-900/90 border border-purple-500/35 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-xl">
             <div class="space-y-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="text-[11px] text-slate-400">📅 ${escapeHtml(mkt.createdAt || '')}</span>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5">
                   ${modeBadge}
+                  <button type="button" onclick="openCustomMarketModal('${mkt.id}')" title="Edytuj zakład / opcje / stawkę" class="text-slate-300 hover:text-amber-300 text-xs px-2 py-0.5 rounded bg-slate-800 border border-slate-700">✏️ Edytuj</button>
                   <button type="button" onclick="cancelMarket('${mkt.id}')" title="Usuń / Anuluj rynek" class="text-slate-400 hover:text-rose-400 text-xs px-1.5 py-0.5 rounded bg-slate-800">✕</button>
                 </div>
               </div>
@@ -4708,18 +4759,13 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
                 <select id="mktMember_${mkt.id}" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold focus:outline-none">
                   ${memberOptionsHtml}
                 </select>
-                <span class="text-slate-400 font-medium ml-auto">Stawka ELO:</span>
-                <input type="number" id="mktStake_${mkt.id}" value="${mkt.defaultStake || 20}" min="1" max="500" step="5" class="w-20 bg-slate-900 border border-amber-500/40 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none" />
+                ${stakeControlHtml}
               </div>
 
               <!-- Lista opcji do obstawiania i rozstrzygnięcia -->
               <div class="space-y-2">
                 ${optionsHtml}
               </div>
-            </div>
-
-            <div class="text-[11px] text-slate-400 flex items-center justify-between pt-2 border-t border-slate-800/80">
-              <span>${isAiHouse ? '⚠️ W grze z AI wygrana jest pomniejszona o marżę kasyna (Ujemne EV), a przegrana zabiera 100% stawki.' : '💡 Cała pula przegranych opcji trafia do graczy, którzy wytypowali zwycięską opcję.'}</span>
             </div>
           </div>
         `;
@@ -4767,9 +4813,6 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
           const fullPrompt = `Jesteś błyskotliwym komentatorem i analitykiem "Ekipa ELO Wrapped 2026".
 Oto aktualny Główny Ranking Ekipy:
 ${leaderboardSummary}
-
-Tabela Ligi Dwójek 2v2 (Sezon #${appState.league2v2.seasonNumber || 1}):
-${l2v2Summary}
 
 Ostatnie wydarzenia i zakłady:
 ${recentEventsSummary}
