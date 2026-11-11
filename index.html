@@ -74,6 +74,10 @@
         <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white">
           🏆 Główny Ranking & Mecze
         </button>
+        <button onclick="switchTab('bets')" id="tabBtn-bets" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5">
+          <span>🎲 Zakłady & Krupier AI</span>
+          <span id="navBetsBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">0</span>
+        </button>
         <button onclick="switchTab('league2v2')" id="tabBtn-league2v2" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5">
           <span>🎮 Liga Dwójek (2v2)</span>
           <span id="navSeasonBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">S1</span>
@@ -105,33 +109,14 @@
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-2 shrink-0">
-          <button onclick="openCreateBetModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/20 transition">
-            🎲 + Nowy Zakład Punktowy (2+ osób)
+          <button onclick="switchTab('bets')" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5">
+            <span>🎲 Zakłady & Krupier AI</span>
+            <span id="dashBetsBadge" class="px-1.5 py-0.5 rounded bg-black/25 text-white font-mono text-[10px]">0</span>
           </button>
           <button onclick="switchTab('league2v2')" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition">
             🎮 Liga Dwójek 2v2 →
           </button>
         </div>
-      </div>
-
-      <!-- PANEL AKTYWNYCH ZAKŁADÓW PUNKTOWYCH WIDOCZNY DLA WSZYSTKICH -->
-      <div class="glass rounded-2xl p-5 border border-amber-500/30 shadow-xl space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl">🎲</span>
-            <div>
-              <h2 class="text-base font-bold text-white flex items-center gap-2">
-                <span>Aktywne Zakłady Punktowe ELO</span>
-                <span id="activeBetsCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">0</span>
-              </h2>
-              <p class="text-xs text-slate-400">Obstawiaj swoje punkty ELO między 2 lub więcej osobami – zakłady synchronizują się na żywo u każdego!</p>
-            </div>
-          </div>
-          <button onclick="openCreateBetModal()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition">
-            ➕ Postaw nowy zakład
-          </button>
-        </div>
-        <div id="activeBetsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -326,6 +311,160 @@
 
         </div>
       </div>
+    </div>
+
+    <!-- ================= NOWA ZAKŁADKA: ZAKŁADY & KRUPIER AI (NOWE RYNKI + ZAKŁADY Z AI O UJEMNYM EV + STARE ZAKŁADY) ================= -->
+    <div id="tab-bets" class="hidden space-y-6">
+
+      <!-- Górny pasek informacyjny Zakładów -->
+      <div class="glass rounded-2xl p-5 border border-amber-500/30 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/25">
+            🎲
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-lg sm:text-xl font-extrabold text-white tracking-tight">CENTRUM ZAKŁADÓW & KRUPIER AI</h2>
+              <span class="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                Marża Kasyna AI: EV ~ -18%
+              </span>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5">
+              Twórz rynki ze zrzutu ekranu / opisu przez AI, graj przeciwko <strong class="text-rose-300">Krupierowi AI (z ujemnym EV, żeby trudniej było wyjść na plus)</strong>, obstawiaj w puli z ludźmi lub korzystaj z klasycznych zakładów wieloosobowych!
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="openCustomMarketModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg transition">
+            ✍️ + Stwórz Własny Rynek (Opcje A/B/C)
+          </button>
+          <button type="button" onclick="openCreateBetModal()" class="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold text-xs transition">
+            👥 + Klasyczny Zakład Wieloosobowy (Stary)
+          </button>
+        </div>
+      </div>
+
+      <!-- SEKCJA 1: KRUPIER AI – GENERATOR ZAKŁADÓW ZE ZRZUTU EKRANU / ZDJĘCIA I KONTEKSTU -->
+      <div class="glass rounded-2xl p-6 border border-indigo-500/30 shadow-xl space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <span>🤖 Krupier AI: Wygeneruj Zakłady ze Screenów / Wydarzenia / Promptu</span>
+            </h3>
+            <p class="text-xs text-slate-400">
+              Wrzuć screena (np. lobby 2v2, tablicę kręgli, zdjęcie ze spotkania) i/lub wpisz kontekst. AI wystawi gotowe zakłady z opcjami oraz zaniżonymi kursami (ujemne EV)!
+            </p>
+          </div>
+          <span class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-indigo-300 font-mono">
+            Wklej obraz: Ctrl + V lub kliknij pole
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+          <!-- Dropzone na screena / zdjęcie do zakładu -->
+          <div class="lg:col-span-5 flex flex-col">
+            <div id="betAiDropzone" onclick="document.getElementById('betAiImageInput').click()" class="flex-1 bg-slate-950/80 border-2 border-dashed border-indigo-500/30 hover:border-indigo-400/60 rounded-xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center min-h-[150px] relative">
+              <input type="file" id="betAiImageInput" accept="image/*" class="hidden" onchange="handleBetAiImageSelect(event)" />
+              <div id="betAiImageEmptyState" class="space-y-1.5">
+                <div class="text-2xl">📸</div>
+                <div class="text-xs font-bold text-white">Dodaj screen / zdjęcie kontekstowe (opcjonalnie)</div>
+                <div class="text-[11px] text-slate-400">Kliknij tutaj albo wciśnij <span class="font-mono text-indigo-400">Ctrl+V</span></div>
+              </div>
+              <div id="betAiImagePreviewWrap" class="hidden w-full space-y-2" onclick="event.stopPropagation()">
+                <img id="betAiImagePreview" src="" alt="Podgląd" class="max-h-32 mx-auto rounded-lg border border-slate-700 object-contain" />
+                <div class="flex items-center justify-center gap-2">
+                  <span class="text-[11px] text-emerald-400 font-semibold">✅ Zdjęcie załadowane</span>
+                  <button type="button" onclick="clearBetAiImage()" class="text-[11px] text-rose-400 hover:underline font-semibold">Usuń zdjęcie</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pole na kontekst / wydarzenie / prompt -->
+          <div class="lg:col-span-7 flex flex-col justify-between space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+                Opis sytuacji / wydarzenia / prompt dla Krupiera AI:
+              </label>
+              <textarea id="betAiContextInput" rows="3" placeholder="Np. Gramy w kręgle, Michał już narzeka na nadgarstek, a Tomek twierdzi że rzuci ponad 130 pkt. / Właśnie zaczynamy sesję LoL 2v2, SPICYBob ma serię 4 porażek..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"></textarea>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2 text-xs">
+                <label class="text-slate-400">Domyślny tryb nowych rynków:</label>
+                <select id="betAiDefaultModeSelect" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                  <option value="AI_HOUSE">🎰 Przeciwko Krupierowi AI (Ujemne EV ~ -18%)</option>
+                  <option value="PARIMUTUEL">👥 Gracze vs Gracze (Wspólna Pula 0% marży)</option>
+                </select>
+              </div>
+
+              <button type="button" id="generateAiBetsBtn" onclick="generateBetsWithAI()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition flex items-center gap-2">
+                <span>✨ Wygeneruj Zakłady przez AI</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wygenerowane propozycje od AI do zatwierdzenia / opublikowania -->
+        <div id="aiSuggestedBetsWrap" class="hidden pt-4 border-t border-slate-800 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h4 class="text-xs sm:text-sm font-bold text-amber-300 uppercase tracking-wider">
+              🎯 Propozycje Zakładów od Krupiera AI (Kliknij „Opublikuj”, aby udostępnić ekipie):
+            </h4>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="publishAllAiSuggestedBets()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition">
+                📢 Opublikuj wszystkie (3)
+              </button>
+              <button type="button" onclick="clearAiSuggestedBets()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs transition">
+                Ukryj
+              </button>
+            </div>
+          </div>
+          <div id="aiSuggestedBetsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3.5"></div>
+        </div>
+      </div>
+
+      <!-- SEKCJA 2: NOWE ZAKŁADY (RYNKI Z OPCJAMI A/B/C: PRZECIWKO AI [UJEMNE EV] ORAZ GRACZE VS GRACZE) -->
+      <div class="glass rounded-2xl p-6 border border-purple-500/30 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <span>🔥 Aktywne Rynki Wydarzeń (Zakłady z Opcjami & Zakłady z Krupierem AI)</span>
+              <span id="activeMarketsCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono">0</span>
+            </h3>
+            <p class="text-xs text-slate-400">
+              Wybierz gracza, wpisz stawkę ELO i kliknij opcję, którą obstawiasz! W trybie <strong class="text-rose-300">🎰 Krupier AI (Ujemne EV)</strong> kursy mają wbudowaną marżę ~18% na korzyść kasyna (tracisz 100% stawki, a przy wygranej zysk netto jest pomniejszony o podatek AI).
+            </p>
+          </div>
+          <button type="button" onclick="openCustomMarketModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition">
+            ➕ Dodaj własny rynek z opcjami
+          </button>
+        </div>
+
+        <div id="activeMarketsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+      </div>
+
+      <!-- SEKCJA 3: STARE ZAKŁADY WIELOOSOBOWE (KLASYCZNA WSPÓLNA PULA UCZESTNIKÓW) -->
+      <div class="glass rounded-2xl p-6 border border-amber-500/30 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <span>👥 Klasyczne Zakłady Wieloosobowe (Wspólna Pula 2+ Osób)</span>
+              <span id="activeBetsCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">0</span>
+            </h3>
+            <p class="text-xs text-slate-400">
+              Stare zakłady grupowe: każdy uczestnik wkłada równą stawkę ELO do wspólnej puli, a na koniec wskazujecie 1 lub więcej zwycięzców.
+            </p>
+          </div>
+          <button type="button" onclick="openCreateBetModal()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition">
+            ➕ Nowy klasyczny zakład (2+ osób)
+          </button>
+        </div>
+
+        <div id="activeBetsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+      </div>
+
     </div>
 
     <!-- ================= ZAKŁADKA 2: LIGA DWÓJEK (2v2) ZINTEGROWANA W STYLU GLASS/INDIGO ================= -->
@@ -938,6 +1077,66 @@
     </div>
   </div>
 
+  <!-- ================= MODAL TWORZENIA RYNKU Z OPCJAMI (GRACZE VS GRACZE LUB VS KRUPIER AI Z UJEMNYM EV) ================= -->
+  <div id="customMarketModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-dark rounded-2xl max-w-lg w-full p-6 border border-purple-500/40 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-base font-bold text-white">✍️ Stwórz Zakład z Opcjami Wyboru (A / B / C)</h3>
+          <p class="text-[11px] text-slate-400">Wybierz tryb przeciwko Krupierowi AI (Ujemne EV) lub Wspólną Pulę Graczy</p>
+        </div>
+        <button type="button" onclick="closeCustomMarketModal()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-medium text-slate-300 mb-1">Pytanie / Wydarzenie do obstawienia</label>
+          <input type="text" id="cmTitleInput" placeholder="Np. Kto wykręci najwięcej DMG w tym meczu? / Czy Tomek rzuci powyżej 120 pkt?" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-300 mb-1">Tryb rozliczania zakładu</label>
+            <select id="cmModeSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+              <option value="AI_HOUSE">🎰 Przeciwko Krupierowi AI (Ujemne EV ~ -18%)</option>
+              <option value="PARIMUTUEL">👥 Gracze vs Gracze (Wspólna Pula 0% marży)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-amber-300 mb-1">Domyślna stawka wejścia (ELO)</label>
+            <input type="number" id="cmDefaultStakeInput" value="20" min="5" max="200" step="5" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block font-medium text-slate-300">Opcje do obstawiania oraz kursy u Krupiera AI (mnożnik wypłaty):</label>
+          <p class="text-[11px] text-slate-400">
+            💡 Dla 2 równych opcji (50%/50%) uczciwy kurs to <code>2.00x</code>, a z ujemnym EV u Krupiera AI to <code>1.65x</code> (zysk netto +0.65x stawki, strata -1.00x).
+          </p>
+          <div class="grid grid-cols-12 gap-2 items-center">
+            <input type="text" id="cmOpt1Label" value="Tak / Opcja A" placeholder="Opcja 1" class="col-span-8 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+            <input type="number" id="cmOpt1Odds" value="1.65" step="0.05" min="1.05" max="10" class="col-span-4 bg-slate-950 border border-rose-500/40 rounded-lg px-2.5 py-2 text-right font-mono text-rose-300" title="Kurs AI (z ujemnym EV)" />
+          </div>
+          <div class="grid grid-cols-12 gap-2 items-center">
+            <input type="text" id="cmOpt2Label" value="Nie / Opcja B" placeholder="Opcja 2" class="col-span-8 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+            <input type="number" id="cmOpt2Odds" value="1.65" step="0.05" min="1.05" max="10" class="col-span-4 bg-slate-950 border border-rose-500/40 rounded-lg px-2.5 py-2 text-right font-mono text-rose-300" title="Kurs AI (z ujemnym EV)" />
+          </div>
+          <div class="grid grid-cols-12 gap-2 items-center">
+            <input type="text" id="cmOpt3Label" value="" placeholder="Opcja 3 (opcjonalnie, zostaw puste dla 2 opcji)" class="col-span-8 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+            <input type="number" id="cmOpt3Odds" value="2.35" step="0.05" min="1.05" max="15" class="col-span-4 bg-slate-950 border border-rose-500/40 rounded-lg px-2.5 py-2 text-right font-mono text-rose-300" title="Kurs AI (z ujemnym EV)" />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+        <button type="button" onclick="closeCustomMarketModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Anuluj</button>
+        <button type="button" onclick="confirmCreateCustomMarket()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg">
+          📢 Opublikuj Rynek
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= MODAL WERYFIKACJI PINU ADMINA (3030) ================= -->
   <div id="adminPinModal" class="fixed inset-0 z-[65] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="glass-dark rounded-2xl max-w-xs w-full p-6 border border-amber-500/40 shadow-2xl space-y-4 text-center">
@@ -1187,7 +1386,7 @@
       "dokti1337": "DokTi1337", "leryen": "Leryen"
     };
 
-    const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"];
+    const FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash"];
     const START_ELO = 1000;
     const STORAGE_KEY_STATE = 'ekipa_elo_unified_state_2026_v4';
     const STORAGE_KEY_CFG = 'ekipa_elo_unified_cfg_2026_v4';
@@ -1255,6 +1454,7 @@
         }
       ],
       bets: [],
+      markets: [],
       league2v2: {
         seasonNumber: 1,
         players: {
@@ -1337,12 +1537,23 @@
         if (!Array.isArray(b.winnerIds)) b.winnerIds = [];
       });
 
-      if (merged.sharedConfig && merged.sharedConfig.geminiKey && (!appConfig.geminiKey || appConfig.geminiKey.length < 10)) {
-        appConfig.geminiKey = merged.sharedConfig.geminiKey;
-        if (merged.sharedConfig.model) appConfig.model = merged.sharedConfig.model;
-        localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
-        updateConfigStatuses();
-        populateConfigInputs();
+      if (!Array.isArray(merged.markets)) merged.markets = [];
+      merged.markets.forEach(mkt => {
+        if (!Array.isArray(mkt.options)) mkt.options = [];
+        if (!Array.isArray(mkt.wagers)) mkt.wagers = [];
+      });
+
+      if (merged.sharedConfig && merged.sharedConfig.geminiKey) {
+        const remoteConfigTime = Number(merged.sharedConfig.updatedAt) || 0;
+        const localConfigTime = Number(appConfig.updatedAt) || 0;
+        if (!appConfig.geminiKey || appConfig.geminiKey.length < 10 || remoteConfigTime > localConfigTime) {
+          appConfig.geminiKey = merged.sharedConfig.geminiKey;
+          if (merged.sharedConfig.model) appConfig.model = merged.sharedConfig.model;
+          appConfig.updatedAt = remoteConfigTime || Date.now();
+          localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
+          updateConfigStatuses();
+          populateConfigInputs();
+        }
       }
       if (!merged.league2v2 || !merged.league2v2.players) {
         merged.league2v2 = JSON.parse(JSON.stringify(DEFAULT_STATE.league2v2));
@@ -1498,7 +1709,8 @@
       if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
         appState.sharedConfig = {
           geminiKey: appConfig.geminiKey.trim(),
-          model: appConfig.model || 'gemini-2.5-flash'
+          model: appConfig.model || 'gemini-3.8-flash',
+          updatedAt: appConfig.updatedAt || Date.now()
         };
       }
       localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(appState));
@@ -2010,9 +2222,9 @@
     let currentVisionAbortController = null;
 
     async function resolveWorkingModel(apiKey, forceRefresh = false) {
-      const preferred = (appConfig.model || 'gemini-2.5-flash').trim();
+      const preferred = (appConfig.model || 'gemini-3.8-flash').trim();
       if (!forceRefresh && Array.isArray(cachedWorkingModels) && cachedWorkingModels.length > 0) {
-        return [...new Set([preferred, ...cachedWorkingModels])].slice(0, 3);
+        return [...new Set([preferred, ...cachedWorkingModels])].slice(0, 4);
       }
       try {
         const ctrl = new AbortController();
@@ -2026,24 +2238,26 @@
           const supported = data.models
             .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
             .map(m => m.name.replace(/^models\//, ''))
-            // Odrzucamy modele eksperymentalne/TTS/embedding, które zawieszają zapytania Vision
-            .filter(name => !/(tts|embedding|aqa|imagen|veo|audio|learnlm|thinking)/i.test(name));
+            .filter(name => !/(tts|embedding|aqa|imagen|veo|audio|learnlm|thinking|bisect)/i.test(name));
 
-          const fastCandidates = [
-            preferred,
-            'gemini-2.5-flash',
-            'gemini-2.0-flash',
-            'gemini-2.0-flash-lite',
-            'gemini-1.5-flash'
-          ].filter(m => supported.includes(m));
+          // Sortuj wszystkie dostępne modele flash od najnowszych (np. gemini-3.8-flash, gemini-3.0-flash, gemini-2.5-flash)
+          const dynamicFlashModels = supported
+            .filter(name => name.includes('flash') && !name.includes('8b'))
+            .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
 
-          if (fastCandidates.length > 0) {
-            cachedWorkingModels = [...new Set(fastCandidates)].slice(0, 3);
+          const prioritized = [
+            ...(supported.includes(preferred) ? [preferred] : []),
+            ...['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'].filter(m => supported.includes(m)),
+            ...dynamicFlashModels
+          ];
+
+          if (prioritized.length > 0) {
+            cachedWorkingModels = [...new Set(prioritized)].slice(0, 4);
             return cachedWorkingModels;
           }
         }
       } catch (e) {}
-      return [...new Set([preferred, 'gemini-2.5-flash', 'gemini-2.0-flash'])].slice(0, 3);
+      return [...new Set([preferred, 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'])].slice(0, 4);
     }
 
     function extractTextFromGeminiData(data) {
@@ -2106,6 +2320,10 @@
             return data;
           }
           lastError = data.error?.message || 'Brak odpowiedzi od modelu ' + modelName;
+          const suggestedMatch = String(lastError).match(/models\/([a-zA-Z0-9._-]+)/);
+          if (suggestedMatch && suggestedMatch[1] && !candidates.includes(suggestedMatch[1])) {
+            candidates.push(suggestedMatch[1]);
+          }
         } catch (err) {
           clearTimeout(timeoutId);
           if (customAbortCtrl?.signal?.aborted) {
@@ -2680,8 +2898,14 @@ Zwróć WYŁĄCZNIE czysty JSON:
       if (!items) return;
       for (let item of items) {
         if (item.type.startsWith('image/')) {
-          switchTab('league2v2');
-          processScreenshot2v2(item.getAsFile());
+          const file = item.getAsFile();
+          const betsTabVisible = !document.getElementById('tab-bets')?.classList.contains('hidden');
+          if (betsTabVisible) {
+            loadBetAiImageFile(file);
+          } else {
+            switchTab('league2v2');
+            processScreenshot2v2(file);
+          }
           break;
         }
       }
@@ -3658,12 +3882,20 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
     }
 
     function renderActiveBetsSection(ratingsMap) {
+      renderActiveMarketsSection(ratingsMap);
+
       const container = document.getElementById('activeBetsContainer');
       const badge = document.getElementById('activeBetsCountBadge');
-      if (!container) return;
-
       const activeBets = (appState.bets || []).filter(b => b.status === 'ACTIVE');
+      const activeMarkets = (appState.markets || []).filter(m => m.status === 'ACTIVE');
+      const totalOpenCount = activeBets.length + activeMarkets.length;
+
+      const navBadge = document.getElementById('navBetsBadge');
+      const dashBadge = document.getElementById('dashBetsBadge');
+      if (navBadge) navBadge.textContent = totalOpenCount;
+      if (dashBadge) dashBadge.textContent = totalOpenCount;
       if (badge) badge.textContent = activeBets.length;
+      if (!container) return;
 
       if (activeBets.length === 0) {
         container.innerHTML = `
@@ -3717,6 +3949,612 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
                   ✕
                 </button>
               </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================= KRUPIER AI & RYNKI WYDARZEŃ Z OPCJAMI (W TYM ZAKŁADY Z AI O UJEMNYM EV) =================
+    let currentBetAiImagePayload = null;
+    let aiSuggestedMarketsBuffer = [];
+
+    function handleBetAiImageSelect(e) {
+      const file = e.target.files?.[0];
+      if (file) loadBetAiImageFile(file);
+      e.target.value = '';
+    }
+
+    async function loadBetAiImageFile(file) {
+      try {
+        const compressed = await compressImageForVision(file);
+        currentBetAiImagePayload = compressed;
+        const previewImg = document.getElementById('betAiImagePreview');
+        previewImg.src = `data:${compressed.mimeType};base64,${compressed.base64Data}`;
+        document.getElementById('betAiImageEmptyState').classList.add('hidden');
+        document.getElementById('betAiImagePreviewWrap').classList.remove('hidden');
+        showToast('Załadowano obraz kontekstowy dla Krupiera AI!', 'success');
+      } catch (err) {
+        showToast('Nie udało się wczytać zdjęcia: ' + err.message, 'error');
+      }
+    }
+
+    function clearBetAiImage() {
+      currentBetAiImagePayload = null;
+      document.getElementById('betAiImagePreview').src = '';
+      document.getElementById('betAiImageEmptyState').classList.remove('hidden');
+      document.getElementById('betAiImagePreviewWrap').classList.add('hidden');
+    }
+
+    // Przelicza prawdopodobieństwa na kursy bukmacherskie z wbudowaną marżą Krupiera AI (~18% House Edge -> Ujemne EV!)
+    function applyNegativeEvOdds(rawOptions) {
+      const opts = Array.isArray(rawOptions) && rawOptions.length >= 2 ? rawOptions : [
+        { label: 'Tak (Uda się)', prob: 0.5 },
+        { label: 'Nie (Nie ma szans)', prob: 0.5 }
+      ];
+      // Normalizujemy prawdopodobieństwa, aby sumowały się do 1.0
+      let sumProb = opts.reduce((s, o) => s + (Number(o.prob) || (1 / opts.length)), 0);
+      if (sumProb <= 0) sumProb = 1;
+
+      // Marża kasyna: wypłacamy tylko ~82% wartości sprawiedliwej (czyli oczekiwany zwrot to 0.82 -> EV = -18%!)
+      const HOUSE_PAYOUT_FACTOR = 0.82;
+
+      return opts.slice(0, 4).map((o, idx) => {
+        const cleanProb = Math.min(0.88, Math.max(0.10, (Number(o.prob) || (1 / opts.length)) / sumProb));
+        // Uczciwy kurs dziesiętny to 1 / cleanProb. Kurs Krupiera AI z ujemnym EV to (1 / cleanProb) * 0.82
+        let houseOdds = Math.round(((1 / cleanProb) * HOUSE_PAYOUT_FACTOR) * 100) / 100;
+        // Gwarantujemy, że kurs daje zysk mniejszy niż sprawiedliwy, ale wynosi minimum 1.15x
+        houseOdds = Math.max(1.15, Math.min(6.50, houseOdds));
+        const evPercent = Math.round(((cleanProb * (houseOdds - 1) - (1 - cleanProb) * 1) * 100));
+        return {
+          id: 'opt_' + idx + '_' + Math.random().toString(36).slice(2, 5),
+          label: String(o.label || `Opcja ${idx + 1}`).trim(),
+          prob: Math.round(cleanProb * 100),
+          odds: houseOdds,
+          evPercent: evPercent < 0 ? evPercent : -15
+        };
+      });
+    }
+
+    async function generateBetsWithAI() {
+      const contextText = (document.getElementById('betAiContextInput')?.value || '').trim();
+      if (!contextText && !currentBetAiImagePayload) {
+        showToast('Wpisz opis wydarzenia/prompt lub wklej zrzut ekranu dla Krupiera AI!', 'warn');
+        return;
+      }
+
+      const btn = document.getElementById('generateAiBetsBtn');
+      const origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Krupier AI układa zakłady i kursy...</span>';
+
+      try {
+        const { sortedLeaderboard } = runChronologicalSimulation();
+        const playersSummary = sortedLeaderboard.map(r => `${r.member.name}${r.member.alias2v2 ? ` (${r.member.alias2v2})` : ''}: ${r.elo.toFixed(0)} ELO (${r.wins}W-${r.losses}L)`).join(', ');
+        const l2v2Summary = Object.values(appState.league2v2.players || {}).map(p => `${p.name}: ${p.elo} ELO (seria ${p.streak})`).join(', ');
+        const defaultMode = document.getElementById('betAiDefaultModeSelect')?.value || 'AI_HOUSE';
+
+        if (!appConfig.geminiKey || appConfig.geminiKey.trim().length < 10) {
+          await pullFromCloudIfNewer(true);
+        }
+
+        if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
+          const prompt = `Jesteś Krupierem AI i Bukmacherem dla grupy znajomych.
+Członkowie ekipy i ich Główne ELO: [${playersSummary}].
+Statystyki Ligi 2v2: [${l2v2Summary}].
+Kontekst / opis wydarzenia od użytkownika: "${contextText || 'Przeanalizuj załączony obraz i wymyśl zakłady dopasowane do sytuacji.'}"
+
+Stwórz DOKŁADNIE 3 angażujące, konkretne zakłady do obstawiania punktami ELO (np. 1 główny o wynik rywalizacji, 1 statystyczny typu Over/Under i 1 zabawny/specjalny nawiązujący do graczy lub screena).
+Każdy zakład musi mieć od 2 do 3 opcji wyboru (options), gdzie każda opcja ma "label" (krótki opis opcji po polsku) oraz "prob" (szacowane prawdopodobieństwo od 0.15 do 0.80, suma prob w jednym zakładzie = 1.0).
+Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
+[
+  {
+    "title": "Pytanie zakładu #1",
+    "defaultStake": 20,
+    "options": [
+      {"label": "Opcja A", "prob": 0.50},
+      {"label": "Opcja B", "prob": 0.50}
+    ]
+  }
+]`;
+
+          const parts = [{ text: prompt }];
+          if (currentBetAiImagePayload) {
+            parts.push({
+              inlineData: {
+                mimeType: currentBetAiImagePayload.mimeType,
+                data: currentBetAiImagePayload.base64Data
+              }
+            });
+          }
+
+          const data = await callGeminiWithFallback(appConfig.geminiKey.trim(), {
+            contents: [{ parts }],
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.4 }
+          });
+
+          const parsedList = parseJsonFromGeminiText(extractTextFromGeminiData(data));
+          const rawArray = Array.isArray(parsedList) ? parsedList : (parsedList.bets || parsedList.markets || []);
+          aiSuggestedMarketsBuffer = rawArray.slice(0, 3).map(item => ({
+            title: item.title || 'Zakład Krupiera AI',
+            mode: defaultMode,
+            defaultStake: Number(item.defaultStake) || 20,
+            options: applyNegativeEvOdds(item.options)
+          }));
+        } else {
+          // Lokalny generator propozycji, gdy brak klucza API
+          const p1 = appState.members[0]?.name || 'Gracz 1';
+          const p2 = appState.members[1]?.name || 'Gracz 2';
+          const topic = contextText || 'Dzisiejsze starcie ekipy';
+          aiSuggestedMarketsBuffer = [
+            {
+              title: `${topic} – Kto wypadnie lepiej w głównym starciu?`,
+              mode: defaultMode,
+              defaultStake: 20,
+              options: applyNegativeEvOdds([
+                { label: `Wygra ${p1}`, prob: 0.5 },
+                { label: `Wygra ${p2}`, prob: 0.5 }
+              ])
+            },
+            {
+              title: `${topic} – Linia Over/Under (Czy faworyt przebije oczekiwania?)`,
+              mode: defaultMode,
+              defaultStake: 25,
+              options: applyNegativeEvOdds([
+                { label: 'Powyżej linii (Over – Dominacja)', prob: 0.45 },
+                { label: 'Poniżej linii (Under – Zaskoczenie)', prob: 0.55 }
+              ])
+            },
+            {
+              title: `Zakład specjalny Krupiera AI: Czy dojdzie do dogrywki / tilta?`,
+              mode: defaultMode,
+              defaultStake: 15,
+              options: applyNegativeEvOdds([
+                { label: 'Tak (Będzie gorąco!)', prob: 0.40 },
+                { label: 'Nie (Szybki mecz bez historii)', prob: 0.60 }
+              ])
+            }
+          ];
+        }
+
+        renderAiSuggestedBets();
+        showToast('Krupier AI przygotował 3 propozycje zakładów z wyliczonymi kursami (Ujemne EV)!', 'success');
+      } catch (err) {
+        showToast('Błąd generowania zakładów AI: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
+
+    function renderAiSuggestedBets() {
+      const wrap = document.getElementById('aiSuggestedBetsWrap');
+      const grid = document.getElementById('aiSuggestedBetsGrid');
+      if (!wrap || !grid) return;
+
+      if (aiSuggestedMarketsBuffer.length === 0) {
+        wrap.classList.add('hidden');
+        return;
+      }
+
+      wrap.classList.remove('hidden');
+      grid.innerHTML = aiSuggestedMarketsBuffer.map((m, idx) => {
+        const optsHtml = m.options.map(o => `
+          <div class="flex items-center justify-between bg-slate-950/90 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs">
+            <span class="text-slate-200 font-medium">${escapeHtml(o.label)}</span>
+            <span class="font-mono text-[11px] text-rose-300 font-bold" title="Szansa: ${o.prob}% | Wartość oczekiwana: ${o.evPercent}%">${o.odds.toFixed(2)}x <span class="text-[10px] text-slate-500">(EV ${o.evPercent}%)</span></span>
+          </div>
+        `).join('');
+
+        return `
+          <div class="bg-slate-900/95 border border-amber-500/40 rounded-xl p-4 flex flex-col justify-between gap-3 shadow-lg">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">Propozycja #${idx + 1}</span>
+                <span class="text-slate-400 font-mono">Stawka bazowa: ${m.defaultStake} ELO</span>
+              </div>
+              <h5 class="text-xs sm:text-sm font-bold text-white leading-snug">${escapeHtml(m.title)}</h5>
+              <div class="space-y-1.5 pt-1">${optsHtml}</div>
+            </div>
+            <div class="flex items-center gap-2 pt-2 border-t border-slate-800">
+              <button type="button" onclick="publishSingleAiBet(${idx}, 'AI_HOUSE')" class="flex-1 py-1.5 px-2 rounded-lg bg-rose-600/25 hover:bg-rose-600/40 text-rose-200 border border-rose-500/40 text-[11px] font-bold transition">
+                🎰 Publikuj vs AI (Ujemne EV)
+              </button>
+              <button type="button" onclick="publishSingleAiBet(${idx}, 'PARIMUTUEL')" class="flex-1 py-1.5 px-2 rounded-lg bg-indigo-600/25 hover:bg-indigo-600/40 text-indigo-200 border border-indigo-500/40 text-[11px] font-bold transition">
+                👥 Publikuj (Wspólna Pula)
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function publishSingleAiBet(idx, chosenMode = null) {
+      const item = aiSuggestedMarketsBuffer[idx];
+      if (!item) return;
+      await ensureFreshStateBeforeWrite();
+      if (!Array.isArray(appState.markets)) appState.markets = [];
+
+      const newMarket = {
+        id: 'mkt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        title: item.title,
+        mode: chosenMode || item.mode || 'AI_HOUSE',
+        defaultStake: Number(item.defaultStake) || 20,
+        options: JSON.parse(JSON.stringify(item.options)),
+        wagers: [],
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+
+      appState.markets.unshift(newMarket);
+      aiSuggestedMarketsBuffer.splice(idx, 1);
+      renderAiSuggestedBets();
+      await persistState();
+      renderAll();
+      showToast(`Opublikowano zakład: "${newMarket.title}"!`, 'success');
+    }
+
+    async function publishAllAiSuggestedBets() {
+      if (aiSuggestedMarketsBuffer.length === 0) return;
+      await ensureFreshStateBeforeWrite();
+      if (!Array.isArray(appState.markets)) appState.markets = [];
+      const defaultMode = document.getElementById('betAiDefaultModeSelect')?.value || 'AI_HOUSE';
+
+      aiSuggestedMarketsBuffer.forEach((item, i) => {
+        appState.markets.unshift({
+          id: 'mkt_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 5),
+          title: item.title,
+          mode: defaultMode,
+          defaultStake: Number(item.defaultStake) || 20,
+          options: JSON.parse(JSON.stringify(item.options)),
+          wagers: [],
+          status: 'ACTIVE',
+          createdAt: new Date().toISOString().split('T')[0]
+        });
+      });
+
+      aiSuggestedMarketsBuffer = [];
+      renderAiSuggestedBets();
+      await persistState();
+      renderAll();
+      showToast('Opublikowano wszystkie propozycje zakładów na tablicy!', 'success');
+    }
+
+    function clearAiSuggestedBets() {
+      aiSuggestedMarketsBuffer = [];
+      renderAiSuggestedBets();
+    }
+
+    // Ręczne tworzenie Rynku z Opcjami (A/B/C)
+    function openCustomMarketModal() {
+      document.getElementById('cmTitleInput').value = '';
+      document.getElementById('cmModeSelect').value = 'AI_HOUSE';
+      document.getElementById('cmDefaultStakeInput').value = '20';
+      document.getElementById('cmOpt1Label').value = 'Tak / Opcja A';
+      document.getElementById('cmOpt1Odds').value = '1.65';
+      document.getElementById('cmOpt2Label').value = 'Nie / Opcja B';
+      document.getElementById('cmOpt2Odds').value = '1.65';
+      document.getElementById('cmOpt3Label').value = '';
+      document.getElementById('cmOpt3Odds').value = '2.35';
+      document.getElementById('customMarketModal').classList.remove('hidden');
+    }
+
+    function closeCustomMarketModal() {
+      document.getElementById('customMarketModal').classList.add('hidden');
+    }
+
+    async function confirmCreateCustomMarket() {
+      const title = document.getElementById('cmTitleInput').value.trim();
+      const mode = document.getElementById('cmModeSelect').value;
+      const defaultStake = Math.max(1, Number(document.getElementById('cmDefaultStakeInput').value) || 20);
+
+      if (!title) {
+        showToast('Wpisz pytanie / nazwę wydarzenia do obstawienia!', 'warn');
+        return;
+      }
+
+      const rawOpts = [
+        { label: document.getElementById('cmOpt1Label').value.trim(), odds: Number(document.getElementById('cmOpt1Odds').value) || 1.65 },
+        { label: document.getElementById('cmOpt2Label').value.trim(), odds: Number(document.getElementById('cmOpt2Odds').value) || 1.65 },
+        { label: document.getElementById('cmOpt3Label').value.trim(), odds: Number(document.getElementById('cmOpt3Odds').value) || 2.35 }
+      ].filter(o => o.label.length > 0);
+
+      if (rawOpts.length < 2) {
+        showToast('Podaj minimum 2 opcje wyboru!', 'warn');
+        return;
+      }
+
+      const options = rawOpts.map((o, idx) => ({
+        id: 'opt_' + idx + '_' + Math.random().toString(36).slice(2, 5),
+        label: o.label,
+        odds: Math.max(1.05, Math.round(o.odds * 100) / 100),
+        evPercent: -18
+      }));
+
+      await ensureFreshStateBeforeWrite();
+      if (!Array.isArray(appState.markets)) appState.markets = [];
+
+      appState.markets.unshift({
+        id: 'mkt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        title,
+        mode,
+        defaultStake,
+        options,
+        wagers: [],
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString().split('T')[0]
+      });
+
+      closeCustomMarketModal();
+      await persistState();
+      renderAll();
+      showToast('Dodano nowy rynek bukmacherski!', 'success');
+    }
+
+    async function placeMarketWager(marketId, optionId) {
+      const memberSel = document.getElementById(`mktMember_${marketId}`);
+      const stakeInp = document.getElementById(`mktStake_${marketId}`);
+      const memberId = memberSel?.value;
+      const stake = Math.max(1, Math.round(Number(stakeInp?.value) || 20));
+
+      if (!memberId) {
+        showToast('Wybierz gracza z listy!', 'warn');
+        return;
+      }
+
+      await ensureFreshStateBeforeWrite();
+      const mkt = (appState.markets || []).find(m => m.id === marketId && m.status === 'ACTIVE');
+      if (!mkt) return;
+      if (!Array.isArray(mkt.wagers)) mkt.wagers = [];
+
+      const opt = (mkt.options || []).find(o => o.id === optionId);
+      if (!opt) return;
+
+      // Jeśli ten gracz już wcześniej obstawił w tym rynku, aktualizujemy jego zakład na wybraną opcję i stawkę
+      const existingIdx = mkt.wagers.findIndex(w => w.memberId === memberId);
+      if (existingIdx !== -1) {
+        mkt.wagers[existingIdx] = { memberId, optionId, stake };
+      } else {
+        mkt.wagers.push({ memberId, optionId, stake });
+      }
+
+      await persistState();
+      renderAll();
+      const member = appState.members.find(x => x.id === memberId);
+      showToast(`${member ? member.name : 'Gracz'} postawił ${stake} ELO na opcję "${opt.label}"!`, 'success');
+    }
+
+    async function removeMarketWager(marketId, memberId) {
+      await ensureFreshStateBeforeWrite();
+      const mkt = (appState.markets || []).find(m => m.id === marketId && m.status === 'ACTIVE');
+      if (!mkt || !Array.isArray(mkt.wagers)) return;
+      mkt.wagers = mkt.wagers.filter(w => w.memberId !== memberId);
+      await persistState();
+      renderAll();
+      showToast('Wycofano głos z zakładu.', 'info');
+    }
+
+    function resolveMarketWithOption(marketId, winningOptionId) {
+      const mkt = (appState.markets || []).find(m => m.id === marketId && m.status === 'ACTIVE');
+      if (!mkt) return;
+      const winOpt = (mkt.options || []).find(o => o.id === winningOptionId);
+      if (!winOpt) return;
+
+      const wagers = mkt.wagers || [];
+      if (wagers.length === 0) {
+        showToast('Nikt jeszcze nie obstawił tego rynku! Możesz go usunąć przyciskiem ✕.', 'warn');
+        return;
+      }
+
+      const winningWagers = wagers.filter(w => w.optionId === winningOptionId);
+      const losingWagers = wagers.filter(w => w.optionId !== winningOptionId);
+
+      if (mkt.mode === 'PARIMUTUEL' && (winningWagers.length === 0 || losingWagers.length === 0)) {
+        showToast('W trybie Wspólnej Puli (Gracze vs Gracze) musi być przynajmniej 1 wygrany i 1 przegrany! (W trybie vs Krupier AI każdy rozlicza się bezpośrednio z kasynem).', 'warn');
+        return;
+      }
+
+      askConfirmation(
+        'Rozliczenie Rynku Zakładów ELO',
+        `Czy potwierdzasz, że wygrała opcja "${winOpt.label}" w zakładzie "${mkt.title}"? Punkty ELO zostaną przeliczone i dopisane do Głównego Rankingu.`,
+        async () => {
+          await ensureFreshStateBeforeWrite();
+          const targetMkt = (appState.markets || []).find(m => m.id === marketId && m.status === 'ACTIVE');
+          if (!targetMkt) return;
+
+          const customDeltas = {};
+          const winners = [];
+          const losers = [];
+
+          if (targetMkt.mode === 'AI_HOUSE') {
+            // Tryb przeciwko Krupierowi AI (Ujemne EV):
+            // Wygrani otrzymują zysk netto = stake * (odds - 1) (pomniejszony o marżę kasyna AI!)
+            // Przegrani tracą 100% swojej stawki (-stake) na rzecz Krupiera AI!
+            const odds = Number(winOpt.odds) || 1.65;
+            const netMultiplier = Math.max(0.10, odds - 1);
+
+            (targetMkt.wagers || []).forEach(w => {
+              const s = Number(w.stake) || 20;
+              if (w.optionId === winningOptionId) {
+                const netProfit = Math.round(s * netMultiplier * 10) / 10;
+                customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) + netProfit;
+                if (!winners.includes(w.memberId)) winners.push(w.memberId);
+              } else {
+                customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) - s;
+                if (!losers.includes(w.memberId)) losers.push(w.memberId);
+              }
+            });
+          } else {
+            // Tryb PARIMUTUEL (Gracze vs Gracze – Wspólna Pula):
+            // Pula przegranych dzieli się proporcjonalnie do wkładu zwycięzców!
+            const totalLostPot = losingWagers.reduce((sum, w) => sum + (Number(w.stake) || 20), 0);
+            const totalWinningStakes = winningWagers.reduce((sum, w) => sum + (Number(w.stake) || 20), 0) || 1;
+
+            winningWagers.forEach(w => {
+              const s = Number(w.stake) || 20;
+              const shareOfPot = Math.round((totalLostPot * (s / totalWinningStakes)) * 10) / 10;
+              customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) + shareOfPot;
+              if (!winners.includes(w.memberId)) winners.push(w.memberId);
+            });
+
+            losingWagers.forEach(w => {
+              const s = Number(w.stake) || 20;
+              customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) - s;
+              if (!losers.includes(w.memberId)) losers.push(w.memberId);
+            });
+          }
+
+          const modeDesc = targetMkt.mode === 'AI_HOUSE'
+            ? `🎰 Krupier AI (Kurs ${winOpt.odds.toFixed(2)}x, ujemne EV)`
+            : `👥 Wspólna Pula Graczy`;
+
+          appState.events.unshift({
+            id: 'ev_mkt_' + Date.now(),
+            title: `🎲 Zakład: ${targetMkt.title} → ${winOpt.label}`,
+            category: 'BET_ELO',
+            mode: 'BET_TRANSFER',
+            date: new Date().toISOString().split('T')[0],
+            duration: 15,
+            aiBonus: 0,
+            winners,
+            losers,
+            customDeltas,
+            comment: `Rozstrzygnięto rynek (${modeDesc}). Zwycięska opcja: "${winOpt.label}".`
+          });
+
+          targetMkt.status = 'RESOLVED';
+          targetMkt.winningOptionId = winningOptionId;
+
+          await persistState();
+          renderAll();
+          showToast(`Rozliczono zakład "${targetMkt.title}" (Wygrało: ${winOpt.label})!`, 'success');
+        }
+      );
+    }
+
+    function cancelMarket(marketId) {
+      const mkt = (appState.markets || []).find(m => m.id === marketId);
+      if (!mkt) return;
+      askConfirmation(
+        'Usuwanie rynku bukmacherskiego',
+        `Czy na pewno chcesz anulować rynek "${mkt.title}" bez zmiany punktów ELO?`,
+        async () => {
+          await ensureFreshStateBeforeWrite();
+          appState.markets = (appState.markets || []).filter(m => m.id !== marketId);
+          await persistState();
+          renderAll();
+          showToast('Usunięto rynek zakładów.', 'info');
+        }
+      );
+    }
+
+    function renderActiveMarketsSection(ratingsMap) {
+      const container = document.getElementById('activeMarketsContainer');
+      const badge = document.getElementById('activeMarketsCountBadge');
+      if (!container) return;
+
+      const activeMarkets = (appState.markets || []).filter(m => m.status === 'ACTIVE');
+      if (badge) badge.textContent = activeMarkets.length;
+
+      if (activeMarkets.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-slate-900/50 border border-slate-800/80 rounded-xl p-6 text-center text-xs text-slate-400">
+            Brak otwartych rynków z opcjami. Użyj <strong>🤖 Krupiera AI powyżej</strong> (wrzuć screena lub wpisz wydarzenie), aby wygenerować zakłady z ujemnym EV lub kliknij <strong>„➕ Dodaj własny rynek z opcjami”</strong>!
+          </div>
+        `;
+        return;
+      }
+
+      const memberOptionsHtml = appState.members.map(m => {
+        const elo = Math.round(ratingsMap[m.id] || START_ELO);
+        return `<option value="${m.id}">${escapeHtml(m.name)} (${elo} ELO)</option>`;
+      }).join('');
+
+      container.innerHTML = activeMarkets.map(mkt => {
+        const isAiHouse = mkt.mode === 'AI_HOUSE';
+        const wagers = mkt.wagers || [];
+        const totalPool = wagers.reduce((s, w) => s + (Number(w.stake) || 0), 0);
+
+        const modeBadge = isAiHouse
+          ? `<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold">🎰 vs Krupier AI (Ujemne EV ~ -18%)</span>`
+          : `<span class="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[10px] font-bold">👥 Gracze vs Gracze (Pula: ${totalPool} ELO)</span>`;
+
+        const optionsHtml = (mkt.options || []).map(opt => {
+          const optWagers = wagers.filter(w => w.optionId === opt.id);
+          const optSum = optWagers.reduce((s, w) => s + (Number(w.stake) || 0), 0);
+          const netMultiplier = Math.max(0.1, (Number(opt.odds) || 1.65) - 1);
+
+          const bettorsBadges = optWagers.map(w => {
+            const mem = appState.members.find(x => x.id === w.memberId);
+            if (!mem) return '';
+            const winPreview = isAiHouse
+              ? `+${Math.round(w.stake * netMultiplier * 10) / 10}`
+              : `${w.stake}`;
+            return `
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-[11px] text-white">
+                <span class="w-1.5 h-1.5 rounded-full" style="background:${mem.color}"></span>
+                <span>${escapeHtml(mem.name)}: <strong>${w.stake}</strong> ELO</span>
+                ${isAiHouse ? `<span class="text-[10px] text-emerald-400 font-mono">(wygr: ${winPreview})</span>` : ''}
+                <button type="button" onclick="removeMarketWager('${mkt.id}', '${mem.id}')" class="text-rose-400 hover:text-rose-300 ml-0.5" title="Usuń zakład">&times;</button>
+              </span>
+            `;
+          }).join('');
+
+          return `
+            <div class="bg-slate-950/90 border border-slate-800 hover:border-slate-700 rounded-xl p-3 space-y-2 transition">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs sm:text-sm font-bold text-white">${escapeHtml(opt.label)}</span>
+                  ${isAiHouse
+                    ? `<span class="text-xs font-mono font-extrabold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-500/30" title="Zysk netto to +${Math.round(netMultiplier*100)}% stawki, a strata to -100% stawki (Ujemne EV)">Kurs AI: ${Number(opt.odds).toFixed(2)}x (Zysk +${Math.round(netMultiplier * 100)}%)</span>`
+                    : `<span class="text-[11px] font-mono text-indigo-300">W puli opcji: ${optSum} ELO (${optWagers.length} os.)</span>`
+                  }
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="placeMarketWager('${mkt.id}', '${opt.id}')" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition">
+                    🎯 Obstaw tę opcję
+                  </button>
+                  <button type="button" onclick="resolveMarketWithOption('${mkt.id}', '${opt.id}')" title="Rozstrzygnij: Ta opcja wygrała!" class="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-[11px] font-bold transition">
+                    🏆 Wygrało
+                  </button>
+                </div>
+              </div>
+              ${bettorsBadges ? `<div class="flex flex-wrap gap-1.5 pt-1 border-t border-slate-800/70">${bettorsBadges}</div>` : `<div class="text-[11px] text-slate-500">Brak postawionych punktów na tę opcję</div>`}
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="bg-slate-900/90 border border-purple-500/35 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-xl">
+            <div class="space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-[11px] text-slate-400">📅 ${escapeHtml(mkt.createdAt || '')}</span>
+                <div class="flex items-center gap-2">
+                  ${modeBadge}
+                  <button type="button" onclick="cancelMarket('${mkt.id}')" title="Usuń / Anuluj rynek" class="text-slate-400 hover:text-rose-400 text-xs px-1.5 py-0.5 rounded bg-slate-800">✕</button>
+                </div>
+              </div>
+
+              <h4 class="text-sm sm:text-base font-extrabold text-white leading-snug">${escapeHtml(mkt.title)}</h4>
+
+              <!-- Pasek wyboru gracza i stawki dla tego rynku -->
+              <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 flex flex-wrap items-center gap-2 text-xs">
+                <span class="text-slate-400 font-medium">Kto obstawia:</span>
+                <select id="mktMember_${mkt.id}" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold focus:outline-none">
+                  ${memberOptionsHtml}
+                </select>
+                <span class="text-slate-400 font-medium ml-auto">Stawka ELO:</span>
+                <input type="number" id="mktStake_${mkt.id}" value="${mkt.defaultStake || 20}" min="1" max="500" step="5" class="w-20 bg-slate-900 border border-amber-500/40 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none" />
+              </div>
+
+              <!-- Lista opcji do obstawiania i rozstrzygnięcia -->
+              <div class="space-y-2">
+                ${optionsHtml}
+              </div>
+            </div>
+
+            <div class="text-[11px] text-slate-400 flex items-center justify-between pt-2 border-t border-slate-800/80">
+              <span>${isAiHouse ? '⚠️ W grze z AI wygrana jest pomniejszona o marżę kasyna (Ujemne EV), a przegrana zabiera 100% stawki.' : '💡 Cała pula przegranych opcji trafia do graczy, którzy wytypowali zwycięską opcję.'}</span>
             </div>
           </div>
         `;
@@ -3800,12 +4638,12 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
     // ================= NAWIGACJA I KONFIGURACJA =================
     function switchTab(tabName) {
       if (tabName === 'members') tabName = 'config';
-      ['dashboard', 'league2v2', 'wrapped', 'config'].forEach(t => {
+      ['dashboard', 'bets', 'league2v2', 'wrapped', 'config'].forEach(t => {
         const tabEl = document.getElementById(`tab-${t}`);
         if (tabEl) tabEl.classList.toggle('hidden', t !== tabName);
         const btn = document.getElementById(`tabBtn-${t}`);
         if (!btn) return;
-        if (t === 'league2v2') {
+        if (t === 'league2v2' || t === 'bets') {
           btn.className = t === tabName
             ? 'px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white flex items-center gap-1.5'
             : 'px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5';
@@ -3849,20 +4687,30 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
     }
 
     async function saveConfig() {
-      appConfig.geminiKey = document.getElementById('cfgGeminiKey').value.trim();
-      appConfig.model = document.getElementById('cfgGeminiModel').value.trim() || 'gemini-2.5-flash';
-      appConfig.firebaseUrl = document.getElementById('cfgFirebaseUrl').value.trim();
+      const newKey = document.getElementById('cfgGeminiKey').value.trim();
+      const newModel = document.getElementById('cfgGeminiModel').value.trim() || 'gemini-3.8-flash';
+      const newFb = document.getElementById('cfgFirebaseUrl').value.trim();
+
+      appConfig.geminiKey = newKey;
+      appConfig.model = newModel;
+      appConfig.firebaseUrl = newFb;
+      appConfig.updatedAt = Date.now();
+      cachedWorkingModels = null;
+
       localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
       updateConfigStatuses();
 
-      // Najpierw pobierz najnowszy stan z podpiętej bazy Firebase, żeby nie nadpisać chmury starym stanem lokalnym!
-      const pulled = await pullFromCloudIfNewer(true);
-      if (!pulled) {
-        await loadState();
-        await persistState();
-      }
+      // Pobierz najpierw najnowsze mecze/zakłady z bazy, ale zachowaj nowo wpisany klucz API i model!
+      await ensureFreshStateBeforeWrite();
+      appConfig.geminiKey = newKey;
+      appConfig.model = newModel;
+      appConfig.firebaseUrl = newFb;
+      appConfig.updatedAt = Date.now();
+      localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
+
+      await persistState();
       renderAll();
-      showToast('Zapisano ustawienia i zsynchronizowano z bazą Firebase!', 'success');
+      showToast('Zapisano ustawienia i udostępniono konfigurację w bazie Firebase!', 'success');
     }
 
     function copyMagicLink() {
