@@ -7,16 +7,32 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #060911;
+      background-image: radial-gradient(circle at 50% 0%, rgba(79, 70, 229, 0.12), transparent 45%);
+      color: #f8fafc;
+      letter-spacing: -0.01em;
+    }
     .font-mono { font-family: 'JetBrains Mono', monospace; }
-    .glass { background: rgba(30, 41, 59, 0.72); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .glass-dark { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .role-win { background: linear-gradient(135deg, #059669, #10b981); color: #fff; border-color: #34d399; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
-    .role-lose { background: linear-gradient(135deg, #e11d48, #f43f5e); color: #fff; border-color: #fb7185; box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3); }
-    .role-coop { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border-color: #a78bfa; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    .glass {
+      background: rgba(13, 19, 33, 0.86);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+    }
+    .glass-dark {
+      background: rgba(8, 12, 22, 0.94);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .role-win { background: linear-gradient(135deg, #059669, #10b981); color: #fff; border-color: #34d399; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28); }
+    .role-lose { background: linear-gradient(135deg, #e11d48, #f43f5e); color: #fff; border-color: #fb7185; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.28); }
+    .role-coop { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border-color: #a78bfa; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.28); }
+    input, select, textarea { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #060911; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
   </style>
 </head>
 <body class="min-h-screen pb-16">
@@ -47,48 +63,52 @@
   <datalist id="players2v2Datalist"></datalist>
 
   <!-- TOP NAVBAR -->
-  <header class="sticky top-0 z-30 glass border-b border-slate-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+  <header class="sticky top-0 z-30 glass border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <div onclick="handleSecretLogoClick()" title="Ekipa ELO" class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-extrabold text-xl shadow-lg cursor-pointer select-none">
+        <div onclick="handleSecretLogoClick()" title="Ekipa ELO (3x klik = Admin)" class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-extrabold text-lg shadow-lg cursor-pointer select-none">
           ⚔️
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white">
-              Ekipa <span class="text-indigo-400">Inflationary ELO</span> 2026
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">
+              Ekipa <span class="text-indigo-400">ELO</span>
             </h1>
-            <span class="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-              + Liga 2v2
-            </span>
-          </div>
-          <div class="flex items-center gap-2 text-xs text-slate-400">
-            <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
-            <span id="syncStatusText">Tryb lokalny (localStorage)</span>
+            <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-amber-400" title="Status synchronizacji"></span>
+            <span id="syncStatusText" class="text-[11px] text-slate-400 hidden sm:inline">Lokalnie</span>
           </div>
         </div>
       </div>
 
-      <!-- Nawigacja Zakładek -->
-      <nav class="flex flex-wrap items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
-        <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white">
-          🏆 Główny Ranking & Mecze
-        </button>
-        <button onclick="switchTab('bets')" id="tabBtn-bets" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5">
-          <span>🎲 Zakłady & Krupier AI</span>
-          <span id="navBetsBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">0</span>
-        </button>
-        <button onclick="switchTab('league2v2')" id="tabBtn-league2v2" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5">
-          <span>🎮 Liga Dwójek (2v2)</span>
-          <span id="navSeasonBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">S1</span>
-        </button>
-        <button onclick="switchTab('wrapped')" id="tabBtn-wrapped" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
-          📊 Statystyki / Wrapped
-        </button>
-        <button onclick="switchTab('config')" id="tabBtn-config" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
-          ⚙️ Konfiguracja & Ekipa (<span id="navMemberCount">0</span>)
-        </button>
-      </nav>
+      <!-- Szybki wybór profilu ("Kim jesteś") + Nawigacja -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-1.5 bg-slate-950/90 px-2.5 py-1.5 rounded-xl border border-slate-800 text-xs">
+          <span class="text-slate-400 font-medium">👤 Ja:</span>
+          <select id="navMyIdentitySelect" onchange="setMyIdentity(this.value)" class="bg-transparent text-indigo-300 font-bold focus:outline-none cursor-pointer">
+            <option value="">Wybierz...</option>
+          </select>
+        </div>
+
+        <nav class="flex flex-wrap items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800/90">
+          <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-indigo-600 text-white">
+            🏆 Ranking
+          </button>
+          <button onclick="switchTab('bets')" id="tabBtn-bets" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5">
+            <span>🎲 Zakłady</span>
+            <span id="navBetsBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">0</span>
+          </button>
+          <button onclick="switchTab('league2v2')" id="tabBtn-league2v2" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5">
+            <span>🎮 2v2</span>
+            <span id="navSeasonBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">S1</span>
+          </button>
+          <button onclick="switchTab('wrapped')" id="tabBtn-wrapped" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white">
+            📊 Wrapped
+          </button>
+          <button onclick="switchTab('config')" id="tabBtn-config" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white">
+            ⚙️ Opcje (<span id="navMemberCount">0</span>)
+          </button>
+        </nav>
+      </div>
     </div>
   </header>
 
@@ -97,27 +117,7 @@
     <!-- ================= ZAKŁADKA 1: GŁÓWNY DASHBOARD (KREATOR ELO + RANKING + LOG) ================= -->
     <div id="tab-dashboard" class="space-y-8">
 
-      <!-- Pasek wyjaśniający mechanikę "Inflationary ELO" + Integrację z Ligą 2v2 -->
-      <div class="glass rounded-2xl p-4 border border-indigo-500/20 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-start sm:items-center gap-3">
-          <span class="text-2xl">📈</span>
-          <div class="text-xs sm:text-sm text-slate-300">
-            <strong class="text-white">Zasada Inflationary ELO (Start: 1000 MMR):</strong>
-            Każdy mecz to <span class="text-amber-300 font-semibold">Transfer ELO</span> (zależy od siły drużyn i wagi K)
-            <span class="text-emerald-400 font-semibold">+ Gwarantowana Tarcza Aktywności</span> za obecność.
-            Dodatkowo zamknięcie sezonu w zakładce <strong class="text-purple-300">🎮 Liga Dwójek (2v2)</strong> dopisuje wypracowany ułamek punktów bezpośrednio do Głównego Rankingu!
-          </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-2 shrink-0">
-          <button onclick="switchTab('bets')" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5">
-            <span>🎲 Zakłady & Krupier AI</span>
-            <span id="dashBetsBadge" class="px-1.5 py-0.5 rounded bg-black/25 text-white font-mono text-[10px]">0</span>
-          </button>
-          <button onclick="switchTab('league2v2')" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition">
-            🎮 Liga Dwójek 2v2 →
-          </button>
-        </div>
-      </div>
+      <div class="hidden"><span id="dashBetsBadge">0</span></div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -136,7 +136,7 @@
             <!-- Pole Sędziego AI -->
             <div class="mb-5 bg-slate-900/80 border border-slate-800 rounded-xl p-3.5">
               <label class="block text-xs font-semibold uppercase tracking-wider text-indigo-400 mb-1.5">
-                🤖 Szybki opis dla Sędziego AI (Wykrywa Zwycięzców i Przegranych)
+                🤖 Szybki opis dla AI
               </label>
               <textarea id="aiPromptInput" rows="3" placeholder="Np. Graliśmy w piłkę 2h na Orliku. Tomek, Michał i Janek wygrali 10:7 z Kubą, Piotrkiem i Mateuszem. Padał deszcz!" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"></textarea>
               <div class="mt-2.5 flex items-center justify-between gap-2">
@@ -236,9 +236,7 @@
                   </div>
                 </div>
 
-                <div id="longTermProofNote" class="text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-slate-800">
-                  💡 <strong>Gwarancja długiego terminu:</strong> Średnia zmiana na osobę w tym wydarzeniu to <span id="avgNetGainText" class="text-emerald-400 font-bold font-mono">+14.0 ELO</span>.
-                </div>
+                <div class="hidden"><span id="avgNetGainText"></span></div>
               </div>
 
               <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition">
@@ -255,8 +253,7 @@
           <div class="glass rounded-2xl p-6 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div>
-                <h2 class="text-lg font-bold text-white">🏆 Główna Tabela Rankingowa ELO (Start: 1000 MMR)</h2>
-                <p class="text-xs text-slate-400">Przeliczana chronologicznie ze spotkań IRL, gier online oraz zamkniętych sezonów Ligi Dwójek 2v2</p>
+                <h2 class="text-lg font-bold text-white">🏆 Ranking Główny ELO</h2>
               </div>
               <div class="flex items-center gap-2">
                 <button onclick="switchTab('league2v2')" class="text-xs px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 font-semibold transition">
@@ -316,31 +313,26 @@
     <!-- ================= NOWA ZAKŁADKA: ZAKŁADY & KRUPIER AI (NOWE RYNKI + ZAKŁADY Z AI O UJEMNYM EV + STARE ZAKŁADY) ================= -->
     <div id="tab-bets" class="hidden space-y-6">
 
-      <!-- Górny pasek informacyjny Zakładów -->
-      <div class="glass rounded-2xl p-5 border border-amber-500/30 flex flex-wrap items-center justify-between gap-4 shadow-xl">
-        <div class="flex items-center gap-3.5">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/25">
+      <!-- Górny pasek Zakładów -->
+      <div class="glass rounded-2xl p-4 border border-amber-500/25 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-xl shadow-md">
             🎲
           </div>
-          <div>
-            <div class="flex flex-wrap items-center gap-2">
-              <h2 class="text-lg sm:text-xl font-extrabold text-white tracking-tight">CENTRUM ZAKŁADÓW & KRUPIER AI</h2>
-              <span class="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                Marża Kasyna AI: EV ~ -18%
-              </span>
-            </div>
-            <p class="text-xs text-slate-300 mt-0.5">
-              Twórz rynki ze zrzutu ekranu / opisu przez AI, graj przeciwko <strong class="text-rose-300">Krupierowi AI (z ujemnym EV, żeby trudniej było wyjść na plus)</strong>, obstawiaj w puli z ludźmi lub korzystaj z klasycznych zakładów wieloosobowych!
-            </p>
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-base sm:text-lg font-extrabold text-white">Zakłady & Krupier AI</h2>
+            <span id="houseMarginHeaderBadge" class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
+              Marża AI: 18%
+            </span>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button type="button" onclick="openCustomMarketModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg transition">
-            ✍️ + Stwórz Własny Rynek (Opcje A/B/C)
+          <button type="button" onclick="openCustomMarketModal()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow transition">
+            ✍️ + Własny Rynek (A/B/C)
           </button>
-          <button type="button" onclick="openCreateBetModal()" class="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold text-xs transition">
-            👥 + Klasyczny Zakład Wieloosobowy (Stary)
+          <button type="button" onclick="openCreateBetModal()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-xs transition">
+            👥 + Pula Wieloosobowa
           </button>
         </div>
       </div>
@@ -352,9 +344,7 @@
             <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
               <span>🤖 Krupier AI: Wygeneruj Zakłady ze Screenów / Wydarzenia / Promptu</span>
             </h3>
-            <p class="text-xs text-slate-400">
-              Wrzuć screena (np. lobby 2v2, tablicę kręgli, zdjęcie ze spotkania) i/lub wpisz kontekst. AI wystawi gotowe zakłady z opcjami oraz zaniżonymi kursami (ujemne EV)!
-            </p>
+
           </div>
           <span class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-indigo-300 font-mono">
             Wklej obraz: Ctrl + V lub kliknij pole
@@ -433,9 +423,7 @@
               <span>🔥 Aktywne Rynki Wydarzeń (Zakłady z Opcjami & Zakłady z Krupierem AI)</span>
               <span id="activeMarketsCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono">0</span>
             </h3>
-            <p class="text-xs text-slate-400">
-              Wybierz gracza, wpisz stawkę ELO i kliknij opcję, którą obstawiasz! W trybie <strong class="text-rose-300">🎰 Krupier AI (Ujemne EV)</strong> kursy mają wbudowaną marżę ~18% na korzyść kasyna (tracisz 100% stawki, a przy wygranej zysk netto jest pomniejszony o podatek AI).
-            </p>
+
           </div>
           <button type="button" onclick="openCustomMarketModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition">
             ➕ Dodaj własny rynek z opcjami
@@ -453,9 +441,7 @@
               <span>👥 Klasyczne Zakłady Wieloosobowe (Wspólna Pula 2+ Osób)</span>
               <span id="activeBetsCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">0</span>
             </h3>
-            <p class="text-xs text-slate-400">
-              Stare zakłady grupowe: każdy uczestnik wkłada równą stawkę ELO do wspólnej puli, a na koniec wskazujecie 1 lub więcej zwycięzców.
-            </p>
+
           </div>
           <button type="button" onclick="openCreateBetModal()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition">
             ➕ Nowy klasyczny zakład (2+ osób)
@@ -738,25 +724,37 @@
           </button>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- Wybór "Kim jesteś" na tym urządzeniu (zapisywany w przeglądarce) -->
+        <div class="bg-indigo-950/25 border border-indigo-500/30 p-4 rounded-xl flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-indigo-300">
+              👤 Kim jesteś na tym urządzeniu? (Domyślna postać w zakładach)
+            </label>
+            <p class="text-[11px] text-slate-400 mt-0.5">
+              Zapisuje się w tej przeglądarce. Zakłady domyślnie ustawią Ciebie, ale przy każdym zakładzie nadal możesz przełączyć na inną osobę.
+            </p>
+          </div>
+          <select id="cfgMyIdentitySelect" onchange="setMyIdentity(this.value)" class="bg-slate-950 border border-indigo-500/50 rounded-xl px-4 py-2 text-sm font-bold text-white focus:outline-none min-w-[200px]">
+            <option value="">— Wybierz siebie —</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="space-y-2 bg-slate-900/70 p-4 rounded-xl border border-slate-800">
             <label class="block text-xs font-bold uppercase tracking-wider text-indigo-400">
-              1. Klucz Google Gemini API (Sędzia ELO + Vision 2v2 + Wrapped AI)
+              1. Klucz Google Gemini API
             </label>
             <input type="password" id="cfgGeminiKey" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
-            <p class="text-[11px] text-slate-400">
-              Obsługuje Sędziego AI w Głównym Rankingu, odczytywanie zrzutów ekranu (Ctrl+V), slajdy TTS w Lidze Dwójek oraz customowe prompty w Wrapped.
-            </p>
           </div>
 
           <div class="space-y-2 bg-slate-900/70 p-4 rounded-xl border border-slate-800">
             <div class="flex justify-between items-center">
               <label class="block text-xs font-bold uppercase tracking-wider text-purple-400">
-                2. Model AI Gemini
+                2. Model AI (Zalecany: flash-lite = 500/dzień)
               </label>
-              <button type="button" onclick="detectAvailableModels()" class="text-xs text-indigo-400 hover:underline font-semibold">🔍 Wykryj obsługiwany model</button>
+              <button type="button" onclick="detectAvailableModels()" class="text-xs text-indigo-400 hover:underline font-semibold">🔍 Wykryj najlepszy</button>
             </div>
-            <input type="text" id="cfgGeminiModel" placeholder="gemini-2.5-flash" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-purple-500" />
+            <input type="text" id="cfgGeminiModel" placeholder="gemini-3.5-flash-lite" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-purple-500" />
             <p id="modelDetectStatus" class="text-[11px] text-emerald-400 hidden"></p>
           </div>
         </div>
@@ -1223,9 +1221,71 @@
         </div>
       </div>
 
+      <!-- Edycja Marży Kasyna AI oraz Mnożników Ligi (K-Factor & Tarcze) -->
+      <div class="bg-slate-900/90 border border-rose-500/30 rounded-xl p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+          <h4 class="text-xs font-bold text-rose-300 uppercase tracking-wider">🎰 3. Marża Kasyna AI (Ujemne EV) & Mnożniki Punktowe Ligi</h4>
+          <button type="button" onclick="adminResetDefaultMultipliers()" class="text-[11px] text-slate-400 hover:text-white underline">Przywróć domyślne mnożniki</button>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div class="bg-slate-950/80 border border-rose-500/30 rounded-lg p-2.5">
+            <label class="block text-[11px] text-rose-300 font-semibold">Marża Kasyna AI (%)</label>
+            <input type="number" id="admMultHouseMargin" min="0" max="60" step="1" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
+            <span class="text-[10px] text-slate-500">Domyślnie: 18% (EV -18%)</span>
+          </div>
+          <div class="bg-slate-950/80 border border-purple-500/30 rounded-lg p-2.5">
+            <label class="block text-[11px] text-purple-300 font-semibold">Stawka K w Lidze 2v2</label>
+            <input type="number" id="admMultK2v2" min="4" max="120" step="2" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
+            <span class="text-[10px] text-slate-500">Domyślnie: 32</span>
+          </div>
+          <div class="bg-slate-950/80 border border-amber-500/30 rounded-lg p-2.5">
+            <label class="block text-[11px] text-amber-300 font-semibold">Transfer Sezonu 2v2 (%)</label>
+            <input type="number" id="admMultSeasonPct" min="1" max="100" step="1" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
+            <span class="text-[10px] text-slate-500">Domyślnie: 10%</span>
+          </div>
+          <div class="bg-slate-950/80 border border-emerald-500/30 rounded-lg p-2.5">
+            <label class="block text-[11px] text-emerald-300 font-semibold">Bonus Synergii IRL (%/os)</label>
+            <input type="number" id="admMultSynergyPct" min="0" max="50" step="1" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
+            <span class="text-[10px] text-slate-500">Domyślnie: 10% / os. > 2</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
+          <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
+            <label class="block text-[11px] text-slate-300 font-semibold">⚽ IRL Sport (K / Tarcza)</label>
+            <div class="flex gap-1.5 mt-1">
+              <input type="number" id="admCatSportK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
+              <input type="number" id="admCatSportShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
+            </div>
+          </div>
+          <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
+            <label class="block text-[11px] text-slate-300 font-semibold">🎮 Online (K / Tarcza)</label>
+            <div class="flex gap-1.5 mt-1">
+              <input type="number" id="admCatOnlineK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
+              <input type="number" id="admCatOnlineShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
+            </div>
+          </div>
+          <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
+            <label class="block text-[11px] text-slate-300 font-semibold">🍻 IRL Chill (K / Tarcza)</label>
+            <div class="flex gap-1.5 mt-1">
+              <input type="number" id="admCatChillK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
+              <input type="number" id="admCatChillShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
+            </div>
+          </div>
+          <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
+            <label class="block text-[11px] text-slate-300 font-semibold">⛰️ IRL Wyjazd (K / Tarcza)</label>
+            <div class="flex gap-1.5 mt-1">
+              <input type="number" id="admCatTripK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
+              <input type="number" id="admCatTripShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Edycja Rekordów Ligi 2v2 -->
       <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
-        <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider border-b border-slate-800 pb-2">🏅 3. Korekta Rekordów Historycznych Ligi 2v2</h4>
+        <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider border-b border-slate-800 pb-2">🏅 4. Korekta Rekordów Historycznych Ligi 2v2</h4>
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
           <div>
             <label class="text-[11px] text-slate-400">Max Sezon ELO (Wartość / Gracz)</label>
@@ -1386,7 +1446,19 @@
       "dokti1337": "DokTi1337", "leryen": "Leryen"
     };
 
-    const FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash"];
+    const FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite-preview", "gemini-3.8-flash", "gemini-2.5-flash"];
+    const DEFAULT_MULTIPLIERS = {
+      houseMargin: 18,
+      kFactor2v2: 32,
+      season2v2TransferPct: 10,
+      synergyBonusPct: 10,
+      categories: {
+        IRL_SPORT: { kFactor: 48, baseShield: 14 },
+        ONLINE_GAMING: { kFactor: 28, baseShield: 5 },
+        IRL_CHILL: { kFactor: 24, baseShield: 12 },
+        IRL_TRIP: { kFactor: 60, baseShield: 30 }
+      }
+    };
     const START_ELO = 1000;
     const STORAGE_KEY_STATE = 'ekipa_elo_unified_state_2026_v4';
     const STORAGE_KEY_CFG = 'ekipa_elo_unified_cfg_2026_v4';
@@ -1455,6 +1527,7 @@
       ],
       bets: [],
       markets: [],
+      multipliers: JSON.parse(JSON.stringify(DEFAULT_MULTIPLIERS)),
       league2v2: {
         seasonNumber: 1,
         players: {
@@ -1483,7 +1556,7 @@
 
     let appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
     let participantRoles = {};
-    let appConfig = { geminiKey: '', firebaseUrl: '', model: 'gemini-2.5-flash' };
+    let appConfig = { geminiKey: '', firebaseUrl: '', model: 'gemini-3.5-flash-lite', myMemberId: '' };
     let currentSlideIndex2v2 = 0;
     let autoPlayActive2v2 = false;
 
@@ -1543,6 +1616,20 @@
         if (!Array.isArray(mkt.wagers)) mkt.wagers = [];
       });
 
+      if (!merged.multipliers || typeof merged.multipliers !== 'object') {
+        merged.multipliers = JSON.parse(JSON.stringify(DEFAULT_MULTIPLIERS));
+      } else {
+        merged.multipliers = {
+          ...JSON.parse(JSON.stringify(DEFAULT_MULTIPLIERS)),
+          ...merged.multipliers,
+          categories: {
+            ...JSON.parse(JSON.stringify(DEFAULT_MULTIPLIERS.categories)),
+            ...(merged.multipliers.categories || {})
+          }
+        };
+      }
+      applyMultipliersToRuntime(merged.multipliers);
+
       if (merged.sharedConfig && merged.sharedConfig.geminiKey) {
         const remoteConfigTime = Number(merged.sharedConfig.updatedAt) || 0;
         const localConfigTime = Number(appConfig.updatedAt) || 0;
@@ -1592,13 +1679,63 @@
       updateConfigStatuses();
     }
 
+    function applyMultipliersToRuntime(mult) {
+      const m = mult || appState?.multipliers || DEFAULT_MULTIPLIERS;
+      if (m.categories) {
+        ['IRL_SPORT', 'ONLINE_GAMING', 'IRL_CHILL', 'IRL_TRIP'].forEach(catKey => {
+          if (CATEGORIES[catKey] && m.categories[catKey]) {
+            CATEGORIES[catKey].kFactor = Number(m.categories[catKey].kFactor) ?? CATEGORIES[catKey].kFactor;
+            CATEGORIES[catKey].baseShield = Number(m.categories[catKey].baseShield) ?? CATEGORIES[catKey].baseShield;
+          }
+        });
+      }
+      const evCategorySelect = document.getElementById('evCategory');
+      if (evCategorySelect) {
+        const curVal = evCategorySelect.value;
+        evCategorySelect.innerHTML = `
+          <option value="IRL_SPORT">⚽ IRL Sport (K=${CATEGORIES.IRL_SPORT.kFactor}, Tarcza +${CATEGORIES.IRL_SPORT.baseShield})</option>
+          <option value="ONLINE_GAMING">🎮 Online Gry (K=${CATEGORIES.ONLINE_GAMING.kFactor}, Tarcza +${CATEGORIES.ONLINE_GAMING.baseShield})</option>
+          <option value="IRL_CHILL">🍻 IRL Chill (K=${CATEGORIES.IRL_CHILL.kFactor}, Tarcza +${CATEGORIES.IRL_CHILL.baseShield})</option>
+          <option value="IRL_TRIP">⛰️ IRL Wyjazd (K=${CATEGORIES.IRL_TRIP.kFactor}, Tarcza +${CATEGORIES.IRL_TRIP.baseShield})</option>
+        `;
+        if (curVal) evCategorySelect.value = curVal;
+      }
+      const marginBadge = document.getElementById('houseMarginHeaderBadge');
+      if (marginBadge) {
+        const hm = Number(m.houseMargin ?? 18);
+        marginBadge.textContent = `Marża AI: ${hm}% (EV -${hm}%)`;
+      }
+    }
+
+    function setMyIdentity(memberId) {
+      appConfig.myMemberId = memberId || '';
+      localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
+      renderMyIdentitySelectors();
+      renderAll();
+      const m = appState.members.find(x => x.id === memberId);
+      if (m) showToast(`Ustawiono Twój profil na tym urządzeniu: ${m.name}`, 'success');
+    }
+
+    function renderMyIdentitySelectors() {
+      const navSel = document.getElementById('navMyIdentitySelect');
+      const cfgSel = document.getElementById('cfgMyIdentitySelect');
+      if (!appConfig.myMemberId && appState.members.length > 0) {
+        // Jeśli jeszcze nie wybrano, zostaw możliwość wyboru lub domyślnie pierwszego gracza
+      }
+      const optionsHtml = `<option value="">— Wybierz siebie —</option>` +
+        appState.members.map(m => `<option value="${m.id}" ${appConfig.myMemberId === m.id ? 'selected' : ''}>${escapeHtml(m.name)}</option>`).join('');
+      if (navSel) navSel.innerHTML = optionsHtml;
+      if (cfgSel) cfgSel.innerHTML = optionsHtml;
+    }
+
     function populateConfigInputs() {
       const kEl = document.getElementById('cfgGeminiKey');
       const mEl = document.getElementById('cfgGeminiModel');
       const fEl = document.getElementById('cfgFirebaseUrl');
       if (kEl) kEl.value = appConfig.geminiKey || '';
-      if (mEl) mEl.value = appConfig.model || 'gemini-2.5-flash';
+      if (mEl) mEl.value = appConfig.model || 'gemini-3.5-flash-lite';
       if (fEl) fEl.value = appConfig.firebaseUrl || '';
+      renderMyIdentitySelectors();
     }
 
     function updateConfigStatuses() {
@@ -1785,7 +1922,8 @@
         return { winnerDelta: 0, loserDelta: 0, eloSwing: 0, shield: 0, winProb: 0.5, isCoop: true };
       }
 
-      const synergyMultiplier = cat.isIrl ? (1 + 0.10 * Math.max(0, totalParticipants - 2)) : 1.0;
+      const synPct = (Number(appState?.multipliers?.synergyBonusPct ?? 10)) / 100;
+      const synergyMultiplier = cat.isIrl ? (1 + synPct * Math.max(0, totalParticipants - 2)) : 1.0;
       const shield = Math.round((cat.baseShield * synergyMultiplier + (Number(ev.aiBonus) || 0)) * 10) / 10;
 
       if (ev.mode === 'COOP' || losers.length === 0 || winners.length === 0) {
@@ -2222,9 +2360,9 @@
     let currentVisionAbortController = null;
 
     async function resolveWorkingModel(apiKey, forceRefresh = false) {
-      const preferred = (appConfig.model || 'gemini-3.8-flash').trim();
+      const preferred = (appConfig.model || 'gemini-3.5-flash-lite').trim();
       if (!forceRefresh && Array.isArray(cachedWorkingModels) && cachedWorkingModels.length > 0) {
-        return [...new Set([preferred, ...cachedWorkingModels])].slice(0, 4);
+        return [...new Set([preferred, ...cachedWorkingModels])].slice(0, 2);
       }
       try {
         const ctrl = new AbortController();
@@ -2238,26 +2376,31 @@
           const supported = data.models
             .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
             .map(m => m.name.replace(/^models\//, ''))
-            .filter(name => !/(tts|embedding|aqa|imagen|veo|audio|learnlm|thinking|bisect)/i.test(name));
+            .filter(name => !/(tts|embedding|aqa|imagen|veo|audio|learnlm|thinking|bisect|robotics|computer-use)/i.test(name));
 
-          // Sortuj wszystkie dostępne modele flash od najnowszych (np. gemini-3.8-flash, gemini-3.0-flash, gemini-2.5-flash)
-          const dynamicFlashModels = supported
-            .filter(name => name.includes('flash') && !name.includes('8b'))
+          // Priorytet #1: Modele flash-lite (mają 500 darmowych zapytań RPD zamiast 20 RPD!)
+          const liteModels = supported
+            .filter(name => name.includes('flash-lite'))
+            .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+
+          // Priorytet #2: Zwykłe modele flash (np. gemini-3.8-flash, gemini-2.5-flash)
+          const standardFlashModels = supported
+            .filter(name => name.includes('flash') && !name.includes('lite') && !name.includes('8b'))
             .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
 
           const prioritized = [
-            ...(supported.includes(preferred) ? [preferred] : []),
-            ...['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'].filter(m => supported.includes(m)),
-            ...dynamicFlashModels
+            ...(forceRefresh ? [] : (supported.includes(preferred) ? [preferred] : [])),
+            ...liteModels,
+            ...standardFlashModels
           ];
 
           if (prioritized.length > 0) {
-            cachedWorkingModels = [...new Set(prioritized)].slice(0, 4);
+            cachedWorkingModels = [...new Set(prioritized)].slice(0, 2);
             return cachedWorkingModels;
           }
         }
       } catch (e) {}
-      return [...new Set([preferred, 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'])].slice(0, 4);
+      return [...new Set([preferred, 'gemini-3.5-flash-lite', 'gemini-3.8-flash'])].slice(0, 2);
     }
 
     function extractTextFromGeminiData(data) {
@@ -2603,7 +2746,8 @@ Zwróć WYŁĄCZNIE czysty JSON:
       const winTeamElo = (getElo('w1_name') + getElo('w2_name')) / 2;
       const loseTeamElo = (getElo('l1_name') + getElo('l2_name')) / 2;
       const expectedWin = 1 / (1 + Math.pow(10, (loseTeamElo - winTeamElo) / 400));
-      const delta = Math.round(32 * (1 - expectedWin));
+      const k2v2 = Number(appState?.multipliers?.kFactor2v2 ?? 32);
+      const delta = Math.round(k2v2 * (1 - expectedWin));
 
       document.getElementById('preview2v2WinDelta').textContent = `+${delta} Sezon ELO`;
       document.getElementById('preview2v2LoseDelta').textContent = `-${delta} Sezon ELO`;
@@ -2687,7 +2831,8 @@ Zwróć WYŁĄCZNIE czysty JSON:
       const winTeamElo = (pW1.elo + pW2.elo) / 2;
       const loseTeamElo = (pL1.elo + pL2.elo) / 2;
       const expectedWin = 1 / (1 + Math.pow(10, (loseTeamElo - winTeamElo) / 400));
-      const delta = Math.round(32 * (1 - expectedWin));
+      const k2v2 = Number(appState?.multipliers?.kFactor2v2 ?? 32);
+      const delta = Math.round(k2v2 * (1 - expectedWin));
 
       const report = {
         w1: { name: pW1.name, oldElo: pW1.elo, newElo: pW1.elo + delta, champ: document.getElementById('w1_champ').value || '-', dmg: Number(document.getElementById('w1_dmg').value) || 0 },
@@ -2763,6 +2908,8 @@ Zwróć WYŁĄCZNIE czysty JSON:
     function openEndSeasonModal() {
       const sNum = appState.league2v2.seasonNumber || 1;
       document.getElementById('seasonTransferTitle').value = `🏆 Koniec Sezonu #${sNum} Ligi Dwójek (2v2)`;
+      const defaultPct = Number(appState?.multipliers?.season2v2TransferPct ?? 10);
+      document.getElementById('seasonTransferPercent').value = defaultPct;
       renderEndSeasonPreviewTable();
       document.getElementById('endSeasonModal').classList.remove('hidden');
     }
@@ -3211,6 +3358,8 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
 
     // ================= RENDEROWANIE CAŁEGO WIDOKU =================
     function renderAll() {
+      applyMultipliersToRuntime(appState.multipliers);
+      renderMyIdentitySelectors();
       const navCount = document.getElementById('navMemberCount');
       if (navCount) navCount.textContent = appState.members.length;
       const sNum = appState.league2v2.seasonNumber || 1;
@@ -3245,7 +3394,8 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
         const wr = total > 0 ? Math.round((p.w / total) * 100) : 0;
 
         // Prognoza transferu 10% do głównego rankingu
-        const projectedTransfer = Math.round(((p.elo - 1000) * 0.10) * 10) / 10;
+        const sPct = (Number(appState?.multipliers?.season2v2TransferPct ?? 10)) / 100;
+        const projectedTransfer = Math.round(((p.elo - 1000) * sPct) * 10) / 10;
         const projSign = projectedTransfer >= 0 ? '+' : '';
         const projClass = projectedTransfer > 0 ? 'text-emerald-400' : projectedTransfer < 0 ? 'text-rose-400' : 'text-slate-400';
 
@@ -3664,7 +3814,12 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
     let selectedBetParticipantIds = new Set();
 
     function openCreateBetModal() {
-      selectedBetParticipantIds = new Set(appState.members.slice(0, 2).map(m => m.id));
+      if (appConfig.myMemberId && appState.members.some(m => m.id === appConfig.myMemberId)) {
+        const others = appState.members.filter(m => m.id !== appConfig.myMemberId);
+        selectedBetParticipantIds = new Set([appConfig.myMemberId, ...(others[0] ? [others[0].id] : [])]);
+      } else {
+        selectedBetParticipantIds = new Set(appState.members.slice(0, 2).map(m => m.id));
+      }
       document.getElementById('betTitleInput').value = '';
       document.getElementById('betStakesInput').value = '20';
       renderBetParticipantsSelector();
@@ -3996,8 +4151,9 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       let sumProb = opts.reduce((s, o) => s + (Number(o.prob) || (1 / opts.length)), 0);
       if (sumProb <= 0) sumProb = 1;
 
-      // Marża kasyna: wypłacamy tylko ~82% wartości sprawiedliwej (czyli oczekiwany zwrot to 0.82 -> EV = -18%!)
-      const HOUSE_PAYOUT_FACTOR = 0.82;
+      // Dynamiczna marża kasyna AI z panelu admina (domyślnie 18% -> wypłata 0.82 wartości sprawiedliwej)
+      const houseMarginPct = Math.min(60, Math.max(0, Number(appState?.multipliers?.houseMargin ?? 18)));
+      const HOUSE_PAYOUT_FACTOR = (100 - houseMarginPct) / 100;
 
       return opts.slice(0, 4).map((o, idx) => {
         const cleanProb = Math.min(0.88, Math.max(0.10, (Number(o.prob) || (1 / opts.length)) / sumProb));
@@ -4227,15 +4383,19 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
 
     // Ręczne tworzenie Rynku z Opcjami (A/B/C)
     function openCustomMarketModal() {
+      const hm = Math.min(60, Math.max(0, Number(appState?.multipliers?.houseMargin ?? 18)));
+      const factor = (100 - hm) / 100;
+      const evenOdds2Way = (2.0 * factor).toFixed(2);
+      const evenOdds3Way = (3.0 * factor).toFixed(2);
       document.getElementById('cmTitleInput').value = '';
       document.getElementById('cmModeSelect').value = 'AI_HOUSE';
       document.getElementById('cmDefaultStakeInput').value = '20';
       document.getElementById('cmOpt1Label').value = 'Tak / Opcja A';
-      document.getElementById('cmOpt1Odds').value = '1.65';
+      document.getElementById('cmOpt1Odds').value = evenOdds2Way;
       document.getElementById('cmOpt2Label').value = 'Nie / Opcja B';
-      document.getElementById('cmOpt2Odds').value = '1.65';
+      document.getElementById('cmOpt2Odds').value = evenOdds2Way;
       document.getElementById('cmOpt3Label').value = '';
-      document.getElementById('cmOpt3Odds').value = '2.35';
+      document.getElementById('cmOpt3Odds').value = evenOdds3Way;
       document.getElementById('customMarketModal').classList.remove('hidden');
     }
 
@@ -4465,9 +4625,14 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
         return;
       }
 
+      const defaultMyId = (appConfig.myMemberId && appState.members.some(m => m.id === appConfig.myMemberId))
+        ? appConfig.myMemberId
+        : (appState.members[0]?.id || '');
+
       const memberOptionsHtml = appState.members.map(m => {
         const elo = Math.round(ratingsMap[m.id] || START_ELO);
-        return `<option value="${m.id}">${escapeHtml(m.name)} (${elo} ELO)</option>`;
+        const isMe = m.id === defaultMyId;
+        return `<option value="${m.id}" ${isMe ? 'selected' : ''}>${isMe ? '👤 ' : ''}${escapeHtml(m.name)} (${elo} ELO)</option>`;
       }).join('');
 
       container.innerHTML = activeMarkets.map(mkt => {
@@ -4476,7 +4641,7 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
         const totalPool = wagers.reduce((s, w) => s + (Number(w.stake) || 0), 0);
 
         const modeBadge = isAiHouse
-          ? `<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold">🎰 vs Krupier AI (Ujemne EV ~ -18%)</span>`
+          ? `<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold">🎰 vs Krupier AI (EV -${appState?.multipliers?.houseMargin ?? 18}%)</span>`
           : `<span class="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[10px] font-bold">👥 Gracze vs Gracze (Pula: ${totalPool} ELO)</span>`;
 
         const optionsHtml = (mkt.options || []).map(opt => {
@@ -4676,7 +4841,7 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
       status.classList.remove('hidden');
       status.textContent = 'Sprawdzanie dostępnych modeli...';
       try {
-        const models = await resolveWorkingModel(key);
+        const models = await resolveWorkingModel(key, true);
         document.getElementById('cfgGeminiModel').value = models[0];
         status.textContent = `✅ Wybrano obsługiwany model: ${models[0]}`;
         status.className = 'text-[11px] text-emerald-400';
@@ -4846,6 +5011,30 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
       document.getElementById('admRecMaxDmgChamp').value = rec.maxDmg?.champion ?? '-';
       document.getElementById('admRecMaxStreakVal').value = rec.maxWinStreak?.value ?? 0;
       document.getElementById('admRecMaxStreakPlayer').value = rec.maxWinStreak?.player ?? '-';
+
+      // 4. Mnożniki Ligi i Marża Kasyna AI
+      const mult = appState.multipliers || DEFAULT_MULTIPLIERS;
+      document.getElementById('admMultHouseMargin').value = mult.houseMargin ?? 18;
+      document.getElementById('admMultK2v2').value = mult.kFactor2v2 ?? 32;
+      document.getElementById('admMultSeasonPct').value = mult.season2v2TransferPct ?? 10;
+      document.getElementById('admMultSynergyPct').value = mult.synergyBonusPct ?? 10;
+
+      const cats = mult.categories || DEFAULT_MULTIPLIERS.categories;
+      document.getElementById('admCatSportK').value = cats.IRL_SPORT?.kFactor ?? 48;
+      document.getElementById('admCatSportShield').value = cats.IRL_SPORT?.baseShield ?? 14;
+      document.getElementById('admCatOnlineK').value = cats.ONLINE_GAMING?.kFactor ?? 28;
+      document.getElementById('admCatOnlineShield').value = cats.ONLINE_GAMING?.baseShield ?? 5;
+      document.getElementById('admCatChillK').value = cats.IRL_CHILL?.kFactor ?? 24;
+      document.getElementById('admCatChillShield').value = cats.IRL_CHILL?.baseShield ?? 12;
+      document.getElementById('admCatTripK').value = cats.IRL_TRIP?.kFactor ?? 60;
+      document.getElementById('admCatTripShield').value = cats.IRL_TRIP?.baseShield ?? 30;
+    }
+
+    function adminResetDefaultMultipliers() {
+      appState.multipliers = JSON.parse(JSON.stringify(DEFAULT_MULTIPLIERS));
+      applyMultipliersToRuntime(appState.multipliers);
+      populateAdminEditorFields();
+      showToast('Przywrócono domyślne mnożniki i marżę kasyna (kliknij Zapisz, aby utrwalić w bazie).', 'info');
     }
 
     async function saveAdminAllAdjustments() {
@@ -4903,10 +5092,38 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
         player: document.getElementById('admRecMaxStreakPlayer').value.trim() || '-'
       };
 
+      // 4. Zapisz Mnożniki Ligi i Marżę Kasyna AI
+      const newHouseMargin = Math.min(60, Math.max(0, Number(document.getElementById('admMultHouseMargin').value) || 0));
+      appState.multipliers = {
+        houseMargin: newHouseMargin,
+        kFactor2v2: Math.max(1, Number(document.getElementById('admMultK2v2').value) || 32),
+        season2v2TransferPct: Math.max(1, Number(document.getElementById('admMultSeasonPct').value) || 10),
+        synergyBonusPct: Math.max(0, Number(document.getElementById('admMultSynergyPct').value) || 0),
+        categories: {
+          IRL_SPORT: {
+            kFactor: Number(document.getElementById('admCatSportK').value) ?? 48,
+            baseShield: Number(document.getElementById('admCatSportShield').value) ?? 14
+          },
+          ONLINE_GAMING: {
+            kFactor: Number(document.getElementById('admCatOnlineK').value) ?? 28,
+            baseShield: Number(document.getElementById('admCatOnlineShield').value) ?? 5
+          },
+          IRL_CHILL: {
+            kFactor: Number(document.getElementById('admCatChillK').value) ?? 24,
+            baseShield: Number(document.getElementById('admCatChillShield').value) ?? 12
+          },
+          IRL_TRIP: {
+            kFactor: Number(document.getElementById('admCatTripK').value) ?? 60,
+            baseShield: Number(document.getElementById('admCatTripShield').value) ?? 30
+          }
+        }
+      };
+      applyMultipliersToRuntime(appState.multipliers);
+
       closeAdminEditorModal();
       await persistState();
       renderAll();
-      showToast('Zapisano ręczne korekty punktów w Głównym Rankingu oraz Lidze 2v2!', 'success');
+      showToast('Zapisano korekty punktów, marżę kasyna AI oraz mnożniki ligi!', 'success');
     }
 
     async function adminResetMainOffsets() {
