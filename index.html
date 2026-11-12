@@ -333,9 +333,6 @@
           <button type="button" onclick="openCreateBetModal()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-xs transition">
             👥 + Pula Wieloosobowa
           </button>
-          <button type="button" onclick="openAdminPinModal()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/30 font-bold text-xs transition flex items-center gap-1.5">
-            <span>🔒 Rozlicz Zakłady (Admin)</span>
-          </button>
         </div>
       </div>
 
@@ -383,12 +380,18 @@
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-3">
-              <div class="flex flex-wrap items-center gap-2 text-xs">
-                <label class="text-slate-400">Domyślny tryb nowych rynków:</label>
-                <select id="betAiDefaultModeSelect" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
-                  <option value="AI_HOUSE">🎰 Przeciwko Krupierowi AI (Ujemne EV ~ -18%)</option>
-                  <option value="PARIMUTUEL">👥 Gracze vs Gracze (Wspólna Pula 0% marży)</option>
-                </select>
+              <div class="flex flex-wrap items-center gap-3 text-xs">
+                <div class="flex items-center gap-1.5">
+                  <label class="text-slate-400">Tryb:</label>
+                  <select id="betAiDefaultModeSelect" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                    <option value="AI_HOUSE">🎰 Przeciwko Krupierowi AI (Ujemne EV)</option>
+                    <option value="PARIMUTUEL">👥 Gracze vs Gracze (Wspólna Pula)</option>
+                  </select>
+                </div>
+                <label class="inline-flex items-center gap-1.5 text-slate-300 cursor-pointer bg-slate-900/90 px-2.5 py-1.5 rounded-lg border border-slate-800" title="Automatycznie odczyta godzinę rozpoczęcia meczu ze screena i zablokuje obstawianie z chwilą startu">
+                  <input type="checkbox" id="betAiAutoLockCheckbox" checked onchange="toggleGlobalAiAutoLock(this.checked)" class="rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-0" />
+                  <span>⏱️ Auto-blokada o godz. startu (opcjonalnie)</span>
+                </label>
               </div>
 
               <button type="button" id="generateAiBetsBtn" onclick="generateBetsWithAI()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition flex items-center gap-2">
@@ -406,7 +409,7 @@
             </h4>
             <div class="flex items-center gap-2">
               <button type="button" onclick="publishAllAiSuggestedBets()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition">
-                📢 Opublikuj wszystkie (3)
+                📢 Opublikuj wszystkie
               </button>
               <button type="button" onclick="clearAiSuggestedBets()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs transition">
                 Ukryj
@@ -950,13 +953,21 @@
           <input type="text" id="betTitleInput" placeholder="Np. Kto rzuci najwięcej punktów na kręglach / Kto wygra dzisiejszą serię 2v2" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
         </div>
 
-        <div>
-          <label class="block text-xs font-medium text-amber-300 mb-1">Stawka ELO od każdego uczestnika (pkt)</label>
-          <div class="flex items-center gap-2">
-            <input type="number" id="betStakesInput" value="20" min="1" max="500" step="5" oninput="updateCreateBetPoolPreview()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
-            <button type="button" onclick="setBetStakeQuick(10)" class="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-300">10</button>
-            <button type="button" onclick="setBetStakeQuick(25)" class="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-amber-300">25</button>
-            <button type="button" onclick="setBetStakeQuick(50)" class="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-orange-300">50</button>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-amber-300 mb-1">Stawka ELO od uczestnika (pkt)</label>
+            <div class="flex items-center gap-1.5">
+              <input type="number" id="betStakesInput" value="20" min="1" max="500" step="5" oninput="updateCreateBetPoolPreview()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
+              <button type="button" onclick="setBetStakeQuick(10)" class="px-2 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-300">10</button>
+              <button type="button" onclick="setBetStakeQuick(25)" class="px-2 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-amber-300">25</button>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-medium text-slate-300">⏱️ Auto-blokada (opcjonalnie)</label>
+              <button type="button" onclick="document.getElementById('betLockAtInput').value=''" class="text-[10px] text-slate-400 hover:text-white underline">Wyczyść</button>
+            </div>
+            <input type="datetime-local" id="betLockAtInput" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
           </div>
         </div>
 
@@ -1040,6 +1051,14 @@
             <label class="block font-medium text-amber-300 mb-1">Domyślna stawka wejścia (ELO)</label>
             <input type="number" id="cmDefaultStakeInput" value="20" min="5" max="200" step="5" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
           </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block font-medium text-slate-300">⏱️ Auto-blokada z początkiem meczu (opcjonalnie)</label>
+            <button type="button" onclick="document.getElementById('cmLockAtInput').value=''" class="text-[11px] text-slate-400 hover:text-white underline">Brak limitu czasu</button>
+          </div>
+          <input type="datetime-local" id="cmLockAtInput" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-500" />
         </div>
 
         <div class="space-y-2">
@@ -3777,6 +3796,8 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       }
       document.getElementById('betTitleInput').value = '';
       document.getElementById('betStakesInput').value = '20';
+      const lockEl = document.getElementById('betLockAtInput');
+      if (lockEl) lockEl.value = '';
       renderBetParticipantsSelector();
       updateCreateBetPoolPreview();
       document.getElementById('createBetModal').classList.remove('hidden');
@@ -3842,6 +3863,87 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       return `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     }
 
+    // Sprawdza, czy zakład/rynek jest zablokowany ręcznie przez Admina LUB czy minęła już godzina rozpoczęcia meczu (lockAt)
+    function isItemEffectivelyLocked(item) {
+      if (!item) return false;
+      if (item.isLocked) return true;
+      if (item.lockAt && String(item.lockAt).trim().length > 0) {
+        const lockTime = new Date(item.lockAt).getTime();
+        if (!isNaN(lockTime) && Date.now() >= lockTime) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function formatLockAtDisplay(lockAtStr) {
+      if (!lockAtStr) return '';
+      const d = new Date(lockAtStr);
+      if (isNaN(d.getTime())) return String(lockAtStr);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    // Konwertuje godzinę ze screena bukmachera (np. "20:45", "Jutro 20:45", "12.11 21:00", "2026-11-12T20:45") na format datetime-local (YYYY-MM-DDTHH:MM)
+    function normalizeStartTimeFromAI(rawStr) {
+      if (!rawStr) return '';
+      const s = String(rawStr).trim();
+      if (!s || s === 'null' || s === 'brak') return '';
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) return s.slice(0, 16);
+
+      const targetDate = new Date();
+      const lower = s.toLowerCase();
+      if (lower.includes('pojutrze')) {
+        targetDate.setDate(targetDate.getDate() + 2);
+      } else if (lower.includes('jutro') || lower.includes('tomorrow')) {
+        targetDate.setDate(targetDate.getDate() + 1);
+      }
+
+      const pad = (n) => String(n).padStart(2, '0');
+      let year = targetDate.getFullYear();
+      let month = targetDate.getMonth() + 1;
+      let day = targetDate.getDate();
+
+      const dateMatch = s.match(/(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?/);
+      if (dateMatch) {
+        day = parseInt(dateMatch[1], 10);
+        month = parseInt(dateMatch[2], 10);
+        if (dateMatch[3]) {
+          year = parseInt(dateMatch[3], 10);
+          if (year < 100) year += 2000;
+        }
+      }
+
+      const timeMatch = s.match(/(\d{1,2}):(\d{2})/);
+      if (!timeMatch) return '';
+      const hours = parseInt(timeMatch[1], 10);
+      const mins = parseInt(timeMatch[2], 10);
+      if (hours > 23 || mins > 59) return '';
+
+      return `${year}-${pad(month)}-${pad(day)}T${pad(hours)}:${pad(mins)}`;
+    }
+
+    function toggleGlobalAiAutoLock(enabled) {
+      aiSuggestedMarketsBuffer.forEach(item => {
+        if (enabled && item.detectedStartTime) {
+          item.lockAt = item.detectedStartTime;
+        } else if (!enabled) {
+          item.lockAt = '';
+        }
+      });
+      renderAiSuggestedBets();
+    }
+
+    // Co 15 sekund sprawdza, czy któryś otwarty zakład właśnie przekroczył godzinę startu meczu
+    setInterval(() => {
+      const hasTimedItems = [...(appState.markets || []), ...(appState.bets || [])]
+        .some(x => x.status === 'ACTIVE' && x.lockAt);
+      if (hasTimedItems) {
+        const simData = runChronologicalSimulation();
+        renderActiveBetsSection(simData.ratingsMap);
+      }
+    }, 15000);
+
     async function confirmCreateBet() {
       const title = document.getElementById('betTitleInput').value.trim();
       const stakes = Math.max(1, Number(document.getElementById('betStakesInput').value) || 20);
@@ -3863,6 +3965,7 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       const participantTimestamps = {};
       participantIds.forEach(pid => { participantTimestamps[pid] = nowStamp; });
 
+      const lockAtVal = (document.getElementById('betLockAtInput')?.value || '').trim();
       const newBet = {
         id: 'bet_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
         title,
@@ -3870,6 +3973,7 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
         participantIds,
         participantTimestamps,
         isLocked: false,
+        lockAt: lockAtVal,
         status: 'ACTIVE',
         winnerIds: [],
         createdAt: nowStamp
@@ -3886,8 +3990,8 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       await ensureFreshStateBeforeWrite();
       const bet = (appState.bets || []).find(b => b.id === betId && b.status === 'ACTIVE');
       if (!bet) return;
-      if (bet.isLocked) {
-        showToast('Obstawianie tego zakładu zostało już zamknięte przez Admina!', 'error');
+      if (isItemEffectivelyLocked(bet)) {
+        showToast('Obstawianie tego zakładu zostało już zamknięte (mecz się rozpoczął)!', 'error');
         return;
       }
       if (!Array.isArray(bet.participantIds)) bet.participantIds = [];
@@ -4055,22 +4159,30 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
           `;
         }).join('');
 
+        const lockedNow = isItemEffectivelyLocked(b);
+        const lockBadgeHtml = b.lockAt
+          ? `<span class="px-2 py-0.5 rounded bg-slate-950 border ${lockedNow ? 'border-rose-500/40 text-rose-400' : 'border-indigo-500/30 text-indigo-300'} font-mono text-[10px]">${lockedNow ? '🔒 Start:' : '⏱️ Do:'} ${escapeHtml(formatLockAtDisplay(b.lockAt))}</span>`
+          : '';
+
         const nonParticipants = appState.members.filter(m => !partIds.includes(m.id));
-        const joinDropdown = (!b.isLocked && nonParticipants.length > 0) ? `
+        const joinDropdown = (!lockedNow && nonParticipants.length > 0) ? `
           <select onchange="if(this.value){ joinExistingBet('${b.id}', this.value); this.value=''; }" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-amber-300 focus:outline-none">
             <option value="">+ Dołącz do zakładu (-${b.stakes} ELO)...</option>
             ${nonParticipants.map(m => `<option value="${m.id}">${escapeHtml(m.name)} (-${b.stakes} ELO)</option>`).join('')}
           </select>
-        ` : (b.isLocked ? `<span class="text-[11px] text-rose-400 font-bold">🔒 Obstawianie zamknięte (Mecz w trakcie)</span>` : '');
+        ` : (lockedNow ? `<span class="text-[11px] text-rose-400 font-bold">🔒 Obstawianie zamknięte (Mecz rozpoczęty)</span>` : '');
 
         return `
           <div class="bg-slate-900/90 border border-amber-500/30 rounded-xl p-4 flex flex-col justify-between gap-3 shadow-lg">
             <div class="space-y-2">
-              <div class="flex items-center justify-between gap-2 text-[11px]">
-                <span class="text-slate-400 font-mono">🕒 Utworzono: ${escapeHtml(b.createdAt || '')}</span>
-                <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold">
-                  Stawka: ${b.stakes} ELO (Pula: ${totalPool})
-                </span>
+              <div class="flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+                <span class="text-slate-400 font-mono">🕒 ${escapeHtml(b.createdAt || '')}</span>
+                <div class="flex items-center gap-1.5">
+                  ${lockBadgeHtml}
+                  <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold">
+                    Stawka: ${b.stakes} ELO (Pula: ${totalPool})
+                  </span>
+                </div>
               </div>
               <h3 class="text-sm font-bold text-white leading-snug">🎲 ${escapeHtml(b.title)}</h3>
               <div class="flex flex-wrap gap-1.5 pt-1">
@@ -4078,10 +4190,7 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
               </div>
             </div>
 
-            <div class="pt-2.5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
-              ${joinDropdown}
-              <span class="text-[10px] text-slate-500 ml-auto">🔒 Rozliczanie w Panelu Admina</span>
-            </div>
+            ${joinDropdown ? `<div class="pt-2.5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">${joinDropdown}</div>` : ''}
           </div>
         `;
       }).join('');
@@ -4225,11 +4334,13 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
    - Pierwszy zakład w tablicy MUSI dotyczyć dokładnie tego, o co prosi użytkownik!
    - Oszacuj realistyczne prawdopodobieństwa "prob" (suma prob w jednym zakładzie = 1.00) na podstawie realnej siły drużyn sportowych LUB różnicy ELO, formy i bilansu H2H naszych graczy.
    - Dodatkowo zaproponuj 1 lub 2 ciekawe zakłady poboczne do tego wydarzenia (np. Over/Under, zakład specjalny).
-3. Zwróć WYŁĄCZNIE czysty JSON (tablicę od 1 do 4 obiektów):
+3. Aktualna data to ${new Date().toISOString().split('T')[0]}. Jeśli na zrzucie ekranu (np. od bukmachera/Flashscore) lub w opisie widoczna jest godzina/data rozpoczęcia meczu (np. "20:45", "Jutro 21:00", "14.11 18:30"), odczytaj ją i wpisz w pole "startTime" w formacie "YYYY-MM-DDTHH:MM" lub "DD.MM HH:MM" / "HH:MM" (jeśli brak godziny, wpisz null).
+4. Zwróć WYŁĄCZNIE czysty JSON (tablicę od 1 do 4 obiektów):
 [
   {
     "title": "Nazwa meczu / Pytanie zakładu",
     "defaultStake": 20,
+    "startTime": "20:45",
     "options": [
       {"label": "Opcja 1", "prob": 0.48, "bookieOdds": null},
       {"label": "Opcja 2", "prob": 0.52, "bookieOdds": null}
@@ -4254,12 +4365,18 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
 
           const parsedList = parseJsonFromGeminiText(extractTextFromGeminiData(data));
           const rawArray = Array.isArray(parsedList) ? parsedList : (parsedList.bets || parsedList.markets || [parsedList]);
-          aiSuggestedMarketsBuffer = rawArray.filter(x => x && (x.title || x.options)).slice(0, 5).map(item => ({
-            title: item.title || 'Zakład Krupiera AI',
-            mode: defaultMode,
-            defaultStake: Number(item.defaultStake) || 20,
-            options: applyNegativeEvOdds(item.options)
-          }));
+          const autoLockEnabled = document.getElementById('betAiAutoLockCheckbox')?.checked !== false;
+          aiSuggestedMarketsBuffer = rawArray.filter(x => x && (x.title || x.options)).slice(0, 5).map(item => {
+            const normTime = normalizeStartTimeFromAI(item.startTime || item.lockAt);
+            return {
+              title: item.title || 'Zakład Krupiera AI',
+              mode: defaultMode,
+              defaultStake: Number(item.defaultStake) || 20,
+              detectedStartTime: normTime,
+              lockAt: autoLockEnabled ? normTime : '',
+              options: applyNegativeEvOdds(item.options)
+            };
+          });
         } else {
           // Lokalny generator propozycji, gdy brak klucza API
           const p1 = appState.members[0]?.name || 'Gracz 1';
@@ -4388,6 +4505,13 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
               <div>
                 <input type="text" value="${escapeHtml(m.title)}" oninput="updateAiSuggestedField(${idx}, 'title', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-amber-500" placeholder="Pytanie zakładu..." />
               </div>
+              <div class="flex items-center justify-between gap-1.5 bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 text-[11px]">
+                <span class="text-slate-400">⏱️ Blokada (start):</span>
+                <div class="flex items-center gap-1">
+                  <input type="datetime-local" value="${escapeHtml(m.lockAt || '')}" oninput="updateAiSuggestedField(${idx}, 'lockAt', this.value)" class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] font-mono text-indigo-300 focus:outline-none" />
+                  <button type="button" onclick="updateAiSuggestedField(${idx}, 'lockAt', ''); renderAiSuggestedBets();" title="Wyłącz auto-blokadę" class="text-slate-500 hover:text-rose-400 px-1">&times;</button>
+                </div>
+              </div>
               <div class="space-y-1.5 pt-0.5">${optsHtml}</div>
               <button type="button" onclick="addAiSuggestedOption(${idx})" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold">+ Dodaj kolejną opcję</button>
             </div>
@@ -4421,6 +4545,7 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
         title: item.title || 'Zakład Ekipy',
         mode: chosenMode || item.mode || 'AI_HOUSE',
         defaultStake: Math.max(1, Number(item.defaultStake) || 20),
+        lockAt: item.lockAt || '',
         options: JSON.parse(JSON.stringify(cleanOpts)),
         wagers: [],
         status: 'ACTIVE',
@@ -4450,11 +4575,12 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
             title: item.title || 'Zakład Ekipy',
             mode: defaultMode,
             defaultStake: Math.max(1, Number(item.defaultStake) || 20),
+            lockAt: item.lockAt || '',
             options: JSON.parse(JSON.stringify(cleanOpts)),
             wagers: [],
             status: 'ACTIVE',
             isLocked: false,
-        createdAt: formatNowTimestamp()
+            createdAt: formatNowTimestamp()
           });
         }
       });
@@ -4486,6 +4612,8 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
         document.getElementById('cmTitleInput').value = mkt.title || '';
         document.getElementById('cmModeSelect').value = mkt.mode || 'AI_HOUSE';
         document.getElementById('cmDefaultStakeInput').value = mkt.defaultStake || 20;
+        const lockInp = document.getElementById('cmLockAtInput');
+        if (lockInp) lockInp.value = mkt.lockAt || '';
         document.getElementById('cmOpt1Label').value = mkt.options?.[0]?.label || '';
         document.getElementById('cmOpt1Odds').value = mkt.options?.[0]?.odds ?? evenOdds2Way;
         document.getElementById('cmOpt2Label').value = mkt.options?.[1]?.label || '';
@@ -4497,6 +4625,8 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
         document.getElementById('cmTitleInput').value = '';
         document.getElementById('cmModeSelect').value = 'AI_HOUSE';
         document.getElementById('cmDefaultStakeInput').value = '20';
+        const lockInp = document.getElementById('cmLockAtInput');
+        if (lockInp) lockInp.value = '';
         document.getElementById('cmOpt1Label').value = 'Tak / Opcja A';
         document.getElementById('cmOpt1Odds').value = evenOdds2Way;
         document.getElementById('cmOpt2Label').value = 'Nie / Opcja B';
@@ -4611,6 +4741,7 @@ Zwróć WYŁĄCZNIE czysty JSON:
       const title = document.getElementById('cmTitleInput').value.trim();
       const mode = document.getElementById('cmModeSelect').value;
       const defaultStake = Math.max(1, Math.round(Number(document.getElementById('cmDefaultStakeInput').value) || 20));
+      const lockAt = (document.getElementById('cmLockAtInput')?.value || '').trim();
 
       if (!title) {
         showToast('Wpisz pytanie / nazwę wydarzenia do obstawienia!', 'warn');
@@ -4637,6 +4768,7 @@ Zwróć WYŁĄCZNIE czysty JSON:
           existingMkt.title = title;
           existingMkt.mode = mode;
           existingMkt.defaultStake = defaultStake;
+          existingMkt.lockAt = lockAt;
           existingMkt.options = rawOpts.map((o, idx) => ({
             id: existingMkt.options?.[idx]?.id || ('opt_' + idx + '_' + Math.random().toString(36).slice(2, 5)),
             label: o.label,
@@ -4667,6 +4799,7 @@ Zwróć WYŁĄCZNIE czysty JSON:
         title,
         mode,
         defaultStake,
+        lockAt,
         options,
         wagers: [],
         status: 'ACTIVE',
@@ -4693,8 +4826,8 @@ Zwróć WYŁĄCZNIE czysty JSON:
       await ensureFreshStateBeforeWrite();
       const mkt = (appState.markets || []).find(m => m.id === marketId && m.status === 'ACTIVE');
       if (!mkt) return;
-      if (mkt.isLocked) {
-        showToast('Obstawianie tego zakładu zostało zablokowane przez Admina (mecz w trakcie)!', 'error');
+      if (isItemEffectivelyLocked(mkt)) {
+        showToast('Obstawianie tego zakładu jest już zablokowane (mecz się rozpoczął)!', 'error');
         return;
       }
       if (!Array.isArray(mkt.wagers)) mkt.wagers = [];
@@ -4903,7 +5036,8 @@ Zwróć WYŁĄCZNIE czysty JSON:
             `;
           }).join('');
 
-          const betBtnHtml = mkt.isLocked
+          const lockedNow = isItemEffectivelyLocked(mkt);
+          const betBtnHtml = lockedNow
             ? `<span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-rose-500/30 text-rose-400 text-[11px] font-bold">🔒 Zamknięte</span>`
             : `<button type="button" onclick="placeMarketWager('${mkt.id}', '${opt.id}')" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition">
                 🎯 Obstaw (${isAiHouse ? 'wybrana stawka' : fixedStake + ' ELO'})
@@ -4933,8 +5067,13 @@ Zwróć WYŁĄCZNIE czysty JSON:
              <input type="number" id="mktStake_${mkt.id}" value="${fixedStake}" min="1" max="500" step="5" class="w-20 bg-slate-900 border border-amber-500/40 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none" />`
           : `<span class="ml-auto px-2.5 py-1 rounded-lg bg-slate-900 border border-indigo-500/30 text-indigo-300 font-mono font-bold text-xs">🔒 Stała stawka: ${fixedStake} ELO</span>`;
 
-        const wagerBarHtml = mkt.isLocked
-          ? `<div class="bg-rose-950/20 border border-rose-500/30 rounded-xl p-2.5 text-center text-xs text-rose-300 font-bold">🔒 Obstawianie tego zakładu zostało zamknięte przez Admina (mecz w trakcie)</div>`
+        const lockedMktNow = isItemEffectivelyLocked(mkt);
+        const lockTimeBadgeHtml = mkt.lockAt
+          ? `<span class="px-2 py-0.5 rounded-full bg-slate-950 border ${lockedMktNow ? 'border-rose-500/40 text-rose-400' : 'border-amber-500/30 text-amber-300'} text-[10px] font-mono font-bold">${lockedMktNow ? '🔒 Start meczu:' : '⏱️ Blokada o:'} ${escapeHtml(formatLockAtDisplay(mkt.lockAt))}</span>`
+          : '';
+
+        const wagerBarHtml = lockedMktNow
+          ? `<div class="bg-rose-950/20 border border-rose-500/30 rounded-xl p-2.5 text-center text-xs text-rose-300 font-bold">🔒 Obstawianie zamknięte ${mkt.lockAt ? '(Mecz rozpoczął się: ' + escapeHtml(formatLockAtDisplay(mkt.lockAt)) + ')' : '(Zablokowane)'}</div>`
           : `<div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 flex flex-wrap items-center gap-2 text-xs">
               <span class="text-slate-400 font-medium">Kto obstawia:</span>
               <select id="mktMember_${mkt.id}" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold focus:outline-none">
@@ -4947,8 +5086,9 @@ Zwróć WYŁĄCZNIE czysty JSON:
           <div class="bg-slate-900/90 border border-purple-500/35 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-xl">
             <div class="space-y-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-[11px] text-slate-400 font-mono">🕒 Utworzono: ${escapeHtml(mkt.createdAt || '')}</span>
-                <div class="flex items-center gap-1.5">
+                <span class="text-[11px] text-slate-400 font-mono">🕒 ${escapeHtml(mkt.createdAt || '')}</span>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  ${lockTimeBadgeHtml}
                   ${modeBadge}
                 </div>
               </div>
@@ -4961,7 +5101,6 @@ Zwróć WYŁĄCZNIE czysty JSON:
               <div class="space-y-2">
                 ${optionsHtml}
               </div>
-              <div class="text-[10px] text-slate-500 text-right pt-1">🔒 Rozliczanie, edycja i blokada w Panelu Admina (PIN)</div>
             </div>
           </div>
         `;
@@ -5194,7 +5333,12 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
       await ensureFreshStateBeforeWrite();
       const mkt = (appState.markets || []).find(m => m.id === marketId);
       if (!mkt) return;
-      mkt.isLocked = !mkt.isLocked;
+      if (isItemEffectivelyLocked(mkt)) {
+        mkt.isLocked = false;
+        mkt.lockAt = '';
+      } else {
+        mkt.isLocked = true;
+      }
       await persistState();
       populateAdminEditorFields();
       renderAll();
@@ -5205,7 +5349,12 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
       await ensureFreshStateBeforeWrite();
       const bet = (appState.bets || []).find(b => b.id === betId);
       if (!bet) return;
-      bet.isLocked = !bet.isLocked;
+      if (isItemEffectivelyLocked(bet)) {
+        bet.isLocked = false;
+        bet.lockAt = '';
+      } else {
+        bet.isLocked = true;
+      }
       await persistState();
       populateAdminEditorFields();
       renderAll();
@@ -5274,12 +5423,12 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
           <div class="bg-slate-950/90 border border-purple-500/40 rounded-xl p-3.5 space-y-2.5">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <span class="text-[10px] font-mono text-slate-400">🕒 Utworzono: ${escapeHtml(mkt.createdAt || '')}</span>
+                <span class="text-[10px] font-mono text-slate-400">🕒 Utworzono: ${escapeHtml(mkt.createdAt || '')} ${mkt.lockAt ? '• ⏱️ Auto-blokada: ' + escapeHtml(formatLockAtDisplay(mkt.lockAt)) : ''}</span>
                 <h5 class="text-xs sm:text-sm font-extrabold text-white">${escapeHtml(mkt.title)}</h5>
               </div>
               <div class="flex flex-wrap items-center gap-1.5">
-                <button type="button" onclick="toggleLockMarket('${mkt.id}')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${mkt.isLocked ? 'bg-rose-600/30 text-rose-200 border-rose-500/50' : 'bg-slate-800 text-slate-300 border-slate-700'}">
-                  ${mkt.isLocked ? '🔓 Odblokuj obstawianie' : '🔒 Zablokuj obstawianie'}
+                <button type="button" onclick="toggleLockMarket('${mkt.id}')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${isItemEffectivelyLocked(mkt) ? 'bg-rose-600/30 text-rose-200 border-rose-500/50' : 'bg-slate-800 text-slate-300 border-slate-700'}">
+                  ${isItemEffectivelyLocked(mkt) ? '🔓 Odblokuj obstawianie' : '🔒 Zablokuj obstawianie'}
                 </button>
                 <button type="button" onclick="openCustomMarketModal('${mkt.id}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px] font-semibold">
                   ✏️ Edytuj
@@ -5313,13 +5462,13 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
         return `
           <div class="bg-slate-950/90 border border-amber-500/40 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
             <div class="space-y-1.5 flex-1">
-              <div class="text-[10px] font-mono text-slate-400">🕒 Utworzono: ${escapeHtml(b.createdAt || '')} • Stawka: ${b.stakes} ELO/os.</div>
+              <div class="text-[10px] font-mono text-slate-400">🕒 Utworzono: ${escapeHtml(b.createdAt || '')} ${b.lockAt ? '• ⏱️ Auto-blokada: ' + escapeHtml(formatLockAtDisplay(b.lockAt)) : ''} • Stawka: ${b.stakes} ELO/os.</div>
               <h5 class="text-xs sm:text-sm font-extrabold text-white">🎲 ${escapeHtml(b.title)}</h5>
               <div class="flex flex-wrap gap-1">${badges}</div>
             </div>
             <div class="flex flex-wrap items-center gap-1.5 shrink-0">
-              <button type="button" onclick="toggleLockClassicBet('${b.id}')" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition ${b.isLocked ? 'bg-rose-600/30 text-rose-200 border-rose-500/50' : 'bg-slate-800 text-slate-300 border-slate-700'}">
-                ${b.isLocked ? '🔓 Odblokuj' : '🔒 Zablokuj'}
+              <button type="button" onclick="toggleLockClassicBet('${b.id}')" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition ${isItemEffectivelyLocked(b) ? 'bg-rose-600/30 text-rose-200 border-rose-500/50' : 'bg-slate-800 text-slate-300 border-slate-700'}">
+                ${isItemEffectivelyLocked(b) ? '🔓 Odblokuj' : '🔒 Zablokuj'}
               </button>
               <button type="button" onclick="openResolveBetModal('${b.id}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow transition">
                 🏆 Rozlicz zwycięzcę
