@@ -1040,10 +1040,17 @@
         </div>
 
         <div class="space-y-2">
-          <label class="block font-medium text-slate-300">Opcje do obstawiania oraz kursy u Krupiera AI (mnożnik wypłaty):</label>
-          <p class="text-[11px] text-slate-400">
-            💡 Dla 2 równych opcji (50%/50%) uczciwy kurs to <code>2.00x</code>, a z ujemnym EV u Krupiera AI to <code>1.65x</code> (zysk netto +0.65x stawki, strata -1.00x).
-          </p>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <label class="block font-medium text-slate-300">Opcje wyboru oraz kursy (domyślnie z naszą marżą):</label>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" onclick="estimateModalOddsWithAI()" id="cmAiOddsBtn" class="px-2.5 py-1 rounded-lg bg-indigo-600/25 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/40 text-[11px] font-bold transition">
+                🤖 Szacuj kursy przez AI
+              </button>
+              <button type="button" onclick="convertModalBookieOddsToHouseMargin()" title="Jeśli wpisałeś kursy od bukmachera (np. 2.10 i 1.75), kliknij aby przeliczyć je na naszą marżę kasyna" class="px-2.5 py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600/35 text-rose-300 border border-rose-500/30 text-[11px] font-semibold transition">
+                📉 Przelicz wpisane kursy na naszą marżę
+              </button>
+            </div>
+          </div>
           <div class="grid grid-cols-12 gap-2 items-center">
             <input type="text" id="cmOpt1Label" value="Tak / Opcja A" placeholder="Opcja 1" class="col-span-8 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white" />
             <input type="number" id="cmOpt1Odds" value="1.65" step="0.05" min="1.05" max="10" class="col-span-4 bg-slate-950 border border-rose-500/40 rounded-lg px-2.5 py-2 text-right font-mono text-rose-300" title="Kurs AI (z ujemnym EV)" />
@@ -4074,14 +4081,25 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       document.getElementById('betAiImagePreviewWrap').classList.add('hidden');
     }
 
-    // Przelicza prawdopodobieństwa na kursy bukmacherskie z wbudowaną marżą Krupiera AI (~18% House Edge -> Ujemne EV!)
+    // Przelicza prawdopodobieństwa LUB kursy od bukmachera ze screena na nasze kursy z marżą Krupiera AI (domyślnie ~18% marży -> ujemne EV!)
     function applyNegativeEvOdds(rawOptions) {
       const opts = Array.isArray(rawOptions) && rawOptions.length >= 2 ? rawOptions : [
         { label: 'Tak (Uda się)', prob: 0.5 },
         { label: 'Nie (Nie ma szans)', prob: 0.5 }
       ];
-      // Normalizujemy prawdopodobieństwa, aby sumowały się do 1.0
-      let sumProb = opts.reduce((s, o) => s + (Number(o.prob) || (1 / opts.length)), 0);
+
+      // Jeśli na screenie od bukmachera były podane kursy (bookieOdds > 1.01), najpierw zdejmujemy marżę bukmachera
+      // licząc czyste prawdopodobieństwo rynkowe p_i = (1 / bookieOdds_i) / sum(1 / bookieOdds_k)
+      const derivedProbs = opts.map(o => {
+        const bOdds = Number(o.bookieOdds || o.odds || 0);
+        if (bOdds > 1.01) return 1 / bOdds;
+        const p = Number(o.prob || 0);
+        if (p > 1) return p / 100; // gdyby AI zwróciło np. 50 zamiast 0.50
+        if (p > 0) return p;
+        return 1 / opts.length;
+      });
+
+      let sumProb = derivedProbs.reduce((s, p) => s + p, 0);
       if (sumProb <= 0) sumProb = 1;
 
       // Dynamiczna marża kasyna AI z panelu admina (domyślnie 18% -> wypłata 0.82 wartości sprawiedliwej)
@@ -4089,38 +4107,64 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       const HOUSE_PAYOUT_FACTOR = (100 - houseMarginPct) / 100;
 
       return opts.slice(0, 4).map((o, idx) => {
-        const cleanProb = Math.min(0.88, Math.max(0.10, (Number(o.prob) || (1 / opts.length)) / sumProb));
-        // Uczciwy kurs dziesiętny to 1 / cleanProb. Kurs Krupiera AI z ujemnym EV to (1 / cleanProb) * 0.82
+        const cleanProb = Math.min(0.90, Math.max(0.06, derivedProbs[idx] / sumProb));
+        // Nakładamy naszą marżę kasyna AI domyślnie na wyliczoną szansę (1 / cleanProb) * HOUSE_PAYOUT_FACTOR
         let houseOdds = Math.round(((1 / cleanProb) * HOUSE_PAYOUT_FACTOR) * 100) / 100;
-        // Gwarantujemy, że kurs daje zysk mniejszy niż sprawiedliwy, ale wynosi minimum 1.15x
-        houseOdds = Math.max(1.15, Math.min(6.50, houseOdds));
+        houseOdds = Math.max(1.10, Math.min(12.00, houseOdds));
         const evPercent = Math.round(((cleanProb * (houseOdds - 1) - (1 - cleanProb) * 1) * 100));
+        const origBookie = Number(o.bookieOdds || 0) > 1.01 ? Number(o.bookieOdds).toFixed(2) : null;
         return {
           id: 'opt_' + idx + '_' + Math.random().toString(36).slice(2, 5),
           label: String(o.label || `Opcja ${idx + 1}`).trim(),
           prob: Math.round(cleanProb * 100),
+          bookieOdds: origBookie,
           odds: houseOdds,
-          evPercent: evPercent < 0 ? evPercent : -15
+          evPercent: evPercent < 0 ? evPercent : -houseMarginPct
         };
       });
+    }
+
+    function buildHeadToHeadSummary() {
+      const h2h = {};
+      (appState.events || []).forEach(ev => {
+        if (ev.mode === 'COOP' || ev.mode === 'SEASON_TRANSFER' || ev.mode === 'BET_TRANSFER') return;
+        const wins = ev.winners || [];
+        const loses = ev.losers || [];
+        wins.forEach(wId => {
+          loses.forEach(lId => {
+            const wName = appState.members.find(m => m.id === wId)?.name;
+            const lName = appState.members.find(m => m.id === lId)?.name;
+            if (wName && lName) {
+              const key = [wName, lName].sort().join(' vs ');
+              if (!h2h[key]) h2h[key] = {};
+              h2h[key][wName] = (h2h[key][wName] || 0) + 1;
+              h2h[key][lName] = h2h[key][lName] || 0;
+            }
+          });
+        });
+      });
+      return Object.entries(h2h).slice(0, 12).map(([pair, scores]) => {
+        const parts = Object.entries(scores).map(([n, c]) => `${n}:${c}`).join(', ');
+        return `${pair} (${parts})`;
+      }).join('; ');
     }
 
     async function generateBetsWithAI() {
       const contextText = (document.getElementById('betAiContextInput')?.value || '').trim();
       if (!contextText && !currentBetAiImagePayload) {
-        showToast('Wpisz opis wydarzenia/prompt lub wklej zrzut ekranu dla Krupiera AI!', 'warn');
+        showToast('Wpisz opis wydarzenia/zakładu lub wklej zrzut ekranu (np. od bukmachera)!', 'warn');
         return;
       }
 
       const btn = document.getElementById('generateAiBetsBtn');
       const origHtml = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = '<span>⏳ Krupier AI układa zakłady i kursy...</span>';
+      btn.innerHTML = '<span>⏳ Krupier AI szacuje szanse i przelicza na naszą marżę...</span>';
 
       try {
         const { sortedLeaderboard } = runChronologicalSimulation();
-        const playersSummary = sortedLeaderboard.map(r => `${r.member.name}${r.member.alias2v2 ? ` (${r.member.alias2v2})` : ''}: ${r.elo.toFixed(0)} ELO (${r.wins}W-${r.losses}L)`).join(', ');
-        const l2v2Summary = '';
+        const playersSummary = sortedLeaderboard.map(r => `${r.member.name}: ${r.elo.toFixed(0)} ELO (Bilans: ${r.wins}W-${r.losses}L, Skill: ${r.skillEloNet.toFixed(0)}, Forma: ${r.form.slice(-5).join('') || '-'})`).join(' | ');
+        const h2hSummary = buildHeadToHeadSummary();
         const defaultMode = document.getElementById('betAiDefaultModeSelect')?.value || 'AI_HOUSE';
 
         if (!appConfig.geminiKey || appConfig.geminiKey.trim().length < 10) {
@@ -4128,20 +4172,30 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
         }
 
         if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
-          const prompt = `Jesteś Krupierem AI i Bukmacherem dla grupy znajomych.
-Członkowie ekipy i ich Główne ELO: [${playersSummary}].
-Kontekst / opis wydarzenia od użytkownika: "${contextText || 'Przeanalizuj załączony obraz i wymyśl zakłady dopasowane do sytuacji.'}"
+          const prompt = `Jesteś Krupierem AI i Analitykiem Kursów (Oddsmakerem) dla grupy znajomych.
+DANE NASZEJ LIGI ELO:
+- Ranking graczy: [${playersSummary}]
+- Bezpośrednie pojedynki H2H: [${h2hSummary || 'brak'}]
 
-Stwórz DOKŁADNIE 3 angażujące, konkretne zakłady do obstawiania punktami ELO (np. 1 główny o wynik rywalizacji, 1 statystyczny typu Over/Under i 1 zabawny/specjalny nawiązujący do graczy lub screena).
-Każdy zakład musi mieć od 2 do 3 opcji wyboru (options), gdzie każda opcja ma "label" (krótki opis opcji po polsku) oraz "prob" (szacowane prawdopodobieństwo od 0.15 do 0.80, suma prob w jednym zakładzie = 1.0).
-Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
+WEJŚCIE OD UŻYTKOWNIKA (Tekst / Prompt i/lub Zrzut ekranu):
+"${contextText || 'Przeanalizuj załączony obraz (np. screen od bukmachera lub z wydarzenia) i wystaw zakłady.'}"
+
+ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
+1. Jeśli załączono ZRZUT EKRANU OD BUKMACHERA / Z KUPONU / FLASHSCORE:
+   - Odczytaj wszystkie widoczne na screenie mecze/zdarzenia (od 1 do 5 zakładów).
+   - Jeśli na screenie widnieją kursy bukmacherskie (np. 2.15, 3.40, 3.20), wpisz je dokładnie w pole "bookieOdds" dla każdej opcji (nasz system sam zdejmie marżę bukmachera i przeliczy je na naszą marżę kasyna AI!).
+2. Jeśli użytkownik wpisał KONKRETNY ZAKŁAD (np. mecz Ligi Mistrzów "Real vs Arsenal" albo pojedynek naszych graczy "Tomek vs Michał w kręgle"):
+   - Pierwszy zakład w tablicy MUSI dotyczyć dokładnie tego, o co prosi użytkownik!
+   - Oszacuj realistyczne prawdopodobieństwa "prob" (suma prob w jednym zakładzie = 1.00) na podstawie realnej siły drużyn sportowych LUB różnicy ELO, formy i bilansu H2H naszych graczy.
+   - Dodatkowo zaproponuj 1 lub 2 ciekawe zakłady poboczne do tego wydarzenia (np. Over/Under, zakład specjalny).
+3. Zwróć WYŁĄCZNIE czysty JSON (tablicę od 1 do 4 obiektów):
 [
   {
-    "title": "Pytanie zakładu #1",
+    "title": "Nazwa meczu / Pytanie zakładu",
     "defaultStake": 20,
     "options": [
-      {"label": "Opcja A", "prob": 0.50},
-      {"label": "Opcja B", "prob": 0.50}
+      {"label": "Opcja 1", "prob": 0.48, "bookieOdds": null},
+      {"label": "Opcja 2", "prob": 0.52, "bookieOdds": null}
     ]
   }
 ]`;
@@ -4158,12 +4212,12 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
 
           const data = await callGeminiWithFallback(appConfig.geminiKey.trim(), {
             contents: [{ parts }],
-            generationConfig: { responseMimeType: 'application/json', temperature: 0.4 }
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.25 }
           });
 
           const parsedList = parseJsonFromGeminiText(extractTextFromGeminiData(data));
-          const rawArray = Array.isArray(parsedList) ? parsedList : (parsedList.bets || parsedList.markets || []);
-          aiSuggestedMarketsBuffer = rawArray.slice(0, 3).map(item => ({
+          const rawArray = Array.isArray(parsedList) ? parsedList : (parsedList.bets || parsedList.markets || [parsedList]);
+          aiSuggestedMarketsBuffer = rawArray.filter(x => x && (x.title || x.options)).slice(0, 5).map(item => ({
             title: item.title || 'Zakład Krupiera AI',
             mode: defaultMode,
             defaultStake: Number(item.defaultStake) || 20,
@@ -4275,8 +4329,8 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
         const optsHtml = m.options.map((o, optIdx) => `
           <div class="flex items-center gap-1.5 bg-slate-950/90 border border-slate-800 rounded-lg p-1.5 text-xs">
             <input type="text" value="${escapeHtml(o.label)}" oninput="updateAiSuggestedOption(${idx}, ${optIdx}, 'label', this.value)" class="flex-1 bg-slate-900 border border-slate-700/80 rounded px-2 py-1 text-white focus:outline-none focus:border-amber-500" placeholder="Nazwa opcji" />
-            <div class="flex items-center gap-1 shrink-0" title="Kurs w grze przeciwko AI (z ujemnym EV)">
-              <span class="text-[10px] text-slate-500">Kurs:</span>
+            <div class="flex items-center gap-1 shrink-0" title="Szacowana szansa: ${o.prob || 50}% ${o.bookieOdds ? '| Kurs ze screena: ' + o.bookieOdds + 'x' : ''} | Przeliczono na naszą marżę AI">
+              ${o.bookieOdds ? `<span class="text-[10px] text-slate-500 line-through font-mono">${o.bookieOdds}</span>` : `<span class="text-[10px] text-slate-500 font-mono">${o.prob || 50}%→</span>`}
               <input type="number" step="0.05" min="1.05" max="15" value="${Number(o.odds).toFixed(2)}" oninput="updateAiSuggestedOption(${idx}, ${optIdx}, 'odds', this.value)" class="w-16 bg-slate-900 border border-rose-500/40 rounded px-1.5 py-1 text-right font-mono text-rose-300 font-bold focus:outline-none" />
             </div>
             ${m.options.length > 2 ? `<button type="button" onclick="removeAiSuggestedOption(${idx}, ${optIdx})" class="text-slate-500 hover:text-rose-400 px-1" title="Usuń opcję">&times;</button>` : ''}
@@ -4416,6 +4470,101 @@ Zwróć WYŁĄCZNIE czysty JSON (tablicę 3 obiektów):
 
     function closeCustomMarketModal() {
       document.getElementById('customMarketModal').classList.add('hidden');
+    }
+
+    // Przelicza wpisane w oknie kursy zewnętrznego bukmachera (np. z STS/Fortuny) na naszą marżę kasyna AI
+    function convertModalBookieOddsToHouseMargin() {
+      const rows = [
+        { labelEl: document.getElementById('cmOpt1Label'), oddsEl: document.getElementById('cmOpt1Odds') },
+        { labelEl: document.getElementById('cmOpt2Label'), oddsEl: document.getElementById('cmOpt2Odds') },
+        { labelEl: document.getElementById('cmOpt3Label'), oddsEl: document.getElementById('cmOpt3Odds') }
+      ].filter(r => r.labelEl && r.labelEl.value.trim().length > 0);
+
+      if (rows.length < 2) {
+        showToast('Wpisz najpierw przynajmniej 2 opcje!', 'warn');
+        return;
+      }
+
+      const rawOptions = rows.map(r => ({
+        label: r.labelEl.value.trim(),
+        bookieOdds: Math.max(1.02, Number(r.oddsEl.value) || 2.0)
+      }));
+
+      const converted = applyNegativeEvOdds(rawOptions);
+      converted.forEach((c, idx) => {
+        if (rows[idx]?.oddsEl) rows[idx].oddsEl.value = c.odds.toFixed(2);
+      });
+      const hm = Number(appState?.multipliers?.houseMargin ?? 18);
+      showToast(`Przeliczono kursy na naszą marżę kasyna AI (${hm}% / EV -${hm}%)!`, 'success');
+    }
+
+    // Szacuje kursy przez AI bezpośrednio w oknie tworzenia/edycji zakładu i nakłada naszą marżę
+    async function estimateModalOddsWithAI() {
+      const title = document.getElementById('cmTitleInput')?.value.trim();
+      const rows = [
+        { labelEl: document.getElementById('cmOpt1Label'), oddsEl: document.getElementById('cmOpt1Odds') },
+        { labelEl: document.getElementById('cmOpt2Label'), oddsEl: document.getElementById('cmOpt2Odds') },
+        { labelEl: document.getElementById('cmOpt3Label'), oddsEl: document.getElementById('cmOpt3Odds') }
+      ].filter(r => r.labelEl && r.labelEl.value.trim().length > 0);
+
+      if (!title || rows.length < 2) {
+        showToast('Wpisz pytanie zakładu oraz minimum 2 opcje wyboru!', 'warn');
+        return;
+      }
+
+      if (!appConfig.geminiKey || appConfig.geminiKey.trim().length < 10) {
+        await pullFromCloudIfNewer(true);
+      }
+      if (!appConfig.geminiKey || appConfig.geminiKey.trim().length < 10) {
+        showToast('Brak klucza Gemini API – użyto przeliczenia na naszą marżę z obecnych wartości.', 'info');
+        convertModalBookieOddsToHouseMargin();
+        return;
+      }
+
+      const btn = document.getElementById('cmAiOddsBtn');
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Szacowanie...';
+
+      try {
+        const { sortedLeaderboard } = runChronologicalSimulation();
+        const playersSummary = sortedLeaderboard.map(r => `${r.member.name}: ${r.elo.toFixed(0)} ELO (${r.wins}W-${r.losses}L)`).join(', ');
+        const h2hSummary = buildHeadToHeadSummary();
+        const optNames = rows.map((r, i) => `${i + 1}. "${r.labelEl.value.trim()}"`).join(', ');
+
+        const prompt = `Jesteś analitykiem kursów bukmacherskich (zarówno dla prawdziwego sportu jak Liga Mistrzów, jak i naszej wewnętrznej ligi znajomych).
+Nasi gracze ELO: [${playersSummary}]. Bilans H2H: [${h2hSummary || 'brak'}].
+Zakład: "${title}"
+Dostępne opcje: ${optNames}
+
+Oszacuj prawdziwe prawdopodobieństwa (prob od 0.08 do 0.88, suma prob = 1.00) dla każdej z podanych opcji w tej samej kolejności.
+Zwróć WYŁĄCZNIE czysty JSON:
+{"probs": [0.55, 0.45]}`;
+
+        const data = await callGeminiWithFallback(appConfig.geminiKey.trim(), {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.2 }
+        });
+
+        const parsed = parseJsonFromGeminiText(extractTextFromGeminiData(data));
+        const probsArr = Array.isArray(parsed) ? parsed : (parsed.probs || parsed.probabilities || []);
+        const rawOptions = rows.map((r, i) => ({
+          label: r.labelEl.value.trim(),
+          prob: Number(probsArr[i]) || (1 / rows.length)
+        }));
+
+        const converted = applyNegativeEvOdds(rawOptions);
+        converted.forEach((c, i) => {
+          if (rows[i]?.oddsEl) rows[i].oddsEl.value = c.odds.toFixed(2);
+        });
+        const hm = Number(appState?.multipliers?.houseMargin ?? 18);
+        showToast(`AI oszacowało szanse i nałożyło naszą marżę (${hm}%)!`, 'success');
+      } catch (err) {
+        showToast('Błąd wyceny AI: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
     }
 
     async function confirmCreateCustomMarket() {
