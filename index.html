@@ -343,8 +343,11 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button type="button" onclick="openCustomMarketModal()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow transition">
-            ✍️ + Własny Rynek (A/B/C)
+          <button type="button" onclick="openCustomMarketModal(null, 'OUR')" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow transition">
+            🏠 + Zakład „Nasz” (A/B/C)
+          </button>
+          <button type="button" onclick="openCustomMarketModal(null, 'SPORTS')" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition">
+            ⚽ + Zakład SPORTOWY (A/B/C)
           </button>
           <button type="button" onclick="openCreateBetModal()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-xs transition">
             👥 + Pula Wieloosobowa
@@ -398,10 +401,18 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="flex flex-wrap items-center gap-3 text-xs">
                 <div class="flex items-center gap-1.5">
+                  <label class="text-slate-400">Dział:</label>
+                  <select id="betAiDefaultCategorySelect" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-semibold focus:outline-none">
+                    <option value="AUTO">🤖 Auto-wykryj (Nasze / Sportowe)</option>
+                    <option value="OUR">🏠 Zakłady „Nasze” (Ekipowe)</option>
+                    <option value="SPORTS">⚽ Zakłady SPORTOWE (Mecze / Bukmacher)</option>
+                  </select>
+                </div>
+                <div class="flex items-center gap-1.5">
                   <label class="text-slate-400">Tryb:</label>
                   <select id="betAiDefaultModeSelect" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
-                    <option value="AI_HOUSE">🎰 Przeciwko Krupierowi AI (Ujemne EV)</option>
-                    <option value="PARIMUTUEL">👥 Gracze vs Gracze (Wspólna Pula)</option>
+                    <option value="AI_HOUSE">🎰 vs Krupier AI (Ujemne EV)</option>
+                    <option value="PARIMUTUEL">👥 Wspólna Pula</option>
                   </select>
                 </div>
                 <label class="inline-flex items-center gap-1.5 text-slate-300 cursor-pointer bg-slate-900/90 px-2.5 py-1.5 rounded-lg border border-slate-800" title="Automatycznie odczyta godzinę rozpoczęcia meczu ze screena i zablokuje obstawianie z chwilą startu">
@@ -436,52 +447,81 @@
         </div>
       </div>
 
-      <!-- PASEK SORTOWANIA I FILTROWANIA ZAKŁADÓW -->
+      <!-- PASEK KATEGORII (NASZE vs SPORTOWE), SORTOWANIA I FILTROWANIA -->
       <div class="glass rounded-2xl p-4 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-2 text-xs">
-          <span class="text-slate-400 font-semibold">↕️ Sortuj zakłady:</span>
-          <select id="betsSortSelect" onchange="renderAll()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500">
-            <option value="NEWEST">🕒 Najnowsze (od ostatnio dodanych)</option>
-            <option value="OLDEST">⏳ Najstarsze</option>
-            <option value="POOL_DESC">💰 Największa pula PC (malejąco)</option>
-            <option value="STAKE_DESC">💎 Najwyższa stawka wejścia (malejąco)</option>
-            <option value="PARTICIPANTS_DESC">👥 Najwięcej obstawiających (malejąco)</option>
-            <option value="LOCK_SOON">⏱️ Najszybciej zamykane (wg godz. startu)</option>
-            <option value="OPEN_FIRST">🔓 Najpierw otwarte do obstawiania</option>
-          </select>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2 text-xs">
-          <span class="text-slate-400 font-semibold">🔍 Filtruj:</span>
-          <select id="betsFilterModeSelect" onchange="renderAll()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500">
-            <option value="ALL">Wszystkie aktywne zakłady</option>
-            <option value="OPEN_ONLY">🔓 Tylko otwarte (przed startem meczu)</option>
-            <option value="LOCKED_ONLY">🔒 Tylko zamknięte (mecz w trakcie)</option>
-            <option value="AI_HOUSE">🎰 Tylko vs Krupier AI</option>
-            <option value="PARIMUTUEL">👥 Tylko Wspólna Pula Graczy</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- SEKCJA 2: NOWE ZAKŁADY (RYNKI Z OPCJAMI A/B/C: PRZECIWKO AI [UJEMNE EV] ORAZ GRACZE VS GRACZE) -->
-      <div class="glass rounded-2xl p-6 border border-purple-500/30 shadow-xl space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-          <div>
-            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              <span>🔥 Aktywne Rynki Wydarzeń (Punkty Chwały – PC)</span>
-              <span id="activeMarketsCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono">0</span>
-            </h3>
-          </div>
-          <button type="button" onclick="openCustomMarketModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition">
-            ➕ Dodaj własny rynek z opcjami
+        <!-- Przełącznik widoku: Wszystkie / Nasze / Sportowe -->
+        <div class="flex flex-wrap items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800 text-xs">
+          <button type="button" id="betCatTab-ALL" onclick="setBetsCategoryView('ALL')" class="px-3 py-1.5 rounded-lg font-bold transition bg-indigo-600 text-white">
+            Wszystkie
+          </button>
+          <button type="button" id="betCatTab-OUR" onclick="setBetsCategoryView('OUR')" class="px-3 py-1.5 rounded-lg font-bold transition text-slate-400 hover:text-white flex items-center gap-1">
+            <span>🏠 „Nasze” (Ekipa)</span>
+            <span id="tabCountOurBets" class="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-mono">0</span>
+          </button>
+          <button type="button" id="betCatTab-SPORTS" onclick="setBetsCategoryView('SPORTS')" class="px-3 py-1.5 rounded-lg font-bold transition text-slate-400 hover:text-white flex items-center gap-1">
+            <span>⚽ SPORTOWE</span>
+            <span id="tabCountSportsBets" class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono">0</span>
           </button>
         </div>
 
-        <div id="activeMarketsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <span class="text-slate-400 font-semibold">↕️ Sortuj:</span>
+          <select id="betsSortSelect" onchange="renderAll()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500">
+            <option value="NEWEST">🕒 Najnowsze</option>
+            <option value="OLDEST">⏳ Najstarsze</option>
+            <option value="POOL_DESC">💰 Największa pula PC</option>
+            <option value="STAKE_DESC">💎 Najwyższa stawka wejścia</option>
+            <option value="PARTICIPANTS_DESC">👥 Najwięcej obstawiających</option>
+            <option value="LOCK_SOON">⏱️ Najszybciej zamykane</option>
+            <option value="OPEN_FIRST">🔓 Najpierw otwarte</option>
+          </select>
+
+          <select id="betsFilterModeSelect" onchange="renderAll()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="ALL">Wszystkie tryby</option>
+            <option value="OPEN_ONLY">🔓 Tylko otwarte</option>
+            <option value="LOCKED_ONLY">🔒 Tylko zamknięte</option>
+            <option value="AI_HOUSE">🎰 Tylko vs Krupier AI</option>
+            <option value="PARIMUTUEL">👥 Tylko Wspólna Pula</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- SEKCJA 2A: ZAKŁADY "NASZE" (EKIPOWE & WEWNĘTRZNE) -->
+      <div id="ourMarketsSectionWrap" class="glass rounded-2xl p-6 border border-indigo-500/35 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <span>🏠 Zakłady „NASZE” – Ekipowe & Wewnętrzne (PC)</span>
+              <span id="ourMarketsCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono">0</span>
+            </h3>
+          </div>
+          <button type="button" onclick="openCustomMarketModal(null, 'OUR')" class="px-3.5 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold transition">
+            ➕ Dodaj zakład „Nasz”
+          </button>
+        </div>
+
+        <div id="ourMarketsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+      </div>
+
+      <!-- SEKCJA 2B: ZAKŁADY SPORTOWE (MECZE, LIGA MISTRZÓW, BUKMACHER) -->
+      <div id="sportsMarketsSectionWrap" class="glass rounded-2xl p-6 border border-emerald-500/35 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <span>⚽ Zakłady SPORTOWE – Mecze, Liga Mistrzów & Bukmacher (PC)</span>
+              <span id="sportsMarketsCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">0</span>
+            </h3>
+          </div>
+          <button type="button" onclick="openCustomMarketModal(null, 'SPORTS')" class="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition">
+            ➕ Dodaj zakład SPORTOWY
+          </button>
+        </div>
+
+        <div id="sportsMarketsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
       </div>
 
       <!-- SEKCJA 3: STARE ZAKŁADY WIELOOSOBOWE (KLASYCZNA WSPÓLNA PULA UCZESTNIKÓW) -->
-      <div class="glass rounded-2xl p-6 border border-amber-500/30 shadow-xl space-y-4">
+      <div id="classicBetsSectionWrap" class="glass rounded-2xl p-6 border border-amber-500/30 shadow-xl space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <div>
             <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
@@ -1082,16 +1122,23 @@
           <input type="text" id="cmTitleInput" placeholder="Np. Kto wykręci najwięcej DMG w tym meczu? / Czy Tomek rzuci powyżej 120 pkt?" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500" />
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label class="block font-medium text-slate-300 mb-1">Tryb rozliczania zakładu</label>
-            <select id="cmModeSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
-              <option value="AI_HOUSE">🎰 Przeciwko Krupierowi AI (Ujemne EV ~ -18%)</option>
-              <option value="PARIMUTUEL">👥 Gracze vs Gracze (Wspólna Pula 0% marży)</option>
+            <label class="block font-medium text-indigo-300 mb-1">Dział zakładu</label>
+            <select id="cmBetTypeSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs font-bold text-white focus:outline-none focus:border-indigo-500">
+              <option value="OUR">🏠 „Nasze” (Ekipowe)</option>
+              <option value="SPORTS">⚽ SPORTOWE (Mecze)</option>
             </select>
           </div>
           <div>
-            <label class="block font-medium text-amber-300 mb-1">Domyślna stawka wejścia (PC)</label>
+            <label class="block font-medium text-slate-300 mb-1">Tryb rozliczania</label>
+            <select id="cmModeSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+              <option value="AI_HOUSE">🎰 vs Krupier AI (Ujemne EV)</option>
+              <option value="PARIMUTUEL">👥 Wspólna Pula (0% marży)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-amber-300 mb-1">Stawka wejścia (PC)</label>
             <input type="number" id="cmDefaultStakeInput" value="20" min="5" max="200" step="5" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
           </div>
         </div>
@@ -4507,10 +4554,14 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
    - Oszacuj realistyczne prawdopodobieństwa "prob" (suma prob w jednym zakładzie = 1.00) na podstawie realnej siły drużyn sportowych LUB różnicy Punktów Chwały (PC), formy i bilansu H2H naszych graczy.
    - Dodatkowo zaproponuj 1 lub 2 ciekawe zakłady poboczne do tego wydarzenia (np. Over/Under, zakład specjalny).
 3. Aktualna data to ${new Date().toISOString().split('T')[0]}. Jeśli na zrzucie ekranu (np. od bukmachera/Flashscore) lub w opisie widoczna jest godzina/data rozpoczęcia meczu (np. "20:45", "Jutro 21:00", "14.11 18:30"), odczytaj ją i wpisz w pole "startTime" w formacie "YYYY-MM-DDTHH:MM" lub "DD.MM HH:MM" / "HH:MM" (jeśli brak godziny, wpisz null).
-4. Zwróć WYŁĄCZNIE czysty JSON (tablicę od 1 do 4 obiektów):
+4. Dla każdego zakładu określ pole "betType":
+   - Wpisz "OUR" (Zakłady NASZE / Ekipowe), jeśli zakład dotyczy naszych graczy z ekipy, ich spotkań IRL, kręgli, darta, Ligi 2v2 lub wyzwań między znajomymi.
+   - Wpisz "SPORTS" (Zakłady SPORTOWE), jeśli zakład dotyczy prawdziwych meczów piłkarskich, Ligi Mistrzów, KSW, F1, tenisa lub pochodzi ze screena od bukmachera/Flashscore.
+5. Zwróć WYŁĄCZNIE czysty JSON (tablicę od 1 do 5 obiektów):
 [
   {
     "title": "Nazwa meczu / Pytanie zakładu",
+    "betType": "OUR",
     "defaultStake": 20,
     "startTime": "20:45",
     "options": [
@@ -4538,10 +4589,15 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
           const parsedList = parseJsonFromGeminiText(extractTextFromGeminiData(data));
           const rawArray = Array.isArray(parsedList) ? parsedList : (parsedList.bets || parsedList.markets || [parsedList]);
           const autoLockEnabled = document.getElementById('betAiAutoLockCheckbox')?.checked !== false;
+          const forcedCat = document.getElementById('betAiDefaultCategorySelect')?.value || 'AUTO';
           aiSuggestedMarketsBuffer = rawArray.filter(x => x && (x.title || x.options)).slice(0, 5).map(item => {
             const normTime = normalizeStartTimeFromAI(item.startTime || item.lockAt);
+            const detectedCat = (forcedCat === 'OUR' || forcedCat === 'SPORTS')
+              ? forcedCat
+              : (item.betType === 'SPORTS' || item.betType === 'OUR' ? item.betType : inferBetTypeHeuristic(item));
             return {
               title: item.title || 'Zakład Krupiera AI',
+              betType: detectedCat,
               mode: defaultMode,
               defaultStake: Number(item.defaultStake) || 20,
               detectedStartTime: normTime,
@@ -4640,6 +4696,12 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
       renderAiSuggestedBets();
     }
 
+    function toggleAiSuggestedBetType(idx) {
+      if (!aiSuggestedMarketsBuffer[idx]) return;
+      aiSuggestedMarketsBuffer[idx].betType = (aiSuggestedMarketsBuffer[idx].betType === 'SPORTS') ? 'OUR' : 'SPORTS';
+      renderAiSuggestedBets();
+    }
+
     function renderAiSuggestedBets() {
       const wrap = document.getElementById('aiSuggestedBetsWrap');
       const grid = document.getElementById('aiSuggestedBetsGrid');
@@ -4666,8 +4728,13 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
         return `
           <div class="bg-slate-900/95 border border-amber-500/40 rounded-xl p-4 flex flex-col justify-between gap-3 shadow-lg">
             <div class="space-y-2.5">
-              <div class="flex items-center justify-between gap-2 text-[11px]">
-                <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">✏️ Edytuj Propozycję #${idx + 1}</span>
+              <div class="flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+                <div class="flex items-center gap-1.5">
+                  <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">#${idx + 1}</span>
+                  <button type="button" onclick="toggleAiSuggestedBetType(${idx})" class="px-2 py-0.5 rounded border font-bold transition ${(m.betType || 'OUR') === 'SPORTS' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'}" title="Kliknij, aby przełączyć dział: Nasze vs Sportowe">
+                    ${(m.betType || 'OUR') === 'SPORTS' ? '⚽ SPORTOWY' : '🏠 NASZ (Ekipa)'}
+                  </button>
+                </div>
                 <div class="flex items-center gap-1">
                   <span class="text-slate-400">Stawka:</span>
                   <input type="number" min="1" max="500" step="5" value="${m.defaultStake}" oninput="updateAiSuggestedField(${idx}, 'defaultStake', this.value)" class="w-16 bg-slate-950 border border-amber-500/40 rounded px-2 py-0.5 text-right font-mono font-bold text-amber-300 focus:outline-none" />
@@ -4715,6 +4782,7 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
       const newMarket = {
         id: 'mkt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
         title: item.title || 'Zakład Ekipy',
+        betType: item.betType || inferBetTypeHeuristic(item),
         mode: chosenMode || item.mode || 'AI_HOUSE',
         defaultStake: Math.max(1, Number(item.defaultStake) || 20),
         lockAt: item.lockAt || '',
@@ -4745,6 +4813,7 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
           appState.markets.unshift({
             id: 'mkt_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 5),
             title: item.title || 'Zakład Ekipy',
+            betType: item.betType || inferBetTypeHeuristic(item),
             mode: defaultMode,
             defaultStake: Math.max(1, Number(item.defaultStake) || 20),
             lockAt: item.lockAt || '',
@@ -4770,17 +4839,19 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
     }
 
     // Ręczne tworzenie lub Edycja Opublikowanego Rynku z Opcjami (A/B/C)
-    function openCustomMarketModal(editMarketId = null) {
+    function openCustomMarketModal(editMarketId = null, defaultBetType = 'OUR') {
       const hm = Math.min(60, Math.max(0, Number(appState?.multipliers?.houseMargin ?? 18)));
       const factor = (100 - hm) / 100;
       const evenOdds2Way = (2.0 * factor).toFixed(2);
       const evenOdds3Way = (3.0 * factor).toFixed(2);
 
       const editIdInput = document.getElementById('cmEditMarketId');
+      const betTypeSel = document.getElementById('cmBetTypeSelect');
       if (editMarketId) {
         const mkt = (appState.markets || []).find(m => m.id === editMarketId);
         if (!mkt) return;
         if (editIdInput) editIdInput.value = mkt.id;
+        if (betTypeSel) betTypeSel.value = getEffectiveBetType(mkt);
         document.getElementById('cmTitleInput').value = mkt.title || '';
         document.getElementById('cmModeSelect').value = mkt.mode || 'AI_HOUSE';
         document.getElementById('cmDefaultStakeInput').value = mkt.defaultStake || 20;
@@ -4794,6 +4865,7 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
         document.getElementById('cmOpt3Odds').value = mkt.options?.[2]?.odds ?? evenOdds3Way;
       } else {
         if (editIdInput) editIdInput.value = '';
+        if (betTypeSel) betTypeSel.value = defaultBetType || 'OUR';
         document.getElementById('cmTitleInput').value = '';
         document.getElementById('cmModeSelect').value = 'AI_HOUSE';
         document.getElementById('cmDefaultStakeInput').value = '20';
@@ -4911,6 +4983,7 @@ Zwróć WYŁĄCZNIE czysty JSON:
     async function confirmCreateCustomMarket() {
       const editId = document.getElementById('cmEditMarketId')?.value || '';
       const title = document.getElementById('cmTitleInput').value.trim();
+      const betType = document.getElementById('cmBetTypeSelect')?.value || 'OUR';
       const mode = document.getElementById('cmModeSelect').value;
       const defaultStake = Math.max(1, Math.round(Number(document.getElementById('cmDefaultStakeInput').value) || 20));
       const lockAt = (document.getElementById('cmLockAtInput')?.value || '').trim();
@@ -4938,6 +5011,7 @@ Zwróć WYŁĄCZNIE czysty JSON:
         const existingMkt = appState.markets.find(m => m.id === editId);
         if (existingMkt) {
           existingMkt.title = title;
+          existingMkt.betType = betType;
           existingMkt.mode = mode;
           existingMkt.defaultStake = defaultStake;
           existingMkt.lockAt = lockAt;
@@ -4969,6 +5043,7 @@ Zwróć WYŁĄCZNIE czysty JSON:
       appState.markets.unshift({
         id: 'mkt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
         title,
+        betType,
         mode,
         defaultStake,
         lockAt,
@@ -5144,23 +5219,194 @@ Zwróć WYŁĄCZNIE czysty JSON:
       );
     }
 
-    function renderActiveMarketsSection(ratingsMap) {
-      const container = document.getElementById('activeMarketsContainer');
-      const badge = document.getElementById('activeMarketsCountBadge');
-      if (!container) return;
+    let currentBetsCategoryView = 'ALL'; // 'ALL' | 'OUR' | 'SPORTS'
 
-      const allActiveMarkets = (appState.markets || []).filter(m => m.status === 'ACTIVE');
-      const activeMarkets = sortAndFilterMarkets(allActiveMarkets);
-      if (badge) badge.textContent = activeMarkets.length;
+    function setBetsCategoryView(cat) {
+      currentBetsCategoryView = cat || 'ALL';
+      ['ALL', 'OUR', 'SPORTS'].forEach(k => {
+        const btn = document.getElementById(`betCatTab-${k}`);
+        if (!btn) return;
+        if (k === currentBetsCategoryView) {
+          btn.className = 'px-3 py-1.5 rounded-lg font-bold transition bg-indigo-600 text-white flex items-center gap-1';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg font-bold transition text-slate-400 hover:text-white flex items-center gap-1';
+        }
+      });
+      renderAll();
+    }
 
-      if (activeMarkets.length === 0) {
-        container.innerHTML = `
-          <div class="col-span-full bg-slate-900/50 border border-slate-800/80 rounded-xl p-6 text-center text-xs text-slate-400">
-            Brak otwartych rynków z opcjami. Użyj <strong>🤖 Krupiera AI powyżej</strong> lub kliknij <strong>„➕ Dodaj własny rynek z opcjami”</strong>!
+    function inferBetTypeHeuristic(mkt) {
+      if (!mkt) return 'OUR';
+      if (mkt.betType === 'SPORTS' || mkt.betType === 'OUR') return mkt.betType;
+      // Jeśli opcje mają kursy od bukmachera (bookieOdds), to zakład sportowy/bukmacherski
+      if (Array.isArray(mkt.options) && mkt.options.some(o => Number(o.bookieOdds) > 1.01)) {
+        return 'SPORTS';
+      }
+      const text = `${mkt.title || ''} ${(mkt.options || []).map(o => o.label || '').join(' ')}`.toLowerCase();
+      // Jeśli w treści pada imię któregoś z członków naszej ekipy, to zakład "Nasz"
+      const mentionsCrew = (appState.members || []).some(m => {
+        const n = (m.name || '').trim().toLowerCase();
+        const a = (m.alias2v2 || '').trim().toLowerCase();
+        return (n.length >= 3 && text.includes(n.slice(0, Math.max(3, n.length - 1)))) || (a.length >= 3 && text.includes(a));
+      });
+      if (mentionsCrew) return 'OUR';
+      if (/(real|barcelon|arsenal|bayern|psg|city|united|liverpool|chelsea|inter|milan|juventus|atletico|borussia|bvb|legia|lech|raków|jagiellonia|wisła|widzew|pogoń|górnik|liga mistrzów|ekstraklasa|la liga|premier league|serie a|bundesliga|ksw|ufc|f1|nba|nhl|tenis|świątek|polska|niemcy|hiszpania|francja|anglia|włochy|portugalia|brazylia|argentyna)/i.test(text)) {
+        return 'SPORTS';
+      }
+      return 'OUR';
+    }
+
+    function getEffectiveBetType(mkt) {
+      return inferBetTypeHeuristic(mkt);
+    }
+
+    function renderSingleMarketCardHtml(mkt, memberOptionsHtml) {
+      const isAiHouse = mkt.mode === 'AI_HOUSE';
+      const betType = getEffectiveBetType(mkt);
+      const isSports = betType === 'SPORTS';
+      const fixedStake = Math.max(1, Number(mkt.defaultStake) || 20);
+      const wagers = mkt.wagers || [];
+      const totalPool = isAiHouse
+        ? wagers.reduce((s, w) => s + (Number(w.stake) || 0), 0)
+        : wagers.length * fixedStake;
+
+      const catBadge = isSports
+        ? `<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">⚽ SPORTOWY</span>`
+        : `<span class="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[10px] font-bold">🏠 NASZ (Ekipa)</span>`;
+
+      const modeBadge = isAiHouse
+        ? `<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold">🎰 vs Krupier AI (EV -${appState?.multipliers?.houseMargin ?? 18}%)</span>`
+        : `<span class="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-bold">👥 Wspólna Pula (${fixedStake} PC/os. • Pula: ${totalPool} PC)</span>`;
+
+      const optionsHtml = (mkt.options || []).map(opt => {
+        const optWagers = wagers.filter(w => w.optionId === opt.id);
+        const optSum = isAiHouse
+          ? optWagers.reduce((s, w) => s + (Number(w.stake) || 0), 0)
+          : optWagers.length * fixedStake;
+        const netMultiplier = Math.max(0.1, (Number(opt.odds) || 1.65) - 1);
+
+        const bettorsBadges = optWagers.map(w => {
+          const mem = appState.members.find(x => x.id === w.memberId);
+          if (!mem) return '';
+          const dispStake = isAiHouse ? w.stake : fixedStake;
+          const winPreview = isAiHouse
+            ? `+${Math.round(dispStake * netMultiplier * 10) / 10}`
+            : `${dispStake}`;
+          const ts = w.placedAt || mkt.createdAt || '';
+          return `
+            <span class="inline-flex flex-wrap items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] text-white">
+              <span class="w-2 h-2 rounded-full shrink-0" style="background:${mem.color}"></span>
+              <span>${escapeHtml(mem.name)}: <strong>${dispStake}</strong> PC</span>
+              ${isAiHouse ? `<span class="text-[10px] text-emerald-400 font-mono">(wygr: ${winPreview})</span>` : ''}
+              ${ts ? `<span class="text-[10px] font-mono text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800" title="Dokładny czas postawienia zakładu">🕒 ${escapeHtml(ts)}</span>` : ''}
+            </span>
+          `;
+        }).join('');
+
+        const lockedNow = isItemEffectivelyLocked(mkt);
+        const betBtnHtml = lockedNow
+          ? `<span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-rose-500/30 text-rose-400 text-[11px] font-bold">🔒 Zamknięte</span>`
+          : `<button type="button" onclick="placeMarketWager('${mkt.id}', '${opt.id}')" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition">
+              🎯 Obstaw (${isAiHouse ? 'wybrana stawka' : fixedStake + ' PC'})
+            </button>`;
+
+        return `
+          <div class="bg-slate-950/90 border border-slate-800 hover:border-slate-700 rounded-xl p-3 space-y-2 transition">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs sm:text-sm font-bold text-white">${escapeHtml(opt.label)}</span>
+                ${isAiHouse
+                  ? `<span class="text-xs font-mono font-extrabold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-500/30">Kurs AI: ${Number(opt.odds).toFixed(2)}x (Zysk +${Math.round(netMultiplier * 100)}%)</span>`
+                  : `<span class="text-[11px] font-mono text-indigo-300">W puli opcji: ${optSum} PC (${optWagers.length} os.)</span>`
+                }
+              </div>
+              <div class="flex items-center gap-1.5">
+                ${betBtnHtml}
+              </div>
+            </div>
+            ${bettorsBadges ? `<div class="flex flex-wrap gap-1.5 pt-1 border-t border-slate-800/70">${bettorsBadges}</div>` : `<div class="text-[11px] text-slate-500">Brak postawionych punktów na tę opcję</div>`}
           </div>
         `;
-        return;
-      }
+      }).join('');
+
+      const stakeControlHtml = isAiHouse
+        ? `<span class="text-slate-400 font-medium ml-auto">Stawka PC:</span>
+           <input type="number" id="mktStake_${mkt.id}" value="${fixedStake}" min="1" max="500" step="5" class="w-20 bg-slate-900 border border-amber-500/40 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none" />`
+        : `<span class="ml-auto px-2.5 py-1 rounded-lg bg-slate-900 border border-indigo-500/30 text-indigo-300 font-mono font-bold text-xs">🔒 Stała stawka: ${fixedStake} PC</span>`;
+
+      const lockedMktNow = isItemEffectivelyLocked(mkt);
+      const lockTimeBadgeHtml = mkt.lockAt
+        ? `<span class="px-2 py-0.5 rounded-full bg-slate-950 border ${lockedMktNow ? 'border-rose-500/40 text-rose-400' : 'border-amber-500/30 text-amber-300'} text-[10px] font-mono font-bold">${lockedMktNow ? '🔒 Start meczu:' : '⏱️ Blokada o:'} ${escapeHtml(formatLockAtDisplay(mkt.lockAt))}</span>`
+        : '';
+
+      const wagerBarHtml = lockedMktNow
+        ? `<div class="bg-rose-950/20 border border-rose-500/30 rounded-xl p-2.5 text-center text-xs text-rose-300 font-bold">🔒 Obstawianie zamknięte ${mkt.lockAt ? '(Mecz rozpoczął się: ' + escapeHtml(formatLockAtDisplay(mkt.lockAt)) + ')' : '(Zablokowane)'}</div>`
+        : `<div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 flex flex-wrap items-center gap-2 text-xs">
+            <span class="text-slate-400 font-medium">Kto obstawia:</span>
+            <select id="mktMember_${mkt.id}" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold focus:outline-none">
+              ${memberOptionsHtml}
+            </select>
+            ${stakeControlHtml}
+          </div>`;
+
+      const borderCls = isSports ? 'border-emerald-500/35' : 'border-indigo-500/35';
+
+      return `
+        <div class="bg-slate-900/90 border ${borderCls} rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-xl">
+          <div class="space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                ${catBadge}
+                <span class="text-[11px] text-slate-400 font-mono">🕒 ${escapeHtml(mkt.createdAt || '')}</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-1.5">
+                ${lockTimeBadgeHtml}
+                ${modeBadge}
+              </div>
+            </div>
+
+            <h4 class="text-sm sm:text-base font-extrabold text-white leading-snug">${escapeHtml(mkt.title)}</h4>
+
+            ${wagerBarHtml}
+
+            <div class="space-y-2">
+              ${optionsHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderActiveMarketsSection(ratingsMap) {
+      const ourContainer = document.getElementById('ourMarketsContainer');
+      const sportsContainer = document.getElementById('sportsMarketsContainer');
+      const ourWrap = document.getElementById('ourMarketsSectionWrap');
+      const sportsWrap = document.getElementById('sportsMarketsSectionWrap');
+      const classicWrap = document.getElementById('classicBetsSectionWrap');
+      if (!ourContainer || !sportsContainer) return;
+
+      const allActiveMarkets = (appState.markets || []).filter(m => m.status === 'ACTIVE');
+      const sortedMarkets = sortAndFilterMarkets(allActiveMarkets);
+
+      const ourMarkets = sortedMarkets.filter(m => getEffectiveBetType(m) === 'OUR');
+      const sportsMarkets = sortedMarkets.filter(m => getEffectiveBetType(m) === 'SPORTS');
+
+      const allOurCount = allActiveMarkets.filter(m => getEffectiveBetType(m) === 'OUR').length + (appState.bets || []).filter(b => b.status === 'ACTIVE').length;
+      const allSportsCount = allActiveMarkets.filter(m => getEffectiveBetType(m) === 'SPORTS').length;
+
+      const ourBadge = document.getElementById('ourMarketsCountBadge');
+      const sportsBadge = document.getElementById('sportsMarketsCountBadge');
+      const tabOurBadge = document.getElementById('tabCountOurBets');
+      const tabSportsBadge = document.getElementById('tabCountSportsBets');
+
+      if (ourBadge) ourBadge.textContent = ourMarkets.length;
+      if (sportsBadge) sportsBadge.textContent = sportsMarkets.length;
+      if (tabOurBadge) tabOurBadge.textContent = allOurCount;
+      if (tabSportsBadge) tabSportsBadge.textContent = allSportsCount;
+
+      if (ourWrap) ourWrap.classList.toggle('hidden', currentBetsCategoryView === 'SPORTS');
+      if (sportsWrap) sportsWrap.classList.toggle('hidden', currentBetsCategoryView === 'OUR');
+      if (classicWrap) classicWrap.classList.toggle('hidden', currentBetsCategoryView === 'SPORTS');
 
       const defaultMyId = (appConfig.myMemberId && appState.members.some(m => m.id === appConfig.myMemberId))
         ? appConfig.myMemberId
@@ -5172,112 +5418,25 @@ Zwróć WYŁĄCZNIE czysty JSON:
         return `<option value="${m.id}" ${isMe ? 'selected' : ''}>${isMe ? '👤 ' : ''}${escapeHtml(m.name)} (${elo} PC)</option>`;
       }).join('');
 
-      container.innerHTML = activeMarkets.map(mkt => {
-        const isAiHouse = mkt.mode === 'AI_HOUSE';
-        const fixedStake = Math.max(1, Number(mkt.defaultStake) || 20);
-        const wagers = mkt.wagers || [];
-        const totalPool = isAiHouse
-          ? wagers.reduce((s, w) => s + (Number(w.stake) || 0), 0)
-          : wagers.length * fixedStake;
-
-        const modeBadge = isAiHouse
-          ? `<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold">🎰 vs Krupier AI (EV -${appState?.multipliers?.houseMargin ?? 18}%)</span>`
-          : `<span class="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[10px] font-bold">👥 Wspólna Pula (Stałe ${fixedStake} PC/os. • Pula: ${totalPool} PC)</span>`;
-
-        const optionsHtml = (mkt.options || []).map(opt => {
-          const optWagers = wagers.filter(w => w.optionId === opt.id);
-          const optSum = isAiHouse
-            ? optWagers.reduce((s, w) => s + (Number(w.stake) || 0), 0)
-            : optWagers.length * fixedStake;
-          const netMultiplier = Math.max(0.1, (Number(opt.odds) || 1.65) - 1);
-
-          const bettorsBadges = optWagers.map(w => {
-            const mem = appState.members.find(x => x.id === w.memberId);
-            if (!mem) return '';
-            const dispStake = isAiHouse ? w.stake : fixedStake;
-            const winPreview = isAiHouse
-              ? `+${Math.round(dispStake * netMultiplier * 10) / 10}`
-              : `${dispStake}`;
-            const ts = w.placedAt || mkt.createdAt || '';
-            return `
-              <span class="inline-flex flex-wrap items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] text-white">
-                <span class="w-2 h-2 rounded-full shrink-0" style="background:${mem.color}"></span>
-                <span>${escapeHtml(mem.name)}: <strong>${dispStake}</strong> PC</span>
-                ${isAiHouse ? `<span class="text-[10px] text-emerald-400 font-mono">(wygr: ${winPreview})</span>` : ''}
-                ${ts ? `<span class="text-[10px] font-mono text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800" title="Dokładny czas postawienia zakładu">🕒 ${escapeHtml(ts)}</span>` : ''}
-              </span>
-            `;
-          }).join('');
-
-          const lockedNow = isItemEffectivelyLocked(mkt);
-          const betBtnHtml = lockedNow
-            ? `<span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-rose-500/30 text-rose-400 text-[11px] font-bold">🔒 Zamknięte</span>`
-            : `<button type="button" onclick="placeMarketWager('${mkt.id}', '${opt.id}')" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition">
-                🎯 Obstaw (${isAiHouse ? 'wybrana stawka' : fixedStake + ' PC'})
-              </button>`;
-
-          return `
-            <div class="bg-slate-950/90 border border-slate-800 hover:border-slate-700 rounded-xl p-3 space-y-2 transition">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs sm:text-sm font-bold text-white">${escapeHtml(opt.label)}</span>
-                  ${isAiHouse
-                    ? `<span class="text-xs font-mono font-extrabold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-500/30">Kurs AI: ${Number(opt.odds).toFixed(2)}x (Zysk +${Math.round(netMultiplier * 100)}%)</span>`
-                    : `<span class="text-[11px] font-mono text-indigo-300">W puli opcji: ${optSum} PC (${optWagers.length} os.)</span>`
-                  }
-                </div>
-                <div class="flex items-center gap-1.5">
-                  ${betBtnHtml}
-                </div>
-              </div>
-              ${bettorsBadges ? `<div class="flex flex-wrap gap-1.5 pt-1 border-t border-slate-800/70">${bettorsBadges}</div>` : `<div class="text-[11px] text-slate-500">Brak postawionych punktów na tę opcję</div>`}
-            </div>
-          `;
-        }).join('');
-
-        const stakeControlHtml = isAiHouse
-          ? `<span class="text-slate-400 font-medium ml-auto">Stawka PC:</span>
-             <input type="number" id="mktStake_${mkt.id}" value="${fixedStake}" min="1" max="500" step="5" class="w-20 bg-slate-900 border border-amber-500/40 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-amber-300 focus:outline-none" />`
-          : `<span class="ml-auto px-2.5 py-1 rounded-lg bg-slate-900 border border-indigo-500/30 text-indigo-300 font-mono font-bold text-xs">🔒 Stała stawka: ${fixedStake} PC</span>`;
-
-        const lockedMktNow = isItemEffectivelyLocked(mkt);
-        const lockTimeBadgeHtml = mkt.lockAt
-          ? `<span class="px-2 py-0.5 rounded-full bg-slate-950 border ${lockedMktNow ? 'border-rose-500/40 text-rose-400' : 'border-amber-500/30 text-amber-300'} text-[10px] font-mono font-bold">${lockedMktNow ? '🔒 Start meczu:' : '⏱️ Blokada o:'} ${escapeHtml(formatLockAtDisplay(mkt.lockAt))}</span>`
-          : '';
-
-        const wagerBarHtml = lockedMktNow
-          ? `<div class="bg-rose-950/20 border border-rose-500/30 rounded-xl p-2.5 text-center text-xs text-rose-300 font-bold">🔒 Obstawianie zamknięte ${mkt.lockAt ? '(Mecz rozpoczął się: ' + escapeHtml(formatLockAtDisplay(mkt.lockAt)) + ')' : '(Zablokowane)'}</div>`
-          : `<div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 flex flex-wrap items-center gap-2 text-xs">
-              <span class="text-slate-400 font-medium">Kto obstawia:</span>
-              <select id="mktMember_${mkt.id}" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold focus:outline-none">
-                ${memberOptionsHtml}
-              </select>
-              ${stakeControlHtml}
-            </div>`;
-
-        return `
-          <div class="bg-slate-900/90 border border-purple-500/35 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-xl">
-            <div class="space-y-3">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-[11px] text-slate-400 font-mono">🕒 ${escapeHtml(mkt.createdAt || '')}</span>
-                <div class="flex flex-wrap items-center gap-1.5">
-                  ${lockTimeBadgeHtml}
-                  ${modeBadge}
-                </div>
-              </div>
-
-              <h4 class="text-sm sm:text-base font-extrabold text-white leading-snug">${escapeHtml(mkt.title)}</h4>
-
-              ${wagerBarHtml}
-
-              <!-- Lista opcji do obstawiania -->
-              <div class="space-y-2">
-                ${optionsHtml}
-              </div>
-            </div>
+      if (ourMarkets.length === 0) {
+        ourContainer.innerHTML = `
+          <div class="col-span-full bg-slate-900/50 border border-slate-800/80 rounded-xl p-5 text-center text-xs text-slate-400">
+            Brak aktywnych zakładów „Naszych” (ekipowych). Użyj <strong>🤖 Krupiera AI</strong> lub kliknij <strong>„➕ Dodaj zakład Nasz”</strong>!
           </div>
         `;
-      }).join('');
+      } else {
+        ourContainer.innerHTML = ourMarkets.map(mkt => renderSingleMarketCardHtml(mkt, memberOptionsHtml)).join('');
+      }
+
+      if (sportsMarkets.length === 0) {
+        sportsContainer.innerHTML = `
+          <div class="col-span-full bg-slate-900/50 border border-slate-800/80 rounded-xl p-5 text-center text-xs text-slate-400">
+            Brak aktywnych zakładów SPORTOWYCH. Wklej screena od bukmachera w <strong>🤖 Krupierze AI</strong> lub kliknij <strong>„➕ Dodaj zakład SPORTOWY”</strong>!
+          </div>
+        `;
+      } else {
+        sportsContainer.innerHTML = sportsMarkets.map(mkt => renderSingleMarketCardHtml(mkt, memberOptionsHtml)).join('');
+      }
     }
 
     // ================= CUSTOMOWE PROMPTY W WRAPPED =================
@@ -5597,7 +5756,7 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
           <div class="bg-slate-950/90 border border-purple-500/40 rounded-xl p-3.5 space-y-2.5">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <span class="text-[10px] font-mono text-slate-400">🕒 Utworzono: ${escapeHtml(mkt.createdAt || '')} ${mkt.lockAt ? '• ⏱️ Auto-blokada: ' + escapeHtml(formatLockAtDisplay(mkt.lockAt)) : ''}</span>
+                <span class="text-[10px] font-mono text-slate-400">${getEffectiveBetType(mkt) === 'SPORTS' ? '⚽ SPORTOWY' : '🏠 NASZ'} • 🕒 Utworzono: ${escapeHtml(mkt.createdAt || '')} ${mkt.lockAt ? '• ⏱️ Auto-blokada: ' + escapeHtml(formatLockAtDisplay(mkt.lockAt)) : ''}</span>
                 <h5 class="text-xs sm:text-sm font-extrabold text-white">${escapeHtml(mkt.title)}</h5>
               </div>
               <div class="flex flex-wrap items-center gap-1.5">
