@@ -274,7 +274,7 @@
                     <th class="py-3 px-2 text-right">ELO</th>
                     <th class="py-3 px-2 text-center">Bilans (W-L-C)</th>
                     <th class="py-3 px-2 text-center">Win%</th>
-                    <th class="py-3 px-2 text-right" title="Punkty z rywalizacji i zakładów vs punkty z Tarczy Aktywności">Skill / Tarcza</th>
+                    <th class="py-3 px-2 text-right" title="Punkty z wydarzeń i zakładów / Tarcza Aktywności IRL / Punkty z Końca Sezonu 2v2">Wydarzenia / Tarcza / Koniec Sez. 2v2</th>
                     <th class="py-3 px-2 text-center">Forma</th>
                   </tr>
                 </thead>
@@ -290,6 +290,7 @@
               <div class="flex flex-wrap items-center gap-2">
                 <select id="filterCategory" onchange="renderAll()" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
                   <option value="ALL">Wszystkie kategorie</option>
+                  <option value="SEASON_2V2">🏆 Koniec Sezonu Ligi 2v2</option>
                   <option value="BET_ELO">🎲 Zakłady Punktowe ELO</option>
                   <option value="IRL_SPORT">⚽ IRL Sport</option>
                   <option value="ONLINE_GAMING">🎮 Online (LoL / Gry)</option>
@@ -476,8 +477,8 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="startNewSeason2v2()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition">
-            🏆 Nowy Sezon 2v2 (Reset 1000)
+          <button onclick="openEndSeasonModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5">
+            <span>🏆 Zakończ Sezon 2v2 (Transfer do Głównego ELO)</span>
           </button>
           <button onclick="openManualMatch2v2()" class="px-3.5 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition">
             ✍️ Dodaj mecz ręcznie
@@ -606,7 +607,8 @@
                   <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400 tracking-wider font-semibold">
                     <th class="py-3 px-2.5">#</th>
                     <th class="py-3 px-2.5">Gracz 2v2</th>
-                    <th class="py-3 px-2.5 text-right text-indigo-300">2v2 ELO</th>
+                    <th class="py-3 px-2.5 text-right text-indigo-300">Sezon 2v2 ELO</th>
+                    <th class="py-3 px-2.5 text-right text-amber-300" title="Punkty, które przejdą do Głównego Rankingu po kliknięciu Zakończ Sezon 2v2">Na Koniec Sezonu</th>
                     <th class="py-3 px-2.5 text-center">W-L</th>
                     <th class="py-3 px-2.5 text-center">WR %</th>
                     <th class="py-3 px-2.5 text-center">Seria</th>
@@ -1440,13 +1442,12 @@
     // Zintegrowany stan domyślny (zawiera członków ekipy powiązanych z nickami 2v2 oraz bieżący sezon Ligi Dwójek)
     const DEFAULT_STATE = {
       members: [
-        { id: 'm1', name: 'Tomek', role: 'Playmaker / Dominator 2v2', alias2v2: 'Cancer', color: '#6366f1' },
-        { id: 'm2', name: 'Michał', role: 'Król Orlika / Ivern Main', alias2v2: 'Jargolek', color: '#10b981' },
-        { id: 'm3', name: 'Kuba', role: 'LoL 2v2 Tryhard (Rekord DMG)', alias2v2: 'SPICYBob', color: '#f59e0b' },
+        { id: 'm1', name: 'Tomek', role: 'Kapitan / Playmaker', alias2v2: 'Cancer', color: '#6366f1' },
+        { id: 'm2', name: 'Michał', role: 'Król Orlika', alias2v2: 'Jargolek', color: '#10b981' },
+        { id: 'm3', name: 'Kuba', role: 'Taktyk', alias2v2: 'SPICYBob', color: '#f59e0b' },
         { id: 'm4', name: 'Janek', role: 'Walczak (Zawsze Obecny)', alias2v2: 'Firstu', color: '#ec4899' },
-        { id: 'm5', name: 'Piotrek', role: 'Snajper / Taktyk', alias2v2: 'DokTi1337', color: '#06b6d4' },
-        { id: 'm6', name: 'Mateusz', role: 'Niedzielny Gracz', alias2v2: 'Przypro', color: '#a855f7' },
-        { id: 'm7', name: 'Leryen', role: 'Specjalista Areny 2v2', alias2v2: 'Leryen', color: '#14b8a6' }
+        { id: 'm5', name: 'Piotrek', role: 'Snajper', alias2v2: 'DokTi1337', color: '#06b6d4' },
+        { id: 'm6', name: 'Mateusz', role: 'Ekipowicz', alias2v2: 'Przypro', color: '#a855f7' }
       ],
       events: [
         {
@@ -1460,18 +1461,6 @@
           winners: ['m1', 'm2', 'm4'],
           losers: ['m3', 'm5', 'm6'],
           comment: 'Sędzia AI: Zacięty mecz w 6 osób! Wygrani zgarniają pełną pulę ELO, a przegrani są chronieni Tarczą IRL.'
-        },
-        {
-          id: 'ev2',
-          title: 'LoL 2v2 Custom – Wieczorne granie',
-          category: 'ONLINE_GAMING',
-          mode: 'VERSUS',
-          date: '2026-11-03',
-          duration: 60,
-          aiBonus: 0,
-          winners: ['m3', 'm5'],
-          losers: ['m1', 'm4'],
-          comment: 'Sędzia AI: Kuba i Piotrek ogrywają faworytów z niższego pułapu ELO – duży transfer punktów!'
         },
         {
           id: 'ev3',
@@ -1569,7 +1558,12 @@
 
     function ensureCompleteStateStructure(rawState) {
       const merged = rawState || {};
-      if (!Array.isArray(merged.members)) merged.members = JSON.parse(JSON.stringify(DEFAULT_STATE.members));
+      if (!Array.isArray(merged.members)) {
+        merged.members = JSON.parse(JSON.stringify(DEFAULT_STATE.members));
+      } else {
+        // Rozłączenie rankingów: usuwamy ewentualne konta utworzone automatycznie z samej tabeli 2v2 (m_2v2_*)
+        merged.members = merged.members.filter(m => m && !String(m.id || '').startsWith('m_2v2_') && m.role !== 'Gracz Ligi 2v2');
+      }
       if (!Array.isArray(merged.events)) merged.events = [];
       if (!Array.isArray(merged.bets)) merged.bets = [];
 
@@ -2702,7 +2696,7 @@ Zwróć WYŁĄCZNIE czysty JSON:
       });
       const notice = document.getElementById('newPlayerNotice2v2');
       if (newNames.length > 0) {
-        notice.textContent = `✨ Wykryto nowych graczy w Lidze 2v2: ${newNames.join(', ')} (Startują z 1000 ELO i zostaną automatycznie powiązani z Ekipą)`;
+        notice.textContent = `✨ Nowi gracze w tabeli 2v2: ${newNames.join(', ')} (Startują z 1000 ELO w Lidze 2v2)`;
         notice.classList.remove('hidden');
       } else {
         notice.classList.add('hidden');
@@ -2952,6 +2946,24 @@ Zwróć WYŁĄCZNIE czysty JSON:
       });
     }
 
+    async function link2v2PlayerToMember(nick2v2, targetMemberId) {
+      const cleanNick = String(nick2v2 || '').trim();
+      if (!cleanNick) return;
+      // Usuń ten alias z innych osób w ekipie
+      appState.members.forEach(m => {
+        if (m.alias2v2 && m.alias2v2.trim().toLowerCase() === cleanNick.toLowerCase()) {
+          m.alias2v2 = '';
+        }
+      });
+      if (targetMemberId) {
+        const target = appState.members.find(m => m.id === targetMemberId);
+        if (target) target.alias2v2 = cleanNick;
+      }
+      await persistState();
+      renderEndSeasonPreviewTable();
+      renderAll();
+    }
+
     function renderEndSeasonPreviewTable() {
       const rows = computeSeasonTransferRows();
       const tbody = document.getElementById('endSeasonPreviewBody');
@@ -2960,19 +2972,23 @@ Zwróć WYŁĄCZNIE czysty JSON:
         const p = r.player2v2;
         const sign = r.totalDelta >= 0 ? '+' : '';
         const deltaColor = r.totalDelta > 0 ? 'text-emerald-400' : r.totalDelta < 0 ? 'text-rose-400' : 'text-slate-400';
-        const memberBadge = r.linkedMember
-          ? `<span class="inline-flex items-center gap-1.5 font-semibold text-white"><span class="w-2 h-2 rounded-full" style="background:${r.linkedMember.color}"></span>${escapeHtml(r.linkedMember.name)}</span>`
-          : `<span class="text-amber-300 text-[11px]">✨ Zostanie utworzony: ${escapeHtml(p.name)}</span>`;
+
+        const memberSelectHtml = `
+          <select onchange="link2v2PlayerToMember('${escapeHtml(p.name)}', this.value)" class="bg-slate-900 border ${r.linkedMember ? 'border-emerald-500/40 text-white' : 'border-amber-500/40 text-amber-300'} rounded-lg px-2 py-1 text-xs font-semibold focus:outline-none">
+            <option value="">— Pomiń (brak w Głównym) —</option>
+            ${appState.members.map(m => `<option value="${m.id}" ${r.linkedMember?.id === m.id ? 'selected' : ''}>👤 ${escapeHtml(m.name)}</option>`).join('')}
+          </select>
+        `;
 
         return `
           <tr class="hover:bg-slate-900/60">
             <td class="py-2.5 px-3 font-mono font-bold text-purple-300">${escapeHtml(p.name)}</td>
-            <td class="py-2.5 px-3">${memberBadge}</td>
+            <td class="py-2.5 px-3">${memberSelectHtml}</td>
             <td class="py-2.5 px-3 text-center font-mono text-slate-300">${r.totalGames} (${p.w}W-${p.l}L)</td>
             <td class="py-2.5 px-3 text-right font-mono font-bold text-indigo-300">${Math.round(p.elo)}</td>
-            <td class="py-2.5 px-3 text-right font-mono text-slate-300">${r.currentMainElo.toFixed(1)}</td>
-            <td class="py-2.5 px-3 text-right font-mono font-extrabold ${deltaColor}">${sign}${r.totalDelta.toFixed(1)} ELO</td>
-            <td class="py-2.5 px-3 text-right font-mono font-extrabold text-white">${r.newMainElo.toFixed(1)}</td>
+            <td class="py-2.5 px-3 text-right font-mono text-slate-300">${r.linkedMember ? r.currentMainElo.toFixed(1) : '—'}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-extrabold ${r.linkedMember ? deltaColor : 'text-slate-600'}">${r.linkedMember ? (sign + r.totalDelta.toFixed(1) + ' ELO') : 'Pomiń'}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-extrabold text-white">${r.linkedMember ? r.newMainElo.toFixed(1) : '—'}</td>
           </tr>
         `;
       }).join('');
@@ -2990,11 +3006,12 @@ Zwróć WYŁĄCZNIE czysty JSON:
       const losers = [];
 
       rows.forEach(r => {
-        const member = ensureMemberFor2v2Nick(r.player2v2.name);
-        if (r.totalDelta !== 0 || r.totalGames > 0) {
-          customDeltas[member.id] = r.totalDelta;
-          if (r.totalDelta >= 0) winners.push(member.id);
-          else losers.push(member.id);
+        // Przelewamy punkty TYLKO dla graczy powiązanych z członkiem Głównego Rankingu (NIGDY nie tworzymy nowych graczy 2v2 w Głównym Rankingu!)
+        const member = r.linkedMember;
+        if (member && (r.totalDelta !== 0 || r.totalGames > 0)) {
+          customDeltas[member.id] = Math.round(((customDeltas[member.id] || 0) + r.totalDelta) * 10) / 10;
+          if (r.totalDelta >= 0 && !winners.includes(member.id)) winners.push(member.id);
+          else if (r.totalDelta < 0 && !losers.includes(member.id)) losers.push(member.id);
         }
       });
 
@@ -3398,11 +3415,17 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
 
         const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
 
+        const sPct = (Number(appState?.multipliers?.season2v2TransferPct ?? 10)) / 100;
+        const projectedTransfer = Math.round(((p.elo - 1000) * sPct) * 10) / 10;
+        const projSign = projectedTransfer >= 0 ? '+' : '';
+        const projClass = projectedTransfer > 0 ? 'text-emerald-400' : projectedTransfer < 0 ? 'text-rose-400' : 'text-slate-400';
+
         return `
           <tr class="hover:bg-slate-800/40 transition">
             <td class="py-3 px-2.5 font-bold text-slate-300">${medal}</td>
             <td class="py-3 px-2.5 font-bold text-white font-mono">${escapeHtml(p.name)}</td>
             <td class="py-3 px-2.5 text-right font-mono font-extrabold text-indigo-400 text-base">${Math.round(p.elo)}</td>
+            <td class="py-3 px-2.5 text-right font-mono font-bold ${projClass}">${projSign}${projectedTransfer.toFixed(1)} ELO</td>
             <td class="py-3 px-2.5 text-center text-xs font-mono">
               <span class="text-emerald-400 font-semibold">${p.w}</span>-<span class="text-rose-400 font-semibold">${p.l}</span>
             </td>
@@ -3536,9 +3559,11 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
             </td>
             <td class="py-3 px-2 text-center text-xs font-bold text-slate-200">${winRate}</td>
             <td class="py-3 px-2 text-right text-xs font-mono">
-              <span class="${row.skillEloNet >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-semibold" title="Pojedynki i Zakłady">${skillSign}${row.skillEloNet.toFixed(0)}</span>
+              <span class="${row.skillEloNet >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-semibold" title="Wydarzenia i Zakłady">${skillSign}${row.skillEloNet.toFixed(0)}</span>
               <span class="text-slate-600">/</span>
-              <span class="text-indigo-300 font-semibold" title="Tarcza Aktywności">+${row.shieldEloNet.toFixed(0)}🛡️</span>
+              <span class="text-indigo-300 font-semibold" title="Tarcza Aktywności IRL">+${row.shieldEloNet.toFixed(0)}🛡️</span>
+              <span class="text-slate-600">/</span>
+              <span class="text-amber-300 font-bold" title="Punkty z Końca Sezonu 2v2">${s2v2Sign}${row.season2v2Net.toFixed(1)}🏆</span>
             </td>
             <td class="py-3 px-2 text-center">${last5 || '<span class="text-xs text-slate-500">—</span>'}</td>
           </tr>
@@ -3752,8 +3777,9 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
           <div class="bg-slate-950/70 border border-slate-800 rounded-lg p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div class="font-bold text-white">${escapeHtml(st.member.name)}</div>
             <div class="flex flex-wrap items-center gap-3 font-mono">
-              <span class="${st.skillEloNet >= 0 ? 'text-emerald-400' : 'text-rose-400'}">Skill: <strong>${skillSign}${st.skillEloNet.toFixed(1)}</strong></span>
+              <span class="${st.skillEloNet >= 0 ? 'text-emerald-400' : 'text-rose-400'}">Wydarzenia/Zakłady: <strong>${skillSign}${st.skillEloNet.toFixed(1)}</strong></span>
               <span class="text-indigo-300">Tarcza: <strong>+${st.shieldEloNet.toFixed(1)}</strong></span>
+              <span class="text-amber-300">Koniec Sez. 2v2: <strong>${s2v2Sign}${st.season2v2Net.toFixed(1)}</strong></span>
               
               ${st.adminOffset ? `<span class="text-rose-300">Korekta: <strong>${st.adminOffset > 0 ? '+' : ''}${st.adminOffset.toFixed(1)}</strong></span>` : ''}
               <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold">Razem: ${st.elo.toFixed(1)}</span>
