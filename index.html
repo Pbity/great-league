@@ -4510,6 +4510,43 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       }).join('; ');
     }
 
+    // Buduje pełny kontekst OBU tabel (Tabela #1: Główny Ranking PC + Tabela #2: Liga Dwójek 2v2 ELO) dla Krupiera AI, Wyceny Kursów i Wrapped
+    function buildFullTablesContextForAI() {
+      const { sortedLeaderboard } = runChronologicalSimulation();
+      const mainTableLines = sortedLeaderboard.map((r, idx) => {
+        const totalComp = r.wins + r.losses;
+        const wr = totalComp > 0 ? Math.round((r.wins / totalComp) * 100) + '%' : '0%';
+        const aliasInfo = r.member.alias2v2 ? ` [Powiązany nick 2v2: ${r.member.alias2v2}]` : '';
+        return `${idx + 1}. ${r.member.name}${aliasInfo} — ${r.elo.toFixed(1)} PC (Bilans: ${r.wins}W-${r.losses}L-${r.coops}C, WR: ${wr}, Z wydarzeń/zakładów: ${r.skillEloNet >= 0 ? '+' : ''}${r.skillEloNet.toFixed(1)} PC, Tarcza IRL: +${r.shieldEloNet.toFixed(1)} PC, Koniec Sez. 2v2: ${r.season2v2Net >= 0 ? '+' : ''}${r.season2v2Net.toFixed(1)} PC, Forma: ${(r.form || []).slice(-5).join('') || '-'})`;
+      }).join('\n');
+
+      const l2v2 = appState.league2v2 || {};
+      const sorted2v2 = Object.values(l2v2.players || {}).sort((a, b) => b.elo - a.elo || b.w - a.w);
+      const sPct = (Number(appState?.multipliers?.season2v2TransferPct ?? 10)) / 100;
+      const table2v2Lines = sorted2v2.map((p, idx) => {
+        const total = (p.w || 0) + (p.l || 0);
+        const wr = total > 0 ? Math.round((p.w / total) * 100) + '%' : '0%';
+        const proj = Math.round(((p.elo - 1000) * sPct) * 10) / 10;
+        const streakStr = p.streak > 0 ? `${p.streak}W` : (p.streak < 0 ? `${Math.abs(p.streak)}L` : '0');
+        return `${idx + 1}. ${p.name} — ${Math.round(p.elo)} ELO (Na koniec sezonu: ${proj >= 0 ? '+' : ''}${proj.toFixed(1)} PC | Bilans: ${p.w}W-${p.l}L | WR: ${wr} | Seria: ${streakStr} | Forma: ${(p.form || []).slice(0, 5).join('') || '-'})`;
+      }).join('\n');
+
+      const rec = l2v2.records || {};
+      const records2v2Line = rec.maxElo
+        ? `Rekordy 2v2: Max ELO=${rec.maxElo?.value} (${rec.maxElo?.player}), Min ELO=${rec.minElo?.value} (${rec.minElo?.player}), Rekord DMG=${rec.maxDmg?.value} (${rec.maxDmg?.player} - ${rec.maxDmg?.champion}), Max Seria=${rec.maxWinStreak?.value}W (${rec.maxWinStreak?.player})`
+        : '';
+
+      const h2hSummary = buildHeadToHeadSummary();
+
+      return `=== TABELA #1: GŁÓWNY RANKING EKIPY (Waluta: PUNKTY CHWAŁY – PC, start od 1000 PC) ===
+${mainTableLines || 'Brak graczy'}
+Bezpośrednie pojedynki H2H w wydarzeniach: ${h2hSummary || 'brak'}
+
+=== TABELA #2: LIGA DWÓJEK 2v2 – SEZON #${l2v2.seasonNumber || 1} (Waluta: SEZONOWE 2v2 ELO, start od 1000 ELO) ===
+${table2v2Lines || 'Brak graczy 2v2'}
+${records2v2Line}`;
+    }
+
     async function generateBetsWithAI() {
       const contextText = (document.getElementById('betAiContextInput')?.value || '').trim();
       if (!contextText && !currentBetAiImagePayload) {
@@ -4523,9 +4560,7 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       btn.innerHTML = '<span>⏳ Krupier AI szacuje szanse i przelicza na naszą marżę...</span>';
 
       try {
-        const { sortedLeaderboard } = runChronologicalSimulation();
-        const playersSummary = sortedLeaderboard.map(r => `${r.member.name}: ${r.elo.toFixed(0)} PC [Punkty Chwały] (Bilans: ${r.wins}W-${r.losses}L, Wydarzenia/Zakłady: ${r.skillEloNet.toFixed(0)} PC, Forma: ${r.form.slice(-5).join('') || '-'})`).join(' | ');
-        const h2hSummary = buildHeadToHeadSummary();
+        const fullTablesContext = buildFullTablesContextForAI();
         const defaultMode = document.getElementById('betAiDefaultModeSelect')?.value || 'AI_HOUSE';
 
         if (!appConfig.geminiKey || appConfig.geminiKey.trim().length < 10) {
@@ -4534,25 +4569,24 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
 
         if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
           const prompt = `Jesteś Krupierem AI i Analitykiem Kursów (Oddsmakerem) dla grupy znajomych.
-WAŻNE ROZRÓŻNIENIE SYSTEMOWE:
-- W Głównym Rankingu oraz we wszystkich Zakładach walutą są PUNKTY CHWAŁY (skrót: PC, start od 1000 PC).
-- Natomiast "ELO" dotyczy wyłącznie osobnej Ligi Dwójek 2v2 w grze komputerowej. Nigdy nie myl Punktów Chwały (PC) z punktami ELO 2v2!
+Poniżej otrzymujesz aktualny stan OBU naszych tabel (TABELA #1: Główny Ranking w Punktach Chwały PC oraz TABELA #2: Liga Dwójek 2v2 w Sezonowym ELO):
 
-DANE GŁÓWNEGO RANKINGU (PUNKTY CHWAŁY – PC):
-- Gracze i ich Punkty Chwały (PC): [${playersSummary}]
-- Bezpośrednie pojedynki H2H w wydarzeniach: [${h2hSummary || 'brak'}]
+${fullTablesContext}
 
 WEJŚCIE OD UŻYTKOWNIKA (Tekst / Prompt i/lub Zrzut ekranu):
 "${contextText || 'Przeanalizuj załączony obraz (np. screen od bukmachera lub z wydarzenia) i wystaw zakłady.'}"
 
-ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
+ZASADY WYSTAWIANIA ZAKŁADÓW I MATEMATYCZNEGO SZACOWANIA SZANS ("prob"):
 1. Jeśli załączono ZRZUT EKRANU OD BUKMACHERA / Z KUPONU / FLASHSCORE:
    - Odczytaj wszystkie widoczne na screenie mecze/zdarzenia (od 1 do 5 zakładów).
-   - Jeśli na screenie widnieją kursy bukmacherskie (np. 2.15, 3.40, 3.20), wpisz je dokładnie w pole "bookieOdds" dla każdej opcji (nasz system sam zdejmie marżę bukmachera i przeliczy je na naszą marżę kasyna AI!).
-2. Jeśli użytkownik wpisał KONKRETNY ZAKŁAD (np. mecz Ligi Mistrzów "Real vs Arsenal" albo pojedynek naszych graczy "Tomek vs Michał w kręgle"):
-   - Pierwszy zakład w tablicy MUSI dotyczyć dokładnie tego, o co prosi użytkownik!
-   - Oszacuj realistyczne prawdopodobieństwa "prob" (suma prob w jednym zakładzie = 1.00) na podstawie realnej siły drużyn sportowych LUB różnicy Punktów Chwały (PC), formy i bilansu H2H naszych graczy.
-   - Dodatkowo zaproponuj 1 lub 2 ciekawe zakłady poboczne do tego wydarzenia (np. Over/Under, zakład specjalny).
+   - Jeśli na screenie widnieją kursy bukmacherskie (np. 2.15, 3.40, 3.20), wpisz je dokładnie w pole "bookieOdds" dla każdej opcji.
+2. Jeśli zakład dotyczy naszej LIGI DWÓJEK 2v2 (lub występują w nim nicki z TABELI #2, np. Cancer, Firstu, Jargolek, SPICYBob, DokTi1337, Przypro, Leryen):
+   - MUSISZ wyliczyć szanse ("prob") na podstawie TABELI #2 (Sezon 2v2 ELO, miejsce w tabeli, bilans W-L, WR% i aktualna seria)!
+   - Wyższe miejsce i wyższe ELO w Tabeli #2 = wyższa szansa "prob" (niższy kurs) na bycie wyżej w tabeli!
+   - Zachowaj proporcje matematyczne ELO: jeśli różnica między liderem (np. 1012 ELO) a dołem tabeli (np. 986 ELO) wynosi tylko ~26 pkt ELO, to szanse są zbliżone (np. dla 4 graczy: liderzy po ~0.29-0.32, goniący po ~0.18-0.22), a NIGDY skrajne typu 0.42 vs 0.08!
+3. Jeśli zakład dotyczy wydarzeń IRL / spotkań ekipowych (imiona z TABELI #1):
+   - Wylicz szanse ("prob") na podstawie TABELI #1 (Punkty Chwały – PC, bilans W-L i pojedynki H2H).
+   - Pierwszy zakład w tablicy MUSI dotyczyć dokładnie tego, o co prosi użytkownik, a kolejne 1-2 mogą być ciekawymi zakładami pobocznymi.
 3. Aktualna data to ${new Date().toISOString().split('T')[0]}. Jeśli na zrzucie ekranu (np. od bukmachera/Flashscore) lub w opisie widoczna jest godzina/data rozpoczęcia meczu (np. "20:45", "Jutro 21:00", "14.11 18:30"), odczytaj ją i wpisz w pole "startTime" w formacie "YYYY-MM-DDTHH:MM" lub "DD.MM HH:MM" / "HH:MM" (jeśli brak godziny, wpisz null).
 4. Dla każdego zakładu określ pole "betType":
    - Wpisz "OUR" (Zakłady NASZE / Ekipowe), jeśli zakład dotyczy naszych graczy z ekipy, ich spotkań IRL, kręgli, darta, Ligi 2v2 lub wyzwań między znajomymi.
@@ -4940,17 +4974,20 @@ ZASADY WYSTAWIANIA ZAKŁADÓW I SZACOWANIA SZANS:
       btn.innerHTML = '⏳ Szacowanie...';
 
       try {
-        const { sortedLeaderboard } = runChronologicalSimulation();
-        const playersSummary = sortedLeaderboard.map(r => `${r.member.name}: ${r.elo.toFixed(0)} PC [Punkty Chwały] (${r.wins}W-${r.losses}L)`).join(', ');
-        const h2hSummary = buildHeadToHeadSummary();
+        const fullTablesContext = buildFullTablesContextForAI();
         const optNames = rows.map((r, i) => `${i + 1}. "${r.labelEl.value.trim()}"`).join(', ');
 
         const prompt = `Jesteś analitykiem kursów bukmacherskich (zarówno dla prawdziwego sportu jak Liga Mistrzów, jak i naszej wewnętrznej ligi znajomych).
-WAŻNE: Główny Ranking używa Punktów Chwały (PC), a Liga 2v2 używa ELO (nie myl ich ze sobą). Nasi gracze (Punkty Chwały – PC): [${playersSummary}]. Bilans H2H: [${h2hSummary || 'brak'}].
-Zakład: "${title}"
-Dostępne opcje: ${optNames}
+Oto aktualne dane OBU naszych tabel:
+${fullTablesContext}
 
-Oszacuj prawdziwe prawdopodobieństwa (prob od 0.08 do 0.88, suma prob = 1.00) dla każdej z podanych opcji w tej samej kolejności.
+Zakład: "${title}"
+Dostępne opcje w kolejności: ${optNames}
+
+ZASADY:
+- Jeśli w opcjach lub tytule występują gracze z TABELI #2 (Liga Dwójek 2v2), oszacuj prawdopodobieństwa na podstawie ich Sezonowego 2v2 ELO, miejsca w tabeli 2v2, bilansu W-L i formy. Pamiętaj, że mała różnica ELO (np. 1012 vs 986) oznacza wyrównane szanse!
+- Jeśli w opcjach występują gracze z TABELI #1 (Główny Ranking), oszacuj szanse na podstawie ich Punktów Chwały (PC) i bilansu H2H.
+- Suma prawdopodobieństw "probs" wszystkich opcji MUSI równać się 1.00.
 Zwróć WYŁĄCZNIE czysty JSON:
 {"probs": [0.55, 0.45]}`;
 
@@ -5464,25 +5501,19 @@ Zwróć WYŁĄCZNIE czysty JSON:
 
       try {
         const { sortedLeaderboard } = runChronologicalSimulation();
-        const leaderboardSummary = sortedLeaderboard.map((r, i) =>
-          `${i+1}. ${r.member.name}: ${r.elo.toFixed(1)} PC (Punktów Chwały), Bilans w wydarzeniach: ${r.wins}W-${r.losses}L-${r.coops}C, Z wydarzeń/zakładów: ${r.skillEloNet.toFixed(1)} PC, Tarcza IRL: +${r.shieldEloNet.toFixed(1)} PC, Z końca sezonów 2v2: ${r.season2v2Net.toFixed(1)} PC`
-        ).join('\n');
+        const fullTablesContext = buildFullTablesContextForAI();
 
         const recentEventsSummary = appState.events.slice(0, 20).map(ev =>
           `- [${ev.date}] ${ev.title} (${ev.category}): ${ev.comment || ''}`
         ).join('\n');
 
-        const l2v2Summary = Object.values(appState.league2v2.players || {}).map(p =>
-          `${p.name}: ${p.elo} ELO (${p.w}W-${p.l}L, seria: ${p.streak})`
-        ).join(', ');
-
         if (appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) {
           const fullPrompt = `Jesteś błyskotliwym komentatorem i analitykiem "Ekipa Wrapped 2026".
-WAŻNE ROZRÓŻNIENIE: Główny Ranking Ekipy operuje na PUNKTACH CHWAŁY (PC) i dotyczy wydarzeń IRL, zakładów oraz transferów z końca sezonu 2v2. Natomiast Liga Dwójek 2v2 ma osobne punkty ELO.
-Oto aktualny Główny Ranking Ekipy (Punkty Chwały – PC):
-${leaderboardSummary}
+WAŻNE ROZRÓŻNIENIE: Główny Ranking Ekipy (Tabela #1) operuje na PUNKTACH CHWAŁY (PC) i dotyczy wydarzeń IRL, zakładów oraz transferów z końca sezonu 2v2. Natomiast Liga Dwójek 2v2 (Tabela #2) ma osobne punkty ELO.
 
-Ostatnie wydarzenia i zakłady:
+${fullTablesContext}
+
+Ostatnie wydarzenia i zakłady w Głównym Rankingu:
 ${recentEventsSummary}
 
 Polecenie / Customowy Prompt użytkownika:
