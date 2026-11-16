@@ -1707,8 +1707,8 @@
       loadConfig();
       populateConfigInputs();
       updateNotificationBellUI();
-      if (new URLSearchParams(window.location.search).get('widget') === '1') {
-        document.getElementById('androidWidgetOverlay')?.classList.remove('hidden');
+      if (detectWidgetModeFromUrl()) {
+        enterWidgetMode();
       }
       await loadState();
       initDefaultRoles();
@@ -1800,17 +1800,33 @@
       return merged;
     }
 
+    let isWidgetModeActive = false;
+
+    function detectWidgetModeFromUrl() {
+      const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+      if (searchParams.get('widget') === '1' || hashParams.get('widget') === '1' || window.location.href.includes('widget=1')) {
+        isWidgetModeActive = true;
+      }
+      return isWidgetModeActive;
+    }
+
     function loadConfig() {
-      const hash = window.location.hash;
-      if (hash.includes('fb=') || hash.includes('cfg=')) {
+      detectWidgetModeFromUrl();
+      const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+      const fbRaw = hashParams.get('fb') || hashParams.get('cfg') || searchParams.get('fb') || searchParams.get('cfg') || '';
+
+      if (fbRaw) {
         try {
-          const params = new URLSearchParams(hash.slice(1));
-          const fbFromUrl = decodeURIComponent(params.get('fb') || params.get('cfg') || '');
+          const fbFromUrl = decodeURIComponent(fbRaw);
           if (fbFromUrl) {
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_CFG) || '{}');
             saved.firebaseUrl = fbFromUrl;
             localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(saved));
-            history.replaceState(null, '', window.location.pathname);
+            appConfig.firebaseUrl = fbFromUrl;
+            const keepQuery = isWidgetModeActive ? '?widget=1' : window.location.search;
+            history.replaceState(null, '', window.location.pathname + keepQuery);
           }
         } catch (e) {}
       }
@@ -6360,24 +6376,30 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
     }
 
     function enterWidgetMode() {
+      isWidgetModeActive = true;
       document.getElementById('androidWidgetOverlay')?.classList.remove('hidden');
+      document.querySelector('header')?.classList.add('hidden');
+      document.querySelector('main')?.classList.add('hidden');
       const simData = runChronologicalSimulation();
       renderWidgetView(simData.sortedLeaderboard);
     }
 
     function exitWidgetMode(e) {
       if (e) e.preventDefault();
+      isWidgetModeActive = false;
       document.getElementById('androidWidgetOverlay')?.classList.add('hidden');
-      if (window.location.search.includes('widget=1')) {
-        history.replaceState(null, '', window.location.pathname + window.location.hash);
+      document.querySelector('header')?.classList.remove('hidden');
+      document.querySelector('main')?.classList.remove('hidden');
+      if (window.location.href.includes('widget=1')) {
+        history.replaceState(null, '', window.location.pathname);
       }
     }
 
     function copyWidgetLink() {
       const fb = (document.getElementById('cfgFirebaseUrl')?.value || appConfig.firebaseUrl || '').trim();
-      const hashPart = fb ? `#fb=${encodeURIComponent(fb)}` : window.location.hash;
-      const url = `${window.location.origin}${window.location.pathname}?widget=1${hashPart}`;
-      copyTextToClipboard(url, 'Skopiowano link Widżetu (?widget=1)! Wklej go w aplikacji WebWidget na Androidzie.');
+      const fbParam = fb ? `&fb=${encodeURIComponent(fb)}` : '';
+      const url = `${window.location.origin}${window.location.pathname}?widget=1${fbParam}#widget=1${fbParam}`;
+      copyTextToClipboard(url, 'Skopiowano link Widżetu! Wklej go w aplikacji widżetu na Androidzie.');
     }
 
     function renderWidgetView(sortedLeaderboard) {
