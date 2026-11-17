@@ -398,6 +398,9 @@
           <button type="button" onclick="openCreateBetModal()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-xs transition">
             👥 + Pula Wieloosobowa
           </button>
+          <button type="button" onclick="openAdminPinModal(() => { openAdminEditorModal('bets'); })" class="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold text-xs transition flex items-center gap-1" title="Wklej screena z SofaScore/Flashscore, aby automatycznie rozliczyć wszystkie zakończone mecze">
+            📸 Auto-Rozlicz (Sofa/Flash)
+          </button>
         </div>
       </div>
 
@@ -913,6 +916,29 @@
 
         <div id="membersManagementList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
       </div>
+
+      <!-- Panel 3: Wybór Własnych Odznak z Panelu Ustawień -->
+      <div class="glass rounded-2xl p-6 shadow-xl max-w-5xl mx-auto space-y-4 border border-amber-500/30">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+              <span>🏅 Moje Odznaki i Wizytówka w Tabeli (30 Odznak • 3 Poziomy)</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Wybierz maksymalnie 3 odblokowane odznaki, które będą widoczne przy Twoim nicku w Głównym Rankingu (lub kliknij w dowolnego gracza w tabeli, aby otworzyć pełny profil ze wszystkimi 30 odznakami).
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="cfgBadgeMemberSelect" onchange="renderSettingsBadgeSelector(this.value)" class="bg-slate-950 border border-amber-500/50 rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:outline-none">
+            </select>
+            <button type="button" onclick="openPlayerProfileModal(document.getElementById('cfgBadgeMemberSelect')?.value || appConfig.myMemberId || appState.members[0]?.id)" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow transition">
+              🏆 Otwórz Pełny Profil (Wszystkie 30 Odznak)
+            </button>
+          </div>
+        </div>
+
+        <div id="settingsBadgesContainer" class="space-y-3"></div>
+      </div>
     </div>
 
     <!-- ================= ZAKŁADKA 4: STATYSTYKI / WRAPPED ================= -->
@@ -1293,174 +1319,307 @@
     </div>
   </div>
 
-  <!-- ================= MODAL ADMINA: RĘCZNA MODYFIKACJA I RESET PUNKTÓW (RANKING GŁÓWNY & LIGA 2V2) ================= -->
+  <!-- ================= MODAL PROFILU GRACZA (WSZYSTKIE 30 ODZNAK + STATYSTYKI + WYBÓR ODZNAK) ================= -->
+  <div id="playerProfileModal" class="fixed inset-0 z-[66] hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+    <div class="glass-dark rounded-2xl max-w-5xl w-full p-5 sm:p-6 border border-indigo-500/50 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-3.5">
+          <div id="profAvatar" class="w-12 h-12 rounded-2xl flex items-center justify-center text-base font-extrabold text-white shadow-lg" style="background:#6366f1">
+            GR
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 id="profName" class="text-lg sm:text-xl font-extrabold text-white">Profil Gracza</h3>
+              <span id="profRankBadge"></span>
+              <span id="profAliasBadge" class="text-xs font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 hidden"></span>
+            </div>
+            <p id="profSubtext" class="text-xs text-slate-400 mt-0.5"></p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <select id="profSwitchMemberSelect" onchange="openPlayerProfileModal(this.value)" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-200 focus:outline-none">
+          </select>
+          <button type="button" onclick="closePlayerProfileModal()" class="text-slate-400 hover:text-white text-2xl leading-none px-2">&times;</button>
+        </div>
+      </div>
+
+      <!-- Kafelki podsumowania gracza -->
+      <div id="profStatsSummaryGrid" class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs"></div>
+
+      <!-- Przypięte odznaki gracza (Do 3 w tabeli) -->
+      <div class="bg-slate-900/90 border border-amber-500/35 rounded-xl p-4 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h4 class="text-xs sm:text-sm font-bold text-amber-300">📌 Przypięte Odznaki w Tabeli Głównej (Maksymalnie 3):</h4>
+            <p class="text-[11px] text-slate-400">Kliknij w dowolną odblokowaną odznakę poniżej, aby przypiąć lub odpiąć ją ze swojej wizytówki w tabeli.</p>
+          </div>
+          <button type="button" onclick="clearPinnedBadgesForCurrentProfile()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700 transition">
+            Auto (3 najwyższe)
+          </button>
+        </div>
+        <div id="profPinnedBadgesBar" class="flex flex-wrap gap-2 pt-1"></div>
+      </div>
+
+      <!-- Filtr kategorii odznak w profilu -->
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800 text-xs">
+          <button type="button" onclick="setProfileBadgeFilter('ALL')" id="profFilterBtn-ALL" class="px-2.5 py-1 rounded-lg font-bold bg-indigo-600 text-white transition">Wszystkie (30)</button>
+          <button type="button" onclick="setProfileBadgeFilter('UNLOCKED')" id="profFilterBtn-UNLOCKED" class="px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition">✅ Tylko zdobyte</button>
+          <button type="button" onclick="setProfileBadgeFilter('BETS')" id="profFilterBtn-BETS" class="px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition">🎰 Kasyno (10)</button>
+          <button type="button" onclick="setProfileBadgeFilter('IRL')" id="profFilterBtn-IRL" class="px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition">🛡️ IRL (7)</button>
+          <button type="button" onclick="setProfileBadgeFilter('VERSUS')" id="profFilterBtn-VERSUS" class="px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition">⚔️ Skill (5)</button>
+          <button type="button" onclick="setProfileBadgeFilter('L2V2')" id="profFilterBtn-L2V2" class="px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition">🎮 2v2 (6)</button>
+          <button type="button" onclick="setProfileBadgeFilter('SOCIAL')" id="profFilterBtn-SOCIAL" class="px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition">🤜🤛 Duety (2)</button>
+        </div>
+        <span id="profUnlockedCountBadge" class="text-xs font-mono font-bold text-emerald-400">Odblokowano: 0 / 30</span>
+      </div>
+
+      <!-- Siatka wszystkich 30 odznak z paskami postępu i progami I / II / III -->
+      <div id="profAllBadgesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL ADMINA Z ZAKŁADKAMI (ZAKŁADY & AUTO-ROZLICZANIE / PUNKTY / MNOŻNIKI / PROGI 30 ODZNAK) ================= -->
   <div id="adminEditorModal" class="fixed inset-0 z-[65] hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
-    <div class="glass-dark rounded-2xl max-w-4xl w-full p-5 sm:p-6 border border-amber-500/50 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
+    <div class="glass-dark rounded-2xl max-w-5xl w-full p-5 sm:p-6 border border-amber-500/50 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3.5">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl">🛠️</div>
           <div>
-            <h3 class="text-base sm:text-lg font-extrabold text-white">Panel Administratora – Ręczna Korekta i Reset Punktów</h3>
-            <p class="text-xs text-slate-400">Zmieniaj bezpośrednio Główne ELO, punkty i bilanse w Lidze Dwójek 2v2 oraz rekordy</p>
+            <h3 class="text-base sm:text-lg font-extrabold text-white">Panel Administratora</h3>
+            <p class="text-xs text-slate-400">Zarządzaj zakładami, auto-rozliczaniem ze screenów, punktami PC/2v2, mnożnikami oraz progami 30 odznak</p>
           </div>
         </div>
         <button type="button" onclick="closeAdminEditorModal()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
       </div>
 
-      <!-- Sekcja Rozliczania i Zarządzania Zakładami (Tylko Admin) -->
-      <div class="bg-slate-900/95 border border-amber-500/40 rounded-xl p-4 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-          <h4 class="text-xs sm:text-sm font-extrabold text-amber-300 uppercase tracking-wider flex items-center gap-2">
-            <span>🎲 Rozliczanie i Zarządzanie Aktywnymi Zakładami (Tylko Admin)</span>
-          </h4>
-          <span class="text-[11px] text-slate-400">Wskaż zwycięską opcję, zablokuj obstawianie w trakcie meczu lub usuń spóźniony głos</span>
-        </div>
-        <div id="adminActiveBetsManagerContainer" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
+      <!-- Nawigacja Zakładek Panelu Admina -->
+      <div class="flex flex-wrap items-center gap-1.5 bg-slate-950/90 p-1.5 rounded-xl border border-slate-800 text-xs">
+        <button type="button" id="admTabBtn-bets" onclick="switchAdminTab('bets')" class="px-3.5 py-2 rounded-lg font-extrabold transition bg-amber-500 text-slate-950 flex items-center gap-1.5">
+          <span>🎲 1. Zakłady & Auto-Rozliczanie (Sofa/Flash)</span>
+        </button>
+        <button type="button" id="admTabBtn-points" onclick="switchAdminTab('points')" class="px-3.5 py-2 rounded-lg font-bold transition text-slate-300 hover:text-white flex items-center gap-1.5">
+          <span>🏆 2. Korekta Punktów (PC & 2v2)</span>
+        </button>
+        <button type="button" id="admTabBtn-multipliers" onclick="switchAdminTab('multipliers')" class="px-3.5 py-2 rounded-lg font-bold transition text-slate-300 hover:text-white flex items-center gap-1.5">
+          <span>⚙️ 3. Mnożniki & Rekordy 2v2</span>
+        </button>
+        <button type="button" id="admTabBtn-badges" onclick="switchAdminTab('badges')" class="px-3.5 py-2 rounded-lg font-bold transition text-slate-300 hover:text-white flex items-center gap-1.5">
+          <span>🏅 4. Progi 30 Odznak</span>
+        </button>
       </div>
 
-      <!-- Szybkie akcje resetowania -->
-      <div class="bg-rose-950/25 border border-rose-500/30 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2">
-        <div class="text-xs text-slate-300">
-          <strong class="text-rose-300">⚡ Szybkie Resety Punktów:</strong> Możesz wyzerować same korekty, zresetować tabelę sezonu 2v2 do 1000 lub wyzerować Główny Ranking do 1000.
+      <!-- ================= ZAKŁADKA ADMINA 1: ZAKŁADY & AUTO-ROZLICZANIE ZE SCREENÓW SOFASCORE / FLASHSCORE ================= -->
+      <div id="admTab-bets" class="space-y-4">
+        <!-- Moduł AI Auto-Rozliczania ze screena SofaScore / Flashscore -->
+        <div class="bg-gradient-to-r from-indigo-950/40 via-slate-900/95 to-emerald-950/40 border border-emerald-500/40 rounded-xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+            <div>
+              <h4 class="text-xs sm:text-sm font-extrabold text-emerald-300 uppercase tracking-wider flex items-center gap-2">
+                <span>📸 Automatyczne Rozliczanie Zakładów ze Screenów (SofaScore / Flashscore)</span>
+              </h4>
+              <p class="text-[11px] text-slate-300 mt-0.5">
+                Wrzuć lub wklej (<code class="text-amber-300 font-mono">Ctrl+V</code>) screena z wynikami meczów z SofaScore lub Flashscore. AI odczyta wszystkie wyniki naraz i dopasuje zwycięskie opcje do aktywnych zakładów!
+              </p>
+            </div>
+            <input type="file" id="sofaSettleFileInput" accept="image/*" class="hidden" onchange="handleSofaSettleImageSelect(event)" />
+            <button type="button" id="sofaSettleUploadBtn" onclick="document.getElementById('sofaSettleFileInput').click()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg transition flex items-center gap-1.5">
+              <span>📸 Wybierz / Wklej screen z wynikami (Sofa/Flash)</span>
+            </button>
+          </div>
+
+          <div id="sofaSettleStatusBox" class="hidden bg-slate-950/90 border border-indigo-500/40 rounded-xl p-3 text-xs text-indigo-300 font-semibold"></div>
+
+          <!-- Lista dopasowanych przez AI zakładów do hurtowego zatwierdzenia -->
+          <div id="sofaSettlePreviewWrap" class="hidden space-y-2.5 pt-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs font-bold text-amber-300">🎯 Wykryte rozstrzygnięcia na zrzucie ekranu (zaznacz, które chcesz rozliczyć):</span>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="confirmBatchSofaSettlement()" class="px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs shadow transition">
+                  ✅ Zatwierdź i rozlicz zaznaczone zakłady
+                </button>
+                <button type="button" onclick="clearSofaSettlePreview()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs">
+                  Ukryj
+                </button>
+              </div>
+            </div>
+            <div id="sofaSettleMatchesList" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <button type="button" onclick="adminResetMainOffsets()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition">
-            Wyzeruj korekty Punktów Chwały (PC)
-          </button>
-          <button type="button" onclick="adminResetMainRankingTo1000()" class="px-3 py-1.5 rounded-lg bg-rose-900/60 hover:bg-rose-800 text-xs font-bold text-rose-200 border border-rose-700/50 transition">
-            Resetuj wszystkim Punkty Chwały na 1000 PC
-          </button>
-          <button type="button" onclick="adminResetLeague2v2To1000()" class="px-3 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-xs font-bold text-purple-200 border border-purple-700/50 transition">
-            Resetuj tabelę Ligi 2v2 na 1000 (0W-0L)
-          </button>
+
+        <!-- Ręczne Rozliczanie i Zarządzanie Aktywnymi Zakładami -->
+        <div class="bg-slate-900/95 border border-amber-500/40 rounded-xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+            <h4 class="text-xs sm:text-sm font-extrabold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+              <span>🎲 Lista Aktywnych Zakładów (Ręczne rozliczanie, edycja i usuwanie głosów)</span>
+            </h4>
+            <span class="text-[11px] text-slate-400">Wskaż zwycięską opcję, zablokuj obstawianie lub usuń spóźniony głos</span>
+          </div>
+          <div id="adminActiveBetsManagerContainer" class="space-y-3 max-h-96 overflow-y-auto pr-1"></div>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <!-- Kolumna 1: Główny Ranking ELO -->
+      <!-- ================= ZAKŁADKA ADMINA 2: KOREKTA PUNKTÓW (PC & 2v2) ================= -->
+      <div id="admTab-points" class="hidden space-y-4">
+        <div class="bg-rose-950/25 border border-rose-500/30 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2">
+          <div class="text-xs text-slate-300">
+            <strong class="text-rose-300">⚡ Szybkie Resety Punktów:</strong> Możesz wyzerować same korekty, zresetować tabelę sezonu 2v2 do 1000 lub wyzerować Główny Ranking do 1000.
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="adminResetMainOffsets()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition">
+              Wyzeruj korekty Punktów Chwały (PC)
+            </button>
+            <button type="button" onclick="adminResetMainRankingTo1000()" class="px-3 py-1.5 rounded-lg bg-rose-900/60 hover:bg-rose-800 text-xs font-bold text-rose-200 border border-rose-700/50 transition">
+              Resetuj wszystkim Punkty Chwały na 1000 PC
+            </button>
+            <button type="button" onclick="adminResetLeague2v2To1000()" class="px-3 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-xs font-bold text-purple-200 border border-purple-700/50 transition">
+              Resetuj tabelę Ligi 2v2 na 1000 (0W-0L)
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h4 class="text-xs sm:text-sm font-bold text-indigo-300 uppercase tracking-wider">🏆 1. Główny Ranking – Punkty Chwały (Docelowe PC)</h4>
+              <span class="text-[11px] text-slate-400">Wpisz dokładną wartość PC</span>
+            </div>
+            <div id="adminMainEloList" class="space-y-2 max-h-80 overflow-y-auto pr-1"></div>
+          </div>
+
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h4 class="text-xs sm:text-sm font-bold text-purple-300 uppercase tracking-wider">🎮 2. Liga Dwójek 2v2 (ELO / W / L / Seria)</h4>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] text-slate-400">Sezon #</span>
+                <input type="number" id="adminSeasonNumberInput" min="1" max="99" class="w-14 bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-xs text-purple-300 font-mono text-center" />
+              </div>
+            </div>
+            <div class="grid grid-cols-12 gap-1.5 text-[10px] uppercase font-bold text-slate-400 px-1">
+              <div class="col-span-4">Nick 2v2</div>
+              <div class="col-span-3 text-right">Sezon ELO</div>
+              <div class="col-span-2 text-center">W</div>
+              <div class="col-span-2 text-center">L</div>
+              <div class="col-span-1 text-center">Str</div>
+            </div>
+            <div id="adminLeague2v2List" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= ZAKŁADKA ADMINA 3: MNOŻNIKI & REKORDY 2v2 ================= -->
+      <div id="admTab-multipliers" class="hidden space-y-4">
+        <div class="bg-slate-900/90 border border-rose-500/30 rounded-xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+            <h4 class="text-xs font-bold text-rose-300 uppercase tracking-wider">🎰 Marża Kasyna AI (Ujemne EV) & Mnożniki Punktowe Ligi</h4>
+            <button type="button" onclick="adminResetDefaultMultipliers()" class="text-[11px] text-slate-400 hover:text-white underline">Przywróć domyślne mnożniki</button>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div class="bg-slate-950/80 border border-rose-500/30 rounded-lg p-2.5">
+              <label class="block text-[11px] text-rose-300 font-semibold">Marża Kasyna AI (%)</label>
+              <input type="number" id="admMultHouseMargin" min="0" max="60" step="1" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
+              <span class="text-[10px] text-slate-500">Domyślnie: 18% (EV -18%)</span>
+            </div>
+            <div class="bg-slate-950/80 border border-purple-500/30 rounded-lg p-2.5">
+              <label class="block text-[11px] text-purple-300 font-semibold">Stawka K w Lidze 2v2</label>
+              <input type="number" id="admMultK2v2" min="4" max="120" step="2" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
+              <span class="text-[10px] text-slate-500">Domyślnie: 32</span>
+            </div>
+            <div class="bg-slate-950/80 border border-amber-500/30 rounded-lg p-2.5">
+              <label class="block text-[11px] text-amber-300 font-semibold">Transfer Sezonu 2v2 (%)</label>
+              <input type="number" id="admMultSeasonPct" min="1" max="100" step="1" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
+              <span class="text-[10px] text-slate-500">Domyślnie: 10%</span>
+            </div>
+            <div class="bg-slate-950/80 border border-emerald-500/30 rounded-lg p-2.5">
+              <label class="block text-[11px] text-emerald-300 font-semibold">Bonus Synergii IRL (%/os)</label>
+              <input type="number" id="admMultSynergyPct" min="0" max="50" step="1" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
+              <span class="text-[10px] text-slate-500">Domyślnie: 10% / os. > 2</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
+            <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
+              <label class="block text-[11px] text-slate-300 font-semibold">⚽ IRL Sport (K / Tarcza)</label>
+              <div class="flex gap-1.5 mt-1">
+                <input type="number" id="admCatSportK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
+                <input type="number" id="admCatSportShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
+              </div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
+              <label class="block text-[11px] text-slate-300 font-semibold">🎮 Online (K / Tarcza)</label>
+              <div class="flex gap-1.5 mt-1">
+                <input type="number" id="admCatOnlineK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
+                <input type="number" id="admCatOnlineShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
+              </div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
+              <label class="block text-[11px] text-slate-300 font-semibold">🍻 IRL Chill (K / Tarcza)</label>
+              <div class="flex gap-1.5 mt-1">
+                <input type="number" id="admCatChillK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
+                <input type="number" id="admCatChillShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
+              </div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
+              <label class="block text-[11px] text-slate-300 font-semibold">⛰️ IRL Wyjazd (K / Tarcza)</label>
+              <div class="flex gap-1.5 mt-1">
+                <input type="number" id="admCatTripK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
+                <input type="number" id="admCatTripShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-            <h4 class="text-xs sm:text-sm font-bold text-indigo-300 uppercase tracking-wider">🏆 1. Główny Ranking – Punkty Chwały (Docelowe PC)</h4>
-            <span class="text-[11px] text-slate-400">Wpisz dokładną wartość ELO</span>
-          </div>
-          <div id="adminMainEloList" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
-        </div>
-
-        <!-- Kolumna 2: Liga Dwójek 2v2 -->
-        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-            <h4 class="text-xs sm:text-sm font-bold text-purple-300 uppercase tracking-wider">🎮 2. Liga Dwójek 2v2 (ELO / W / L / Seria)</h4>
-            <div class="flex items-center gap-1.5">
-              <span class="text-[11px] text-slate-400">Sezon #</span>
-              <input type="number" id="adminSeasonNumberInput" min="1" max="99" class="w-14 bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-xs text-purple-300 font-mono text-center" />
+          <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider border-b border-slate-800 pb-2">🏅 Korekta Rekordów Historycznych Ligi 2v2</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label class="text-[11px] text-slate-400">Max Sezon ELO (Wartość / Gracz)</label>
+              <div class="flex gap-1.5 mt-1">
+                <input type="number" id="admRecMaxEloVal" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
+                <input type="text" id="admRecMaxEloPlayer" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
+              </div>
             </div>
-          </div>
-          <div class="grid grid-cols-12 gap-1.5 text-[10px] uppercase font-bold text-slate-400 px-1">
-            <div class="col-span-4">Nick 2v2</div>
-            <div class="col-span-3 text-right">Sezon ELO</div>
-            <div class="col-span-2 text-center">W</div>
-            <div class="col-span-2 text-center">L</div>
-            <div class="col-span-1 text-center">Str</div>
-          </div>
-          <div id="adminLeague2v2List" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
-        </div>
-      </div>
-
-      <!-- Edycja Marży Kasyna AI oraz Mnożników Ligi (K-Factor & Tarcze) -->
-      <div class="bg-slate-900/90 border border-rose-500/30 rounded-xl p-4 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-          <h4 class="text-xs font-bold text-rose-300 uppercase tracking-wider">🎰 3. Marża Kasyna AI (Ujemne EV) & Mnożniki Punktowe Ligi</h4>
-          <button type="button" onclick="adminResetDefaultMultipliers()" class="text-[11px] text-slate-400 hover:text-white underline">Przywróć domyślne mnożniki</button>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div class="bg-slate-950/80 border border-rose-500/30 rounded-lg p-2.5">
-            <label class="block text-[11px] text-rose-300 font-semibold">Marża Kasyna AI (%)</label>
-            <input type="number" id="admMultHouseMargin" min="0" max="60" step="1" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
-            <span class="text-[10px] text-slate-500">Domyślnie: 18% (EV -18%)</span>
-          </div>
-          <div class="bg-slate-950/80 border border-purple-500/30 rounded-lg p-2.5">
-            <label class="block text-[11px] text-purple-300 font-semibold">Stawka K w Lidze 2v2</label>
-            <input type="number" id="admMultK2v2" min="4" max="120" step="2" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
-            <span class="text-[10px] text-slate-500">Domyślnie: 32</span>
-          </div>
-          <div class="bg-slate-950/80 border border-amber-500/30 rounded-lg p-2.5">
-            <label class="block text-[11px] text-amber-300 font-semibold">Transfer Sezonu 2v2 (%)</label>
-            <input type="number" id="admMultSeasonPct" min="1" max="100" step="1" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
-            <span class="text-[10px] text-slate-500">Domyślnie: 10%</span>
-          </div>
-          <div class="bg-slate-950/80 border border-emerald-500/30 rounded-lg p-2.5">
-            <label class="block text-[11px] text-emerald-300 font-semibold">Bonus Synergii IRL (%/os)</label>
-            <input type="number" id="admMultSynergyPct" min="0" max="50" step="1" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono font-bold text-white" />
-            <span class="text-[10px] text-slate-500">Domyślnie: 10% / os. > 2</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
-          <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
-            <label class="block text-[11px] text-slate-300 font-semibold">⚽ IRL Sport (K / Tarcza)</label>
-            <div class="flex gap-1.5 mt-1">
-              <input type="number" id="admCatSportK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
-              <input type="number" id="admCatSportShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
+            <div>
+              <label class="text-[11px] text-slate-400">Min Sezon ELO (Wartość / Gracz)</label>
+              <div class="flex gap-1.5 mt-1">
+                <input type="number" id="admRecMinEloVal" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
+                <input type="text" id="admRecMinEloPlayer" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
+              </div>
             </div>
-          </div>
-          <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
-            <label class="block text-[11px] text-slate-300 font-semibold">🎮 Online (K / Tarcza)</label>
-            <div class="flex gap-1.5 mt-1">
-              <input type="number" id="admCatOnlineK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
-              <input type="number" id="admCatOnlineShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
+            <div>
+              <label class="text-[11px] text-slate-400">Rekord DMG (Wartość / Gracz / Champ)</label>
+              <div class="flex gap-1 mt-1">
+                <input type="number" id="admRecMaxDmgVal" class="w-24 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
+                <input type="text" id="admRecMaxDmgPlayer" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
+                <input type="text" id="admRecMaxDmgChamp" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
+              </div>
             </div>
-          </div>
-          <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
-            <label class="block text-[11px] text-slate-300 font-semibold">🍻 IRL Chill (K / Tarcza)</label>
-            <div class="flex gap-1.5 mt-1">
-              <input type="number" id="admCatChillK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
-              <input type="number" id="admCatChillShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
-            </div>
-          </div>
-          <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5">
-            <label class="block text-[11px] text-slate-300 font-semibold">⛰️ IRL Wyjazd (K / Tarcza)</label>
-            <div class="flex gap-1.5 mt-1">
-              <input type="number" id="admCatTripK" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-white" title="K-Factor" />
-              <input type="number" id="admCatTripShield" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300" title="Tarcza" />
+            <div>
+              <label class="text-[11px] text-slate-400">Max Seria Wygranych (Wartość / Gracz)</label>
+              <div class="flex gap-1.5 mt-1">
+                <input type="number" id="admRecMaxStreakVal" class="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
+                <input type="text" id="admRecMaxStreakPlayer" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Edycja Rekordów Ligi 2v2 -->
-      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
-        <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider border-b border-slate-800 pb-2">🏅 4. Korekta Rekordów Historycznych Ligi 2v2</h4>
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-          <div>
-            <label class="text-[11px] text-slate-400">Max Sezon ELO (Wartość / Gracz)</label>
-            <div class="flex gap-1.5 mt-1">
-              <input type="number" id="admRecMaxEloVal" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
-              <input type="text" id="admRecMaxEloPlayer" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
+      <!-- ================= ZAKŁADKA ADMINA 4: EDYCJA PROGÓW 30 ODZNAK (POZIOMY I / II / III) ================= -->
+      <div id="admTab-badges" class="hidden space-y-3">
+        <div class="bg-slate-900/90 border border-amber-500/35 rounded-xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <div>
+              <h4 class="text-xs sm:text-sm font-bold text-amber-300 uppercase tracking-wider">🏅 Edycja Progów 30 Odznak (Poziom I Brąz 🥉 / Poziom II Srebro 🥈 / Poziom III Złoto 🥇)</h4>
+              <p class="text-[11px] text-slate-400">Zmień wymagane wartości liczbowe dla dowolnej odznaki i kliknij „Zapisz wszystkie korekty w bazie” na dole okna.</p>
             </div>
+            <button type="button" onclick="adminResetBadgeThresholds()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-300 border border-slate-700 transition">
+              🔄 Przywróć domyślne progi odznak
+            </button>
           </div>
-          <div>
-            <label class="text-[11px] text-slate-400">Min Sezon ELO (Wartość / Gracz)</label>
-            <div class="flex gap-1.5 mt-1">
-              <input type="number" id="admRecMinEloVal" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
-              <input type="text" id="admRecMinEloPlayer" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
-            </div>
-          </div>
-          <div>
-            <label class="text-[11px] text-slate-400">Rekord DMG (Wartość / Gracz / Champ)</label>
-            <div class="flex gap-1 mt-1">
-              <input type="number" id="admRecMaxDmgVal" class="w-24 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
-              <input type="text" id="admRecMaxDmgPlayer" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
-              <input type="text" id="admRecMaxDmgChamp" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
-            </div>
-          </div>
-          <div>
-            <label class="text-[11px] text-slate-400">Max Seria Wygranych (Wartość / Gracz)</label>
-            <div class="flex gap-1.5 mt-1">
-              <input type="number" id="admRecMaxStreakVal" class="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-white" />
-              <input type="text" id="admRecMaxStreakPlayer" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white" />
-            </div>
-          </div>
+          <div id="adminBadgeThresholdsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[52vh] overflow-y-auto pr-1"></div>
         </div>
       </div>
 
@@ -1468,7 +1627,7 @@
         <span class="text-[11px] text-slate-400">💡 Kliknięcie „Zapisz wszystkie korekty” natychmiast zaktualizuje stan lokalny oraz bazę Firebase u wszystkich graczy.</span>
         <div class="flex items-center gap-2">
           <button type="button" onclick="closeAdminEditorModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition">
-            Anuluj
+            Zamknij
           </button>
           <button type="button" onclick="saveAdminAllAdjustments()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/25 transition">
             💾 Zapisz wszystkie korekty w bazie
@@ -1741,6 +1900,13 @@
       }
       if (!Array.isArray(merged.events)) merged.events = [];
       if (!Array.isArray(merged.bets)) merged.bets = [];
+
+      if (!merged.badgeThresholds || typeof merged.badgeThresholds !== 'object') {
+        merged.badgeThresholds = {};
+      }
+      merged.members.forEach(m => {
+        if (!Array.isArray(m.pinnedBadges)) m.pinnedBadges = [];
+      });
 
       merged.events.forEach(ev => {
         if (!Array.isArray(ev.winners)) ev.winners = [];
@@ -3257,8 +3423,12 @@ Zwróć WYŁĄCZNIE czysty JSON:
       for (let item of items) {
         if (item.type.startsWith('image/')) {
           const file = item.getAsFile();
+          const adminModalOpen = !document.getElementById('adminEditorModal')?.classList.contains('hidden');
+          const adminBetsTabOpen = !document.getElementById('admTab-bets')?.classList.contains('hidden');
           const betsTabVisible = !document.getElementById('tab-bets')?.classList.contains('hidden');
-          if (betsTabVisible) {
+          if (adminModalOpen && adminBetsTabOpen) {
+            processSofaFlashscoreScreenshot(file);
+          } else if (betsTabVisible) {
             loadBetAiImageFile(file);
           } else {
             switchTab('league2v2');
@@ -3588,6 +3758,7 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
       renderEventsLog(simData.eventComputedMap);
       renderLeague2v2Tab(simData.ratingsMap);
       renderMembersManagementTab(simData.sortedLeaderboard);
+      renderSettingsBadgeSelector();
       renderWrappedStats(simData.sortedLeaderboard);
       renderWidgetView(simData.sortedLeaderboard);
     }
@@ -3753,14 +3924,15 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
           <tr class="hover:bg-slate-800/40 transition">
             <td class="py-3 px-2 font-bold text-slate-300">${medal}</td>
             <td class="py-3 px-2">
-              <div class="flex items-center gap-2.5">
-                <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold text-white shadow shrink-0" style="background:${row.member.color}">
+              <div onclick="openPlayerProfileModal('${row.member.id}')" class="flex items-center gap-2.5 cursor-pointer group" title="Kliknij, aby zobaczyć pełny profil i wszystkie 30 odznak gracza">
+                <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold text-white shadow shrink-0 group-hover:scale-105 transition" style="background:${row.member.color}">
                   ${escapeHtml(row.member.name.slice(0, 2).toUpperCase())}
                 </span>
                 <div>
-                  <div class="font-bold text-white flex flex-wrap items-center gap-1.5">
-                    <span>${escapeHtml(row.member.name)}</span>
+                  <div class="font-bold text-white group-hover:text-indigo-300 transition flex flex-wrap items-center gap-1.5">
+                    <span class="underline decoration-slate-700 group-hover:decoration-indigo-400 underline-offset-2">${escapeHtml(row.member.name)}</span>
                     ${getRankTierBadge(row.elo)}
+                    ${renderMemberMiniBadgesHtml(row.member.id)}
                   </div>
                   <div class="text-[11px] text-slate-400">${escapeHtml(row.member.role || 'Gracz Ekipy')} • ${row.irlCount} IRL / ${row.onlineCount} Online</div>
                 </div>
@@ -3916,6 +4088,9 @@ Zwróć WYŁĄCZNIE tablicę JSON 10 obiektów:
               </div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="openPlayerProfileModal('${m.id}')" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs text-amber-300 border border-amber-500/40 font-semibold transition">
+                🏅 Odznaki
+              </button>
               <button onclick="openEditMemberModal('${m.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition">
                 ✏️ Edytuj
               </button>
@@ -5852,10 +6027,24 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
       if (cb) cb();
     }
 
-    async function openAdminEditorModal() {
+    async function openAdminEditorModal(initialTab = 'bets') {
       await ensureFreshStateBeforeWrite();
       populateAdminEditorFields();
+      switchAdminTab(initialTab || 'bets');
       document.getElementById('adminEditorModal').classList.remove('hidden');
+    }
+
+    function switchAdminTab(tabName) {
+      ['bets', 'points', 'multipliers', 'badges'].forEach(t => {
+        const panel = document.getElementById(`admTab-${t}`);
+        const btn = document.getElementById(`admTabBtn-${t}`);
+        if (panel) panel.classList.toggle('hidden', t !== tabName);
+        if (btn) {
+          btn.className = t === tabName
+            ? 'px-3.5 py-2 rounded-lg font-extrabold transition bg-amber-500 text-slate-950 flex items-center gap-1.5 shadow'
+            : 'px-3.5 py-2 rounded-lg font-bold transition text-slate-300 hover:text-white flex items-center gap-1.5';
+        }
+      });
     }
 
     function closeAdminEditorModal() {
@@ -6095,6 +6284,9 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
       document.getElementById('admCatChillShield').value = cats.IRL_CHILL?.baseShield ?? 12;
       document.getElementById('admCatTripK').value = cats.IRL_TRIP?.kFactor ?? 60;
       document.getElementById('admCatTripShield').value = cats.IRL_TRIP?.baseShield ?? 30;
+
+      // 5. Progi 30 Odznak
+      populateAdminBadgeThresholds();
     }
 
     function adminResetDefaultMultipliers() {
@@ -6186,6 +6378,20 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
         }
       };
       applyMultipliersToRuntime(appState.multipliers);
+
+      // 5. Zapisz Progi 30 Odznak
+      if (!appState.badgeThresholds || typeof appState.badgeThresholds !== 'object') {
+        appState.badgeThresholds = {};
+      }
+      document.querySelectorAll('div[data-admin-badge-id]').forEach(row => {
+        const bId = row.getAttribute('data-admin-badge-id');
+        const t1 = Number(row.querySelector('input[data-tier="0"]')?.value);
+        const t2 = Number(row.querySelector('input[data-tier="1"]')?.value);
+        const t3 = Number(row.querySelector('input[data-tier="2"]')?.value);
+        if (bId && !isNaN(t1) && !isNaN(t2) && !isNaN(t3)) {
+          appState.badgeThresholds[bId] = [t1, t2, t3];
+        }
+      });
 
       closeAdminEditorModal();
       await persistState();
@@ -6449,6 +6655,772 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
             <span class="text-purple-300 font-bold">${Math.round(p.elo)}</span>
           </div>
         `).join('');
+      }
+    }
+
+
+    // ================= SYSTEM 30 ODZNAK (3 POZIOMY: I BRĄZ, II SREBRO, III ZŁOTO) =================
+    const DEFAULT_BADGES_CONFIG = [
+      // I. KASYNO & BUKMACHERKA (10)
+      { id: 'b_bets_count', cat: 'BETS', icon: '🎰', name: 'Bywalec Kasyna', desc: 'Liczba postawionych zakładów łącznie', unit: 'zakł.', tiers: [5, 15, 35] },
+      { id: 'b_bets_volume', cat: 'BETS', icon: '💎', name: 'Gruba Ryba', desc: 'Łączna suma PC obrócona w zakładach', unit: 'PC', tiers: [150, 500, 1500] },
+      { id: 'b_bets_winrate', cat: 'BETS', icon: '🎯', name: 'Snajper Bukmacherski', desc: 'Skuteczność trafionych zakładów (min. 5 kuponów)', unit: '%', tiers: [55, 65, 75] },
+      { id: 'b_bets_underdog', cat: 'BETS', icon: '🍀', name: 'Łowca Underdogów', desc: 'Najwyższy trafiony kurs przeciwko Krupierowi AI', unit: 'x', tiers: [2.2, 3.5, 6.0] },
+      { id: 'b_bets_profit', cat: 'BETS', icon: '🏦', name: 'Koszmar Krupiera', desc: 'Dodatni bilans netto wygrany z zakładów', unit: 'PC', tiers: [50, 150, 350] },
+      { id: 'b_bets_loss', cat: 'BETS', icon: '💸', name: 'Sponsor Kasyna', desc: 'Ujemny bilans netto na zakładach (wsparcie kasyna)', unit: 'PC', tiers: [50, 150, 300] },
+      { id: 'b_bets_winstreak', cat: 'BETS', icon: '🔥', name: 'Wilk z Wall Street', desc: 'Seria wygranych zakładów z rzędu', unit: 'W', tiers: [3, 5, 8] },
+      { id: 'b_bets_losestreak', cat: 'BETS', icon: '❄️', name: 'Czarna Seria', desc: 'Seria przegranych zakładów z rzędu', unit: 'L', tiers: [3, 5, 8] },
+      { id: 'b_bets_sports', cat: 'BETS', icon: '⚽', name: 'Ekspert Kanapowy', desc: 'Udział w zakładach z działu SPORTOWE', unit: 'zakł.', tiers: [3, 10, 25] },
+      { id: 'b_bets_our', cat: 'BETS', icon: '🏠', name: 'Znawca Ekipy', desc: 'Udział w zakładach wewnętrznych NASZE', unit: 'zakł.', tiers: [3, 10, 25] },
+
+      // II. FREKWENCJA & SPOTKANIA IRL (7)
+      { id: 'b_irl_count', cat: 'IRL', icon: '🛡️', name: 'Żelazna Obecność', desc: 'Łączna liczba zaliczonych spotkań IRL', unit: 'IRL', tiers: [5, 15, 35] },
+      { id: 'b_irl_shield', cat: 'IRL', icon: '🧱', name: 'Mur Obronny', desc: 'Punkty Chwały zdobyte z Tarczy Aktywności IRL', unit: 'PC', tiers: [50, 150, 350] },
+      { id: 'b_irl_sport', cat: 'IRL', icon: '🏃', name: 'Atleta Orlika', desc: 'Udział w wydarzeniach IRL Sport', unit: 'mecz.', tiers: [3, 10, 25] },
+      { id: 'b_irl_chill', cat: 'IRL', icon: '🍻', name: 'Dusza Towarzystwa', desc: 'Udział w spotkaniach IRL Chill / Planszówki', unit: 'spotk.', tiers: [3, 10, 25] },
+      { id: 'b_irl_trip', cat: 'IRL', icon: '⛰️', name: 'Globtroter', desc: 'Udział w dużych wyjazdach / eventach IRL', unit: 'wyj.', tiers: [1, 3, 6] },
+      { id: 'b_irl_hours', cat: 'IRL', icon: '⏳', name: 'Maratończyk', desc: 'Łączny czas spędzony na wydarzeniach (w minutach)', unit: 'min', tiers: [600, 1800, 4500] },
+      { id: 'b_irl_coop', cat: 'IRL', icon: '🤝', name: 'Pacyfista', desc: 'Udział w wydarzeniach kooperacyjnych (COOP)', unit: 'COOP', tiers: [3, 8, 15] },
+
+      // III. RYWALIZACJA & SKILL W GŁÓWNYM RANKINGU (5)
+      { id: 'b_vs_wins', cat: 'VERSUS', icon: '⚔️', name: 'Gladiator', desc: 'Wygrane pojedynki i zakłady w Głównym Rankingu', unit: 'W', tiers: [5, 15, 35] },
+      { id: 'b_vs_skillnet', cat: 'VERSUS', icon: '👑', name: 'Dominator Skilla', desc: 'Czysty zysk PC z pojedynków i zakładów (bez Tarczy)', unit: 'PC', tiers: [40, 100, 200] },
+      { id: 'b_vs_streak', cat: 'VERSUS', icon: '🚀', name: 'Niszczyciel', desc: 'Najdłuższa seria zwycięstw w Głównym Rankingu', unit: 'W', tiers: [3, 5, 8] },
+      { id: 'b_vs_saved', cat: 'VERSUS', icon: '🩹', name: 'Niezłomny', desc: 'Przegrane mecze IRL uratowane przez Tarczę Obecności', unit: 'razy', tiers: [2, 5, 12] },
+      { id: 'b_vs_peakpc', cat: 'VERSUS', icon: '🧗', name: 'Wspinacz', desc: 'Aktualny pułap Punktów Chwały (PC)', unit: 'PC', tiers: [1100, 1250, 1450] },
+
+      // IV. LIGA DWÓJEK 2v2 (6)
+      { id: 'b_2v2_games', cat: 'L2V2', icon: '🎮', name: 'Weteran Areny 2v2', desc: 'Rozegrane mecze w Lidze Dwójek 2v2', unit: 'gier', tiers: [10, 30, 75] },
+      { id: 'b_2v2_dmg', cat: 'L2V2', icon: '💥', name: 'Rzeźnik Obrażeń', desc: 'Najwyższe obrażenia DMG w meczu 2v2', unit: 'DMG', tiers: [60000, 100000, 150000] },
+      { id: 'b_2v2_streak', cat: 'L2V2', icon: '⚡', name: 'Maszyna 2v2', desc: 'Najlepsza seria wygranych w Lidze Dwójek', unit: 'W', tiers: [3, 5, 8] },
+      { id: 'b_2v2_elo', cat: 'L2V2', icon: '📈', name: 'Pretendent 2v2', desc: 'Osiągnięty pułap sezonowego 2v2 ELO', unit: 'ELO', tiers: [1040, 1100, 1180] },
+      { id: 'b_2v2_champs', cat: 'L2V2', icon: '🎭', name: 'Kameleon', desc: 'Różni bohaterowie zagrani w historii meczów 2v2', unit: 'champ.', tiers: [3, 6, 12] },
+      { id: 'b_2v2_transfer', cat: 'L2V2', icon: '💰', name: 'Inwestor Sezonowy', desc: 'Punkty PC zdobyte z zamknięć sezonów 2v2', unit: 'PC', tiers: [5, 15, 35] },
+
+      // V. RELACJE & DUETY (2)
+      { id: 'b_soc_duo', cat: 'SOCIAL', icon: '🤜🤛', name: 'Żelazne Duo', desc: 'Wspólne wygrane w jednej drużynie z tym samym partnerem', unit: 'W', tiers: [4, 10, 20] },
+      { id: 'b_soc_nemesis', cat: 'SOCIAL', icon: '🩸', name: 'Kat Nemezis', desc: 'Wygrane przeciwko temu samemu rywalowi po drugiej stronie', unit: 'W', tiers: [4, 10, 20] }
+    ];
+
+    function getActiveBadgesConfig() {
+      const custom = appState?.badgeThresholds || {};
+      return DEFAULT_BADGES_CONFIG.map(b => {
+        const overrides = custom[b.id];
+        if (Array.isArray(overrides) && overrides.length === 3) {
+          return {
+            ...b,
+            tiers: [
+              Number(overrides[0]) || b.tiers[0],
+              Number(overrides[1]) || b.tiers[1],
+              Number(overrides[2]) || b.tiers[2]
+            ]
+          };
+        }
+        return b;
+      });
+    }
+
+    function computeMemberBadgesData(memberId, simData = null) {
+      const sim = simData || runChronologicalSimulation();
+      const row = sim.sortedLeaderboard.find(r => r.member.id === memberId);
+      const member = row ? row.member : appState.members.find(m => m.id === memberId);
+      if (!member) return [];
+
+      let betsCount = 0, betsWins = 0, betsNetProfit = 0, betsWinStreak = 0, maxBetsWinStreak = 0, betsLoseStreak = 0, maxBetsLoseStreak = 0;
+      let sportCount = 0, chillCount = 0, tripCount = 0, coopCount = 0, savedByShieldCount = 0;
+      let mainWinStreak = 0, maxMainWinStreak = 0;
+      const duoWinsMap = {};
+      const nemesisWinsMap = {};
+
+      const chronological = [...(appState.events || [])].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      chronological.forEach(ev => {
+        const isWin = (ev.winners || []).includes(memberId);
+        const isLose = (ev.losers || []).includes(memberId);
+        if (!isWin && !isLose) return;
+
+        if (ev.category === 'BET_ELO' || ev.mode === 'BET_TRANSFER') {
+          betsCount++;
+          const d = Number(ev.customDeltas?.[memberId] || 0);
+          betsNetProfit += d;
+          if (d > 0 || isWin) {
+            betsWins++;
+            betsWinStreak++;
+            betsLoseStreak = 0;
+            if (betsWinStreak > maxBetsWinStreak) maxBetsWinStreak = betsWinStreak;
+          } else if (d < 0 || isLose) {
+            betsLoseStreak++;
+            betsWinStreak = 0;
+            if (betsLoseStreak > maxBetsLoseStreak) maxBetsLoseStreak = betsLoseStreak;
+          }
+          return;
+        }
+
+        if (ev.mode === 'SEASON_TRANSFER' || ev.category === 'SEASON_2V2') return;
+
+        if (ev.category === 'IRL_SPORT') sportCount++;
+        if (ev.category === 'IRL_CHILL') chillCount++;
+        if (ev.category === 'IRL_TRIP') tripCount++;
+
+        if (ev.mode === 'COOP') {
+          coopCount++;
+        } else {
+          if (isWin) {
+            mainWinStreak++;
+            if (mainWinStreak > maxMainWinStreak) maxMainWinStreak = mainWinStreak;
+            (ev.winners || []).forEach(otherId => {
+              if (otherId !== memberId) duoWinsMap[otherId] = (duoWinsMap[otherId] || 0) + 1;
+            });
+            (ev.losers || []).forEach(enemyId => {
+              nemesisWinsMap[enemyId] = (nemesisWinsMap[enemyId] || 0) + 1;
+            });
+          } else if (isLose) {
+            mainWinStreak = 0;
+            const calc = sim.eventComputedMap?.[ev.id];
+            if (calc && calc.loserDelta >= -5) savedByShieldCount++;
+          }
+        }
+      });
+
+      let betsVolume = 0, maxUnderdogOdds = 0, sportsBetsCount = 0, ourBetsCount = 0;
+      (appState.markets || []).forEach(mkt => {
+        const w = (mkt.wagers || []).find(x => x.memberId === memberId);
+        if (w) {
+          const stake = mkt.mode === 'PARIMUTUEL' ? (Number(mkt.defaultStake) || 20) : (Number(w.stake) || 20);
+          betsVolume += stake;
+          if (getEffectiveBetType(mkt) === 'SPORTS') sportsBetsCount++;
+          else ourBetsCount++;
+          if (mkt.status === 'RESOLVED' && mkt.winningOptionId === w.optionId && mkt.mode === 'AI_HOUSE') {
+            const opt = (mkt.options || []).find(o => o.id === w.optionId);
+            if (opt && Number(opt.odds) > maxUnderdogOdds) maxUnderdogOdds = Number(opt.odds);
+          }
+        }
+      });
+      (appState.bets || []).forEach(b => {
+        if ((b.participantIds || []).includes(memberId)) {
+          betsVolume += Number(b.stakes) || 20;
+          ourBetsCount++;
+        }
+      });
+
+      const nick2v2 = (member.alias2v2 || member.name || '').trim().toLowerCase();
+      const p2v2 = Object.values(appState.league2v2?.players || {}).find(p => p.name.toLowerCase() === nick2v2);
+      const games2v2 = p2v2 ? ((p2v2.w || 0) + (p2v2.l || 0)) : 0;
+      const elo2v2 = p2v2 ? Math.round(p2v2.elo) : 1000;
+      let maxStreak2v2 = p2v2 && p2v2.streak > 0 ? p2v2.streak : 0;
+      let maxDmg2v2 = 0;
+      const champsSet = new Set();
+
+      if (appState.league2v2?.records?.maxDmg?.player?.toLowerCase() === nick2v2) {
+        maxDmg2v2 = Number(appState.league2v2.records.maxDmg.value) || 0;
+      }
+      if (appState.league2v2?.records?.maxWinStreak?.player?.toLowerCase() === nick2v2) {
+        maxStreak2v2 = Math.max(maxStreak2v2, Number(appState.league2v2.records.maxWinStreak.value) || 0);
+      }
+      (appState.league2v2?.history || []).forEach(h => {
+        const rep = h.report;
+        if (!rep) return;
+        [rep.w1, rep.w2, rep.l1, rep.l2].forEach(slot => {
+          if (slot && slot.name && slot.name.toLowerCase() === nick2v2) {
+            if (Number(slot.dmg) > maxDmg2v2) maxDmg2v2 = Number(slot.dmg);
+            if (slot.champ && slot.champ !== '-') champsSet.add(slot.champ.toLowerCase());
+          }
+        });
+      });
+
+      const bestDuoWins = Math.max(0, ...Object.values(duoWinsMap));
+      const bestNemesisWins = Math.max(0, ...Object.values(nemesisWinsMap));
+      const betsWinrateVal = betsCount >= 5 ? Math.round((betsWins / betsCount) * 100) : 0;
+
+      const metricValues = {
+        b_bets_count: Math.max(betsCount, sportsBetsCount + ourBetsCount),
+        b_bets_volume: Math.round(betsVolume),
+        b_bets_winrate: betsWinrateVal,
+        b_bets_underdog: Math.round(maxUnderdogOdds * 100) / 100,
+        b_bets_profit: Math.max(0, Math.round(betsNetProfit * 10) / 10),
+        b_bets_loss: Math.max(0, Math.round(-betsNetProfit * 10) / 10),
+        b_bets_winstreak: maxBetsWinStreak,
+        b_bets_losestreak: maxBetsLoseStreak,
+        b_bets_sports: sportsBetsCount,
+        b_bets_our: ourBetsCount,
+        b_irl_count: row ? row.irlCount : 0,
+        b_irl_shield: row ? Math.round(row.shieldEloNet) : 0,
+        b_irl_sport: sportCount,
+        b_irl_chill: chillCount,
+        b_irl_trip: tripCount,
+        b_irl_hours: row ? row.totalMinutes : 0,
+        b_irl_coop: coopCount,
+        b_vs_wins: row ? row.wins : 0,
+        b_vs_skillnet: row ? Math.max(0, Math.round(row.skillEloNet)) : 0,
+        b_vs_streak: maxMainWinStreak,
+        b_vs_saved: savedByShieldCount,
+        b_vs_peakpc: row ? Math.round(row.elo) : 1000,
+        b_2v2_games: games2v2,
+        b_2v2_dmg: maxDmg2v2,
+        b_2v2_streak: maxStreak2v2,
+        b_2v2_elo: elo2v2,
+        b_2v2_champs: champsSet.size,
+        b_2v2_transfer: row ? Math.max(0, Math.round(row.season2v2Net * 10) / 10) : 0,
+        b_soc_duo: bestDuoWins,
+        b_soc_nemesis: bestNemesisWins
+      };
+
+      return getActiveBadgesConfig().map(cfg => {
+        const val = Number(metricValues[cfg.id] || 0);
+        const [t1, t2, t3] = cfg.tiers;
+        let level = 0;
+        if (val >= t3) level = 3;
+        else if (val >= t2) level = 2;
+        else if (val >= t1) level = 1;
+
+        const nextTarget = level === 0 ? t1 : (level === 1 ? t2 : (level === 2 ? t3 : t3));
+        const progressPct = Math.min(100, Math.max(0, Math.round((val / (nextTarget || 1)) * 100)));
+
+        return {
+          ...cfg,
+          currentValue: val,
+          level,
+          nextTarget,
+          progressPct
+        };
+      });
+    }
+
+    function getMemberDisplayBadges(memberId, simData = null) {
+      const member = appState.members.find(m => m.id === memberId);
+      const allBadges = computeMemberBadgesData(memberId, simData);
+      const unlocked = allBadges.filter(b => b.level > 0);
+      if (unlocked.length === 0) return [];
+
+      const pinnedIds = Array.isArray(member?.pinnedBadges) ? member.pinnedBadges : [];
+      if (pinnedIds.length > 0) {
+        const pinnedFound = pinnedIds
+          .map(id => unlocked.find(b => b.id === id))
+          .filter(Boolean)
+          .slice(0, 3);
+        if (pinnedFound.length > 0) return pinnedFound;
+      }
+      return [...unlocked].sort((a, b) => b.level - a.level || b.progressPct - a.progressPct).slice(0, 3);
+    }
+
+    function getBadgeTierMeta(level) {
+      if (level === 3) return { roman: 'III', label: 'Złoto', medal: '🥇', cls: 'bg-amber-400/20 text-amber-200 border-amber-400/60 shadow-sm shadow-amber-500/20' };
+      if (level === 2) return { roman: 'II', label: 'Srebro', medal: '🥈', cls: 'bg-slate-400/20 text-slate-100 border-slate-300/50' };
+      if (level === 1) return { roman: 'I', label: 'Brąz', medal: '🥉', cls: 'bg-orange-800/35 text-orange-200 border-orange-600/50' };
+      return { roman: '-', label: 'Zablokowana', medal: '🔒', cls: 'bg-slate-900 text-slate-500 border-slate-800' };
+    }
+
+    function renderMemberMiniBadgesHtml(memberId) {
+      const displayBadges = getMemberDisplayBadges(memberId);
+      if (displayBadges.length === 0) return '';
+      return displayBadges.map(b => {
+        const tm = getBadgeTierMeta(b.level);
+        const tooltip = `${b.icon} ${b.name} (${tm.medal} Poziom ${tm.roman} – ${tm.label}) • ${b.desc}: ${b.currentValue} ${b.unit}`;
+        return `<span title="${escapeHtml(tooltip)}" class="text-[10px] px-1.5 py-0.5 rounded border font-bold inline-flex items-center gap-0.5 ${tm.cls}">${b.icon}<span class="text-[9px] font-mono">${tm.roman}</span></span>`;
+      }).join('');
+    }
+
+    // ================= WYBÓR WŁASNYCH ODZNAK W PANELU USTAWIEŃ ORAZ MODAL PROFILU GRACZA =================
+    let currentProfileMemberId = null;
+    let currentProfileBadgeFilter = 'ALL';
+
+    function renderSettingsBadgeSelector(forcedMemberId = null) {
+      const sel = document.getElementById('cfgBadgeMemberSelect');
+      const container = document.getElementById('settingsBadgesContainer');
+      if (!sel || !container) return;
+
+      const targetId = forcedMemberId || sel.value || appConfig.myMemberId || appState.members[0]?.id || '';
+      sel.innerHTML = appState.members.map(m =>
+        `<option value="${m.id}" ${m.id === targetId ? 'selected' : ''}>👤 ${escapeHtml(m.name)}</option>`
+      ).join('');
+
+      const member = appState.members.find(m => m.id === targetId);
+      if (!member) {
+        container.innerHTML = `<div class="text-xs text-slate-500">Brak graczy w ekipie.</div>`;
+        return;
+      }
+
+      const allBadges = computeMemberBadgesData(member.id);
+      const unlocked = allBadges.filter(b => b.level > 0);
+      const pinned = Array.isArray(member.pinnedBadges) ? member.pinnedBadges : [];
+
+      if (unlocked.length === 0) {
+        container.innerHTML = `<div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 text-xs text-slate-400">Gracz <strong>${escapeHtml(member.name)}</strong> nie odblokował jeszcze żadnej odznaki. Kliknij przycisk <strong>„🏆 Otwórz Pełny Profil”</strong>, aby sprawdzić postęp do wszystkich 30 odznak!</div>`;
+        return;
+      }
+
+      const badgesButtons = unlocked.map(b => {
+        const tm = getBadgeTierMeta(b.level);
+        const isPinned = pinned.includes(b.id);
+        const activeRing = isPinned ? 'ring-2 ring-amber-400 bg-amber-500/25' : 'opacity-85 hover:opacity-100';
+        return `
+          <button type="button" onclick="togglePinBadge('${member.id}', '${b.id}')" class="px-3 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-2 ${tm.cls} ${activeRing}" title="${escapeHtml(b.desc)} (${b.currentValue} ${b.unit})">
+            <span class="text-base">${b.icon}</span>
+            <div class="text-left">
+              <div class="flex items-center gap-1">
+                <span>${escapeHtml(b.name)}</span>
+                <span class="text-[10px] font-mono px-1 rounded bg-black/30">${tm.medal} ${tm.roman}</span>
+                ${isPinned ? '<span class="text-[10px] text-amber-300">📌</span>' : ''}
+              </div>
+              <div class="text-[10px] opacity-80 font-mono">${b.currentValue} ${b.unit}</div>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="text-xs text-slate-300 flex flex-wrap items-center justify-between gap-2">
+          <span>Odblokowane odznaki gracza <strong>${escapeHtml(member.name)}</strong> (${unlocked.length}/30) – kliknij, aby przypiąć do tabeli (wybrano: <strong>${pinned.length}/3</strong>):</span>
+          ${pinned.length > 0 ? `<button type="button" onclick="clearPinnedBadges('${member.id}')" class="text-[11px] text-amber-300 hover:underline">Resetuj na Auto (3 najwyższe)</button>` : '<span class="text-[11px] text-slate-400">Tryb: Auto (3 najwyższe)</span>'}
+        </div>
+        <div class="flex flex-wrap gap-2 pt-1">${badgesButtons}</div>
+      `;
+    }
+
+    async function togglePinBadge(memberId, badgeId) {
+      await ensureFreshStateBeforeWrite();
+      const member = appState.members.find(m => m.id === memberId);
+      if (!member) return;
+      if (!Array.isArray(member.pinnedBadges)) member.pinnedBadges = [];
+
+      const idx = member.pinnedBadges.indexOf(badgeId);
+      if (idx !== -1) {
+        member.pinnedBadges.splice(idx, 1);
+      } else {
+        if (member.pinnedBadges.length >= 3) {
+          showToast('Możesz przypiąć maksymalnie 3 odznaki jednocześnie! Odepnij najpierw jedną z obecnych.', 'warn');
+          return;
+        }
+        member.pinnedBadges.push(badgeId);
+      }
+
+      await persistState();
+      renderAll();
+      if (currentProfileMemberId === memberId && !document.getElementById('playerProfileModal')?.classList.contains('hidden')) {
+        renderPlayerProfileModalContent(memberId);
+      }
+    }
+
+    async function clearPinnedBadges(memberId) {
+      await ensureFreshStateBeforeWrite();
+      const member = appState.members.find(m => m.id === memberId);
+      if (!member) return;
+      member.pinnedBadges = [];
+      await persistState();
+      renderAll();
+      if (currentProfileMemberId === memberId && !document.getElementById('playerProfileModal')?.classList.contains('hidden')) {
+        renderPlayerProfileModalContent(memberId);
+      }
+      showToast('Ustawiono automatyczny wybór 3 najwyższych odznak.', 'info');
+    }
+
+    function clearPinnedBadgesForCurrentProfile() {
+      if (currentProfileMemberId) clearPinnedBadges(currentProfileMemberId);
+    }
+
+    function openPlayerProfileModal(memberId) {
+      const targetId = memberId || appConfig.myMemberId || appState.members[0]?.id;
+      if (!targetId) return;
+      currentProfileMemberId = targetId;
+      renderPlayerProfileModalContent(targetId);
+      document.getElementById('playerProfileModal')?.classList.remove('hidden');
+    }
+
+    function closePlayerProfileModal() {
+      document.getElementById('playerProfileModal')?.classList.add('hidden');
+    }
+
+    function setProfileBadgeFilter(cat) {
+      currentProfileBadgeFilter = cat || 'ALL';
+      ['ALL', 'UNLOCKED', 'BETS', 'IRL', 'VERSUS', 'L2V2', 'SOCIAL'].forEach(k => {
+        const btn = document.getElementById(`profFilterBtn-${k}`);
+        if (!btn) return;
+        btn.className = k === currentProfileBadgeFilter
+          ? 'px-2.5 py-1 rounded-lg font-bold bg-indigo-600 text-white transition'
+          : 'px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition';
+      });
+      if (currentProfileMemberId) renderPlayerProfileModalContent(currentProfileMemberId);
+    }
+
+    function renderPlayerProfileModalContent(memberId) {
+      const sim = runChronologicalSimulation();
+      const row = sim.sortedLeaderboard.find(r => r.member.id === memberId);
+      const member = row ? row.member : appState.members.find(m => m.id === memberId);
+      if (!member) return;
+
+      const switchSel = document.getElementById('profSwitchMemberSelect');
+      if (switchSel) {
+        switchSel.innerHTML = appState.members.map(m =>
+          `<option value="${m.id}" ${m.id === member.id ? 'selected' : ''}>👤 ${escapeHtml(m.name)}</option>`
+        ).join('');
+      }
+
+      const av = document.getElementById('profAvatar');
+      if (av) {
+        av.style.background = member.color || '#6366f1';
+        av.textContent = member.name.slice(0, 2).toUpperCase();
+      }
+      document.getElementById('profName').textContent = member.name;
+      document.getElementById('profRankBadge').innerHTML = getRankTierBadge(row ? row.elo : 1000);
+
+      const aliasEl = document.getElementById('profAliasBadge');
+      if (member.alias2v2) {
+        aliasEl.textContent = `🎮 2v2: ${member.alias2v2}`;
+        aliasEl.classList.remove('hidden');
+      } else {
+        aliasEl.classList.add('hidden');
+      }
+
+      document.getElementById('profSubtext').textContent = `${member.role || 'Gracz Ekipy'} • ${row ? row.irlCount : 0} spotkań IRL / ${row ? row.onlineCount : 0} Online`;
+
+      const nick2v2 = (member.alias2v2 || member.name || '').trim().toLowerCase();
+      const p2v2 = Object.values(appState.league2v2?.players || {}).find(p => p.name.toLowerCase() === nick2v2);
+      const totalComp = row ? (row.wins + row.losses) : 0;
+      const wr = totalComp > 0 ? Math.round((row.wins / totalComp) * 100) + '%' : '—';
+
+      document.getElementById('profStatsSummaryGrid').innerHTML = `
+        <div class="bg-slate-900/90 border border-indigo-500/30 rounded-xl p-3">
+          <div class="text-[10px] uppercase font-bold text-indigo-300">🏆 Punkty Chwały</div>
+          <div class="text-base font-extrabold text-white font-mono mt-0.5">${row ? row.elo.toFixed(1) : '1000.0'} PC</div>
+        </div>
+        <div class="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-3">
+          <div class="text-[10px] uppercase font-bold text-emerald-300">⚔️ Bilans Główny</div>
+          <div class="text-base font-extrabold text-white font-mono mt-0.5">${row ? row.wins : 0}W-${row ? row.losses : 0}L (${wr})</div>
+        </div>
+        <div class="bg-slate-900/90 border border-sky-500/30 rounded-xl p-3">
+          <div class="text-[10px] uppercase font-bold text-sky-300">🛡️ Z Tarczy IRL</div>
+          <div class="text-base font-extrabold text-white font-mono mt-0.5">+${row ? row.shieldEloNet.toFixed(0) : 0} PC</div>
+        </div>
+        <div class="bg-slate-900/90 border border-amber-500/30 rounded-xl p-3">
+          <div class="text-[10px] uppercase font-bold text-amber-300">🎲 Wydarzenia & Zakłady</div>
+          <div class="text-base font-extrabold text-white font-mono mt-0.5">${row && row.skillEloNet >= 0 ? '+' : ''}${row ? row.skillEloNet.toFixed(0) : 0} PC</div>
+        </div>
+        <div class="bg-slate-900/90 border border-purple-500/30 rounded-xl p-3 col-span-2 sm:col-span-1">
+          <div class="text-[10px] uppercase font-bold text-purple-300">🎮 Liga 2v2 ELO</div>
+          <div class="text-base font-extrabold text-white font-mono mt-0.5">${p2v2 ? Math.round(p2v2.elo) + ' ELO (' + p2v2.w + 'W-' + p2v2.l + 'L)' : 'Brak gier'}</div>
+        </div>
+      `;
+
+      const allBadges = computeMemberBadgesData(member.id, sim);
+      const unlockedCount = allBadges.filter(b => b.level > 0).length;
+      const bronzeCount = allBadges.filter(b => b.level === 1).length;
+      const silverCount = allBadges.filter(b => b.level === 2).length;
+      const goldCount = allBadges.filter(b => b.level === 3).length;
+
+      document.getElementById('profUnlockedCountBadge').innerHTML =
+        `Zdobyto: <strong>${unlockedCount}/30</strong> (🥇 ${goldCount} • 🥈 ${silverCount} • 🥉 ${bronzeCount})`;
+
+      const displayBadges = getMemberDisplayBadges(member.id, sim);
+      const pinnedIds = Array.isArray(member.pinnedBadges) ? member.pinnedBadges : [];
+      document.getElementById('profPinnedBadgesBar').innerHTML = displayBadges.length === 0
+        ? `<span class="text-xs text-slate-500">Brak odblokowanych odznak do wyświetlenia w tabeli.</span>`
+        : displayBadges.map(b => {
+            const tm = getBadgeTierMeta(b.level);
+            const isManual = pinnedIds.includes(b.id);
+            return `
+              <span onclick="togglePinBadge('${member.id}', '${b.id}')" class="cursor-pointer px-3 py-1.5 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 ${tm.cls}">
+                <span>${b.icon}</span>
+                <span>${escapeHtml(b.name)}</span>
+                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/30">${tm.medal} ${tm.roman}</span>
+                ${isManual ? '<span class="text-[10px] text-amber-300" title="Przypięta ręcznie">📌</span>' : '<span class="text-[10px] opacity-60">(Auto)</span>'}
+              </span>
+            `;
+          }).join('');
+
+      const filteredBadges = allBadges.filter(b => {
+        if (currentProfileBadgeFilter === 'UNLOCKED') return b.level > 0;
+        if (currentProfileBadgeFilter !== 'ALL') return b.cat === currentProfileBadgeFilter;
+        return true;
+      });
+
+      document.getElementById('profAllBadgesGrid').innerHTML = filteredBadges.map(b => {
+        const tm = getBadgeTierMeta(b.level);
+        const isPinned = pinnedIds.includes(b.id);
+        const [t1, t2, t3] = b.tiers;
+        const canPinAttr = b.level > 0 ? `onclick="togglePinBadge('${member.id}', '${b.id}')" class="cursor-pointer` : `class="opacity-65`;
+
+        return `
+          <div ${canPinAttr} bg-slate-900/90 border ${b.level === 3 ? 'border-amber-400/60' : (b.level === 2 ? 'border-slate-400/50' : (b.level === 1 ? 'border-orange-600/50' : 'border-slate-800'))} rounded-xl p-3.5 flex flex-col justify-between gap-2.5 transition hover:border-indigo-500/50">
+            <div class="space-y-1.5">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-xl">${b.icon}</span>
+                  <div>
+                    <h5 class="text-xs sm:text-sm font-extrabold text-white flex items-center gap-1">
+                      <span>${escapeHtml(b.name)}</span>
+                      ${isPinned ? '<span class="text-xs text-amber-300" title="Przypięta w tabeli">📌</span>' : ''}
+                    </h5>
+                    <span class="text-[10px] text-slate-400">${escapeHtml(b.desc)}</span>
+                  </div>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded-full border font-mono font-bold shrink-0 ${tm.cls}">
+                  ${tm.medal} ${b.level > 0 ? 'Poz. ' + tm.roman : 'Brak'}
+                </span>
+              </div>
+            </div>
+
+            <div class="space-y-1.5 pt-1">
+              <div class="flex items-center justify-between text-[11px] font-mono">
+                <span class="text-slate-300">Postęp: <strong class="text-white">${b.currentValue} ${b.unit}</strong></span>
+                <span class="text-slate-400"> Progi: <span class="${b.level >= 1 ? 'text-orange-300 font-bold' : ''}">${t1}</span> / <span class="${b.level >= 2 ? 'text-slate-200 font-bold' : ''}">${t2}</span> / <span class="${b.level >= 3 ? 'text-amber-300 font-bold' : ''}">${t3}</span></span>
+              </div>
+              <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
+                <div class="${b.level === 3 ? 'bg-amber-400' : (b.level === 2 ? 'bg-slate-300' : (b.level === 1 ? 'bg-orange-500' : 'bg-indigo-600'))} h-full rounded-full transition-all" style="width:${b.progressPct}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================= EDYCJA PROGÓW 30 ODZNAK W PANELU ADMINA =================
+    function populateAdminBadgeThresholds() {
+      const container = document.getElementById('adminBadgeThresholdsContainer');
+      if (!container) return;
+      const activeCfg = getActiveBadgesConfig();
+      container.innerHTML = activeCfg.map(b => `
+        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs" data-admin-badge-id="${b.id}">
+          <div class="flex items-center gap-2 truncate">
+            <span class="text-base shrink-0">${b.icon}</span>
+            <div class="truncate">
+              <div class="font-bold text-white truncate">${escapeHtml(b.name)} <span class="text-[10px] font-mono text-slate-400">(${b.unit})</span></div>
+              <div class="text-[10px] text-slate-500 truncate">${escapeHtml(b.desc)}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 shrink-0 font-mono">
+            <input type="number" step="any" data-tier="0" value="${b.tiers[0]}" title="Próg I (Brąz)" class="w-16 bg-slate-900 border border-orange-700/50 rounded px-1.5 py-1 text-right text-orange-300 font-bold" />
+            <input type="number" step="any" data-tier="1" value="${b.tiers[1]}" title="Próg II (Srebro)" class="w-16 bg-slate-900 border border-slate-500/50 rounded px-1.5 py-1 text-right text-slate-200 font-bold" />
+            <input type="number" step="any" data-tier="2" value="${b.tiers[2]}" title="Próg III (Złoto)" class="w-16 bg-slate-900 border border-amber-500/50 rounded px-1.5 py-1 text-right text-amber-300 font-bold" />
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function adminResetBadgeThresholds() {
+      appState.badgeThresholds = {};
+      populateAdminBadgeThresholds();
+      showToast('Przywrócono domyślne progi dla wszystkich 30 odznak (kliknij Zapisz na dole, aby utrwalić w bazie).', 'info');
+    }
+
+    // ================= AUTOMATYCZNE ROZLICZANIE ZAKŁADÓW ZE SCREENA SOFASCORE / FLASHSCORE =================
+    let pendingSofaSettlements = [];
+
+    async function handleSofaSettleImageSelect(e) {
+      const file = e.target.files?.[0];
+      if (file) await processSofaFlashscoreScreenshot(file);
+      e.target.value = '';
+    }
+
+    async function processSofaFlashscoreScreenshot(file) {
+      const activeMarkets = (appState.markets || []).filter(m => m.status === 'ACTIVE');
+      if (activeMarkets.length === 0) {
+        showToast('Brak otwartych rynków do rozliczenia!', 'warn');
+        return;
+      }
+      if (!appConfig.geminiKey || appConfig.geminiKey.trim().length < 10) {
+        await pullFromCloudIfNewer(true);
+      }
+      if (!appConfig.geminiKey || appConfig.geminiKey.trim().length < 10) {
+        showToast('Najpierw wpisz klucz Gemini API w zakładce Opcje!', 'error');
+        return;
+      }
+
+      const statusBox = document.getElementById('sofaSettleStatusBox');
+      if (statusBox) {
+        statusBox.classList.remove('hidden');
+        statusBox.textContent = '⏳ Odczytywanie wyników meczów ze zrzutu SofaScore / Flashscore i dopasowywanie do otwartych zakładów...';
+      }
+
+      try {
+        const { mimeType, base64Data } = await compressImageForVision(file);
+        const marketsPayload = activeMarkets.map(m => ({
+          marketId: m.id,
+          title: m.title,
+          options: (m.options || []).map(o => ({ optionId: o.id, label: o.label }))
+        }));
+
+        const prompt = `Jesteś Sędzią Bukmacherskim AI. Przeanalizuj załączony zrzut ekranu z wynikami meczów (np. z aplikacji SofaScore / Flashscore / Livescore).
+Oto lista naszych AKTYWNYCH ZAKŁADÓW do rozliczenia:
+${JSON.stringify(marketsPayload, null, 2)}
+
+ZADANIE:
+1. Odczytaj wszystkie zakończone mecze i ich wyniki widoczne na zrzucie ekranu.
+2. Dopasuj zakończone mecze ze zrzutu do naszej listy aktywnych zakładów (uwzględnij skróty, polskie/angielskie nazwy drużyn oraz zakłady typu 1X2 / zwycięzca / over-under).
+3. Dla każdego dopasowanego i zakończonego zakładu wskaż dokładne "marketId", zwycięskie "winningOptionId" oraz odczytany wynik "matchScore" (np. "2:1"). Jeśli mecz na screenie jeszcze się nie zakończył lub nie ma go na screenie, pomiń go.
+Zwróć WYŁĄCZNIE czysty JSON:
+[
+  {
+    "marketId": "mkt_...",
+    "winningOptionId": "opt_...",
+    "matchScore": "2:1",
+    "reason": "Krótkie wyjaśnienie wyniku ze screena"
+  }
+]`;
+
+        const data = await callGeminiWithFallback(appConfig.geminiKey.trim(), {
+          contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType, data: base64Data } }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
+        });
+
+        const parsed = parseJsonFromGeminiText(extractTextFromGeminiData(data));
+        const arr = Array.isArray(parsed) ? parsed : (parsed.matches || parsed.settlements || [parsed]);
+
+        pendingSofaSettlements = arr.filter(item => {
+          if (!item || !item.marketId || !item.winningOptionId) return false;
+          const mkt = activeMarkets.find(m => m.id === item.marketId);
+          const opt = mkt?.options?.find(o => o.id === item.winningOptionId);
+          return Boolean(mkt && opt);
+        });
+
+        renderSofaSettlementPreview();
+        if (pendingSofaSettlements.length > 0) {
+          if (statusBox) statusBox.textContent = `✅ Dopasowano ${pendingSofaSettlements.length} zakończonych zakładów ze zrzutu ekranu! Sprawdź poniżej i zatwierdź.`;
+          showToast(`Wykryto ${pendingSofaSettlements.length} wyników pasujących do otwartych zakładów!`, 'success');
+        } else {
+          if (statusBox) statusBox.textContent = '⚠️ Nie znaleziono na zrzucie zakończonych meczów pasujących do obecnie otwartych zakładów.';
+          showToast('Brak dopasowanych zakończonych meczów na tym screenie.', 'warn');
+        }
+      } catch (err) {
+        if (statusBox) statusBox.textContent = '⚠️ Błąd analizy screena: ' + err.message;
+        showToast('Błąd analizy screena: ' + err.message, 'error');
+      }
+    }
+
+    function renderSofaSettlementPreview() {
+      const wrap = document.getElementById('sofaSettlePreviewWrap');
+      const list = document.getElementById('sofaSettleMatchesList');
+      if (!wrap || !list) return;
+
+      if (pendingSofaSettlements.length === 0) {
+        wrap.classList.add('hidden');
+        return;
+      }
+
+      wrap.classList.remove('hidden');
+      list.innerHTML = pendingSofaSettlements.map((item, idx) => {
+        const mkt = (appState.markets || []).find(m => m.id === item.marketId);
+        if (!mkt) return '';
+        const optionsSelectHtml = (mkt.options || []).map(o =>
+          `<option value="${o.id}" ${o.id === item.winningOptionId ? 'selected' : ''}>🏆 Wygrało: ${escapeHtml(o.label)} (${Number(o.odds).toFixed(2)}x)</option>`
+        ).join('');
+
+        return `
+          <div class="bg-slate-950/90 border border-emerald-500/40 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <label class="flex items-center gap-2.5 flex-1 cursor-pointer">
+              <input type="checkbox" class="sofa-settle-checkbox w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-500" data-idx="${idx}" checked />
+              <div>
+                <div class="font-bold text-white">${escapeHtml(mkt.title)} <span class="text-emerald-400 font-mono">[Wynik: ${escapeHtml(item.matchScore || '?')}]</span></div>
+                <div class="text-[11px] text-slate-400">${escapeHtml(item.reason || '')} • Głosów w puli: ${(mkt.wagers || []).length}</div>
+              </div>
+            </label>
+            <select onchange="pendingSofaSettlements[${idx}].winningOptionId = this.value" class="bg-slate-900 border border-emerald-500/40 rounded-lg px-2.5 py-1.5 text-xs font-bold text-emerald-300 focus:outline-none">
+              ${optionsSelectHtml}
+            </select>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function clearSofaSettlePreview() {
+      pendingSofaSettlements = [];
+      document.getElementById('sofaSettlePreviewWrap')?.classList.add('hidden');
+      document.getElementById('sofaSettleStatusBox')?.classList.add('hidden');
+    }
+
+    async function confirmBatchSofaSettlement() {
+      const checkboxes = Array.from(document.querySelectorAll('.sofa-settle-checkbox:checked'));
+      if (checkboxes.length === 0) {
+        showToast('Zaznacz przynajmniej 1 zakład do rozliczenia!', 'warn');
+        return;
+      }
+
+      await ensureFreshStateBeforeWrite();
+      let settledCount = 0;
+      const settledTitles = [];
+
+      checkboxes.forEach(cb => {
+        const idx = Number(cb.getAttribute('data-idx'));
+        const item = pendingSofaSettlements[idx];
+        if (!item) return;
+
+        const targetMkt = (appState.markets || []).find(m => m.id === item.marketId && m.status === 'ACTIVE');
+        if (!targetMkt) return;
+        const winOpt = (targetMkt.options || []).find(o => o.id === item.winningOptionId);
+        if (!winOpt) return;
+
+        const wagers = targetMkt.wagers || [];
+        const winningWagers = wagers.filter(w => w.optionId === winOpt.id);
+        const losingWagers = wagers.filter(w => w.optionId !== winOpt.id);
+
+        if (targetMkt.mode === 'PARIMUTUEL' && (winningWagers.length === 0 || losingWagers.length === 0)) {
+          // Jeśli we wspólnej puli nikt nie trafił lub wszyscy dali to samo, oznaczamy rynek jako zamknięty bez transferu
+          targetMkt.status = 'RESOLVED';
+          targetMkt.winningOptionId = winOpt.id;
+          settledCount++;
+          return;
+        }
+
+        const customDeltas = {};
+        const winners = [];
+        const losers = [];
+
+        if (targetMkt.mode === 'AI_HOUSE') {
+          const odds = Number(winOpt.odds) || 1.65;
+          const netMultiplier = Math.max(0.10, odds - 1);
+          wagers.forEach(w => {
+            const s = Number(w.stake) || 20;
+            if (w.optionId === winOpt.id) {
+              const netProfit = Math.round(s * netMultiplier * 10) / 10;
+              customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) + netProfit;
+              if (!winners.includes(w.memberId)) winners.push(w.memberId);
+            } else {
+              customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) - s;
+              if (!losers.includes(w.memberId)) losers.push(w.memberId);
+            }
+          });
+        } else {
+          const fixedStake = Math.max(1, Number(targetMkt.defaultStake) || 20);
+          const totalLostPot = losingWagers.length * fixedStake;
+          const gainPerWinner = Math.round((totalLostPot / winningWagers.length) * 10) / 10;
+          winningWagers.forEach(w => {
+            customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) + gainPerWinner;
+            if (!winners.includes(w.memberId)) winners.push(w.memberId);
+          });
+          losingWagers.forEach(w => {
+            customDeltas[w.memberId] = (customDeltas[w.memberId] || 0) - fixedStake;
+            if (!losers.includes(w.memberId)) losers.push(w.memberId);
+          });
+        }
+
+        if (wagers.length > 0) {
+          appState.events.unshift({
+            id: 'ev_mkt_' + Date.now() + '_' + idx,
+            title: `🎲 Zakład: ${targetMkt.title} → ${winOpt.label} (${item.matchScore || ''})`,
+            category: 'BET_ELO',
+            mode: 'BET_TRANSFER',
+            date: new Date().toISOString().split('T')[0],
+            duration: 15,
+            aiBonus: 0,
+            winners,
+            losers,
+            customDeltas,
+            comment: `Auto-rozliczenie ze screena wyników (${item.matchScore || 'Sofa/Flashscore'}). Zwycięska opcja: "${winOpt.label}".`
+          });
+        }
+
+        targetMkt.status = 'RESOLVED';
+        targetMkt.winningOptionId = winOpt.id;
+        settledCount++;
+        settledTitles.push(`${targetMkt.title} → ${winOpt.label}`);
+      });
+
+      clearSofaSettlePreview();
+      await persistState();
+      populateAdminEditorFields();
+      renderAll();
+
+      if (settledCount > 0) {
+        showToast(`Rozliczono automatycznie ${settledCount} zakładów ze zrzutu ekranu!`, 'success');
+        sendDiscordWebhookNotification(`📸 Auto-Rozliczenie (${settledCount} zakładów)`, settledTitles.join('\n'), 0x10b981);
       }
     }
 
