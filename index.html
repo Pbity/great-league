@@ -814,9 +814,12 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="space-y-2 bg-slate-900/70 p-4 rounded-xl border border-slate-800">
             <label class="block text-xs font-bold uppercase tracking-wider text-indigo-400">
-              1. Klucz Google Gemini API
+              1. Klucz Google Gemini API (Tylko w tej przeglądarce 🔒)
             </label>
             <input type="password" id="cfgGeminiKey" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+            <p class="text-[11px] text-emerald-400/90">
+              🔒 Zapisywany wyłącznie lokalnie w Twojej przeglądarce (localStorage) – nigdy nie trafia do bazy Firebase.
+            </p>
           </div>
 
           <div class="space-y-2 bg-slate-900/70 p-4 rounded-xl border border-slate-800">
@@ -1938,14 +1941,18 @@
       }
       applyMultipliersToRuntime(merged.multipliers);
 
-      if (merged.sharedConfig && merged.sharedConfig.geminiKey) {
+      if (merged.sharedConfig && typeof merged.sharedConfig === 'object') {
+        // Bezpieczeństwo: Klucz Gemini API jest przechowywany WYŁĄCZNIE lokalnie w przeglądarce (localStorage).
+        // Usuwamy ewentualny stary klucz z obiektu stanu pobranego z bazy Firebase:
+        if ('geminiKey' in merged.sharedConfig) {
+          delete merged.sharedConfig.geminiKey;
+        }
         const remoteConfigTime = Number(merged.sharedConfig.updatedAt) || 0;
         const localConfigTime = Number(appConfig.updatedAt) || 0;
-        if (!appConfig.geminiKey || appConfig.geminiKey.length < 10 || remoteConfigTime > localConfigTime) {
-          appConfig.geminiKey = merged.sharedConfig.geminiKey;
+        if (remoteConfigTime > localConfigTime) {
           if (merged.sharedConfig.model) appConfig.model = merged.sharedConfig.model;
           if (merged.sharedConfig.discordWebhookUrl) appConfig.discordWebhookUrl = merged.sharedConfig.discordWebhookUrl;
-          appConfig.updatedAt = remoteConfigTime || Date.now();
+          appConfig.updatedAt = remoteConfigTime;
           localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(appConfig));
           updateConfigStatuses();
           populateConfigInputs();
@@ -2148,8 +2155,13 @@
           if (res.ok) {
             const remoteData = await res.json();
             if (remoteData && Array.isArray(remoteData.members)) {
+              const hadLegacyCloudKey = Boolean(remoteData?.sharedConfig?.geminiKey);
               appState = ensureCompleteStateStructure(remoteData);
               localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(appState));
+              if (hadLegacyCloudKey) {
+                // Automatycznie wyczyść stary klucz API z chmury Firebase przy pierwszym uruchomieniu
+                await persistState();
+              }
               return;
             }
           }
@@ -2171,14 +2183,11 @@
 
     async function persistState() {
       appState.lastUpdated = Date.now();
-      if ((appConfig.geminiKey && appConfig.geminiKey.trim().length > 10) || appConfig.discordWebhookUrl) {
-        appState.sharedConfig = {
-          geminiKey: (appConfig.geminiKey || '').trim(),
-          model: appConfig.model || 'gemini-3.5-flash-lite',
-          discordWebhookUrl: (appConfig.discordWebhookUrl || '').trim(),
-          updatedAt: appConfig.updatedAt || Date.now()
-        };
-      }
+      appState.sharedConfig = {
+        model: appConfig.model || 'gemini-3.5-flash-lite',
+        discordWebhookUrl: (appConfig.discordWebhookUrl || '').trim(),
+        updatedAt: appConfig.updatedAt || Date.now()
+      };
       localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(appState));
       const baseUrl = getCleanFirebaseUrl();
       if (baseUrl) {
@@ -5961,7 +5970,7 @@ Odpowiedz po polsku, konkretnie, z humorem, odnosząc się bezpośrednio do imio
 
       await persistState();
       renderAll();
-      showToast('Zapisano ustawienia i udostępniono konfigurację w bazie Firebase!', 'success');
+      showToast('Zapisano ustawienia! Klucz Gemini API zapisano wyłącznie lokalnie w tej przeglądarce.', 'success');
     }
 
     function copyMagicLink() {
